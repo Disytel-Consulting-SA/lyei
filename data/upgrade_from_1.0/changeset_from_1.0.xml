@@ -1,0 +1,32 @@
+<project name="deployer" default="deploy" basedir=".">
+    
+    <!-- =============================================== -->
+    <!-- CONSTANTES A UTILIZAR A LO LARGO DEL DESCRIPTOR -->
+    <!-- =============================================== -->
+    
+    <!-- Directorio destino se hereda de la configuración de unattendedUpgrade -->
+    <property name="TARGET_DIR" value="${oxpDir}${upgradeSuffix}"/>
+    
+    <!-- Directorio origen donde se encuentran los archivos -->
+    <property name="SOURCE_DIR" value="changeset"/>
+    	
+    <!-- ==================== -->
+    <!-- TARGET DE INVOCACION -->
+    <!-- ==================== -->
+    <target name="deploy" description="Actualización de archivos a instalar">
+        
+        <!-- Esta seteada TARGET_DIR? De no estarlo es un problema grave -->
+		<fail message="No se ha seteado TARGET_DIR">
+			<condition><not><isset property="TARGET_DIR"/></not></condition>
+		</fail>
+	        
+		<!-- ================================ -->
+		<!-- Nomina de cambios a continuación -->
+		<!-- ================================ -->
+
+		<!-- 20171023-1104 Archivo de configuracion afip.  -->
+		<copy file="${SOURCE_DIR}/afip-openssl.cnf" todir="${TARGET_DIR}" overwrite="yes" />
+
+    </target>
+    
+</project>
