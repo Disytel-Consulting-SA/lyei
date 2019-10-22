@@ -27,19 +27,10 @@ import FEV1.dif.afip.gov.ar.ServiceSoap;
 
 public class WSFEConsultarComprobanteProcess extends SvrProcess {
 
-	// Tipos no cargados en tabla de DocType
-	public static final int TIPO_COMPROBANTE_FACTURA_M 							= 51;
-	public static final int TIPO_COMPROBANTE_NOTA_DEBITO_M						= 52;
-	public static final int TIPO_COMPROBANTE_NOTA_CREDITO_M						= 53;
-	public static final int TIPO_COMPROBANTE_FACTURA_EXPORTACION_SIMPLIFICADO 	= 22;
-	
 	/** Etiquta token dentro del archivo */
 	public static final String TA_TAG_TOKEN = "token";
 	/** Etiquta sign dentro del archivo */
 	public static final String TA_TAG_SIGN  = "sign";
-
-
-	
 	
 	/** Nomina de comprobantes recuperados.  En cada posicion de la lista hay una map con todos los datos, o bien ERROR_KEY si no se pudo recuperar */
 	protected ArrayList<HashMap<String, String>> retrievedDocuments = new ArrayList<HashMap<String, String>>();
@@ -99,9 +90,21 @@ public class WSFEConsultarComprobanteProcess extends SvrProcess {
 		docTypeMap.put("CDNC", Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_NotasDeDebitoC));
 		docTypeMap.put("CCNC", Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_NotasDeCreditoC));
 		// Comprobantes tipo M		
-		docTypeMap.put("CIM", TIPO_COMPROBANTE_FACTURA_M);
-		docTypeMap.put("CDNM", TIPO_COMPROBANTE_NOTA_DEBITO_M);
-		docTypeMap.put("CCNM", TIPO_COMPROBANTE_NOTA_CREDITO_M);
+		docTypeMap.put("CIM", Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_FacturasM));
+		docTypeMap.put("CDNM", Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_NotasDeDebitoM)); 
+		docTypeMap.put("CCNM", Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_NotasDeCreditoM)); 
+		// Comprobantes tipo MiPyME A 
+		docTypeMap.put("CIMPA", Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_FacturasMiPyMEA));
+		docTypeMap.put("CDNMPA", Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_NotasDeDebitoMiPyMEA));
+		docTypeMap.put("CCNMPA", Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_NotasDeCreditoMiPyMEA));
+		// Comprobantes tipo BMiPyME B		
+		docTypeMap.put("CIMPB", Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_FacturasMiPyMEB));
+		docTypeMap.put("CDNMPB", Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_NotasDeDebitoMiPyMEB));
+		docTypeMap.put("CCNMPB", Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_NotasDeCreditoMiPyMEB));
+		// Comprobantes tipo MiPyME C	
+		docTypeMap.put("CIMPC", Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_FacturasMiPyMEC));
+		docTypeMap.put("CDNMPC", Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_NotasDeDebitoMiPyMEC));
+		docTypeMap.put("CCNMPC", Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_NotasDeCreditoMiPyMEC));
 	}
 	
 		

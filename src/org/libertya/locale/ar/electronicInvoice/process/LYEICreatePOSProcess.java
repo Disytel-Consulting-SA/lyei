@@ -32,6 +32,11 @@ public class LYEICreatePOSProcess extends SvrProcess {
 	/** Ya se habían creado los tipos de documento? */
 	protected boolean docTypesAlreadyCreated = false;
 	
+	/** Generar tipos de documento standard CI, CCN, CDN */
+	protected boolean createStandard = false;
+	
+	/** Generar tipos de documento standard CIMP, CCNMP, CDNMP */
+	protected boolean createMiPyME = false;
 	
 	@Override
 	protected void prepare() {
@@ -45,6 +50,10 @@ public class LYEICreatePOSProcess extends SvrProcess {
 				orgID = para[i].getParameterAsInt();
 			} else if (name.equalsIgnoreCase("POSNumber")) {
 				posNumber =  para[i].getParameterAsInt();
+			} else if (name.equalsIgnoreCase("Standard")) {
+            	createStandard = "Y".equals(para[i].getParameter());
+			} else if (name.equalsIgnoreCase("MiPyME")) {
+            	createMiPyME = "Y".equals(para[i].getParameter());
 			}
 		}
 	}
@@ -102,7 +111,12 @@ public class LYEICreatePOSProcess extends SvrProcess {
 		// Argumento numero de Pto de Venta
 		ProcessInfoParameter paramPOSNro = new ProcessInfoParameter("POSNumber", new BigDecimal(posNumber), null, null, null);
 		pi.setParameter(ProcessInfoUtil.addToArray(pi.getParameter(), paramPOSNro));
-
+		// Argumentos crear Standard y/o MiPyME
+		ProcessInfoParameter paramGenStandard = new ProcessInfoParameter("Standard", createStandard?"Y":"N", null, null, null);
+		pi.setParameter(ProcessInfoUtil.addToArray(pi.getParameter(), paramGenStandard));
+		ProcessInfoParameter paramGenMiPyME = new ProcessInfoParameter("MiPyME", createMiPyME?"Y":"N", null, null, null);
+		pi.setParameter(ProcessInfoUtil.addToArray(pi.getParameter(), paramGenMiPyME));
+		
 		// Ejecutar la creación
 		MProcess process = new MProcess(getCtx(), processID, get_TrxName());
     	MProcess.execute(getCtx(), process, pi, get_TrxName());
@@ -224,7 +238,28 @@ public class LYEICreatePOSProcess extends SvrProcess {
 		if (aDocType.getDocTypeKey().startsWith("CCNE"))
 			return X_C_DocType.DOCSUBTYPECAE_NotaDeCréditoPorOperacionesEnElExterior;
 		if (aDocType.getDocTypeKey().startsWith("CDNE"))
-			return X_C_DocType.DOCSUBTYPECAE_NotaDeDébitoPorOperacionesEnElExterior;		
+			return X_C_DocType.DOCSUBTYPECAE_NotaDeDébitoPorOperacionesEnElExterior;
+		// Comprobantes MiPyME A 
+		if (aDocType.getDocTypeKey().startsWith("CIMPA"))
+			return X_C_DocType.DOCSUBTYPECAE_FacturasMiPyMEA;
+		if (aDocType.getDocTypeKey().startsWith("CCNMPA"))
+			return X_C_DocType.DOCSUBTYPECAE_NotasDeCreditoMiPyMEA;  
+		if (aDocType.getDocTypeKey().startsWith("CDNMPA"))
+			return X_C_DocType.DOCSUBTYPECAE_NotasDeDebitoMiPyMEA;  
+		// Comprobantes MiPyME B 
+		if (aDocType.getDocTypeKey().startsWith("CIMPB"))
+			return X_C_DocType.DOCSUBTYPECAE_FacturasMiPyMEB;
+		if (aDocType.getDocTypeKey().startsWith("CCNMPB"))
+			return X_C_DocType.DOCSUBTYPECAE_NotasDeCreditoMiPyMEB;
+		if (aDocType.getDocTypeKey().startsWith("CDNMPB"))
+			return X_C_DocType.DOCSUBTYPECAE_NotasDeDebitoMiPyMEB;
+		// Comprobantes MiPyME C 
+		if (aDocType.getDocTypeKey().startsWith("CIMPC"))
+			return X_C_DocType.DOCSUBTYPECAE_FacturasMiPyMEC;
+		if (aDocType.getDocTypeKey().startsWith("CCNMPC"))
+			return X_C_DocType.DOCSUBTYPECAE_NotasDeCreditoMiPyMEC;
+		if (aDocType.getDocTypeKey().startsWith("CDNMPC"))
+			return X_C_DocType.DOCSUBTYPECAE_NotasDeDebitoMiPyMEC;
 		return null;
 	}
 
