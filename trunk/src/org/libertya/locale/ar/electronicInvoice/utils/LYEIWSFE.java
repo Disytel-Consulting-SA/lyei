@@ -162,6 +162,9 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			// Fecha del comprobante  (yyyymmdd). Si  no  se envía la	fecha del comprobante se   
 			// asignará la fecha de proceso
 			detReq.setCbteFch(getCbteFch());
+			// Fecha vencimiento pago. Si NO es Factura de Crédito no debe informarse.
+			if (shouldSendFechaVtoPago())
+				detReq.setFchVtoPago(getFechaVto());
 			// Código de  moneda  del comprobante. Consultar método FEParamGetTiposMonedas para valores posibles
 			detReq.setMonId(getMonId());
 			// Cotizacion de  la  moneda  informada.  Para PES, pesos argentinos  la misma debe ser 1
@@ -277,6 +280,18 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 					LYEIConstants.WSFE_BPARTNER_NO_ES_CONSUMIDOR_FINAL;
 	}
 	
+	/** Determinar si el campo FechaVtoPago debe ser enviado */
+	protected boolean shouldSendFechaVtoPago() {
+		// Si el tipo de comprobante que está autorizando es MiPyMEs (FCE), Tipo 
+		// 			201 - FACTURA DE CREDITO ELECTRONICA MiPyMEs (FCE) A / 
+		// 			206 - FACTURA DE CREDITO ELECTRONICA MiPyMEs (FCE) B / 
+		// 			211 - FACTURA DE CREDITO ELECTRONICA MiPyMEs (FCE) C, 
+		// es obligatorio informar FchVtoPago.
+		return (X_C_DocType.DOCSUBTYPECAE_FacturasMiPyMEA.equals(docType.getdocsubtypecae()) ||
+				X_C_DocType.DOCSUBTYPECAE_FacturasMiPyMEB.equals(docType.getdocsubtypecae()) ||
+				X_C_DocType.DOCSUBTYPECAE_FacturasMiPyMEC.equals(docType.getdocsubtypecae()));
+	}
+	
 	/** Concepto de la FE segun existan productos y/o servicios en la misma */
 	protected int getConcepto() {
 		// TODO: VERIFICAR CORRECTITUD DE USO DE PRODUCTOS
@@ -294,6 +309,13 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 	protected String getCbteFch() {
         DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
         Date date = new Date(inv.getDateAcct().getTime());
+        return dateFormat.format(date);
+	}
+	
+	/** Fecha de vencimiento de la factura */
+	protected String getFechaVto() {
+        DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+        Date date = new Date(inv.getFechaVto().getTime());
         return dateFormat.format(date);
 	}
 	
