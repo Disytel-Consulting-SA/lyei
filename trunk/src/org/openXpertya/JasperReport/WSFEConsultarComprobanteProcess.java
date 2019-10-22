@@ -347,7 +347,7 @@ public class WSFEConsultarComprobanteProcess extends SvrProcess {
 		return (tipoCbte == Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_FacturaDeExportaciónE) ||
 				tipoCbte == Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_NotaDeCréditoPorOperacionesEnElExterior) ||
 				tipoCbte == Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_NotaDeDébitoPorOperacionesEnElExterior) || 
-				tipoCbte == TIPO_COMPROBANTE_FACTURA_EXPORTACION_SIMPLIFICADO);
+				tipoCbte == Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_FacturasDeExportacionSimplificado));
 	}	
 	 
 
