@@ -8,7 +8,7 @@
 package FEV1.dif.afip.gov.ar;
 
 public class PtoVenta  implements java.io.Serializable {
-    private short nro;
+    private int nro;
 
     private java.lang.String emisionTipo;
 
@@ -20,7 +20,7 @@ public class PtoVenta  implements java.io.Serializable {
     }
 
     public PtoVenta(
-           short nro,
+           int nro,
            java.lang.String emisionTipo,
            java.lang.String bloqueado,
            java.lang.String fchBaja) {
@@ -36,7 +36,7 @@ public class PtoVenta  implements java.io.Serializable {
      * 
      * @return nro
      */
-    public short getNro() {
+    public int getNro() {
         return nro;
     }
 
@@ -46,7 +46,7 @@ public class PtoVenta  implements java.io.Serializable {
      * 
      * @param nro
      */
-    public void setNro(short nro) {
+    public void setNro(int nro) {
         this.nro = nro;
     }
 
@@ -166,7 +166,7 @@ public class PtoVenta  implements java.io.Serializable {
         org.apache.axis.description.ElementDesc elemField = new org.apache.axis.description.ElementDesc();
         elemField.setFieldName("nro");
         elemField.setXmlName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.FEV1/", "Nro"));
-        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "short"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "int"));
         elemField.setNillable(false);
         typeDesc.addFieldDesc(elemField);
         elemField = new org.apache.axis.description.ElementDesc();

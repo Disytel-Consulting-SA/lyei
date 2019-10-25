@@ -16,6 +16,8 @@ public class CbteAsoc  implements java.io.Serializable {
 
     private java.lang.String cuit;
 
+    private java.lang.String cbteFch;
+
     public CbteAsoc() {
     }
 
@@ -23,11 +25,13 @@ public class CbteAsoc  implements java.io.Serializable {
            int tipo,
            int ptoVta,
            long nro,
-           java.lang.String cuit) {
+           java.lang.String cuit,
+           java.lang.String cbteFch) {
            this.tipo = tipo;
            this.ptoVta = ptoVta;
            this.nro = nro;
            this.cuit = cuit;
+           this.cbteFch = cbteFch;
     }
 
 
@@ -110,6 +114,26 @@ public class CbteAsoc  implements java.io.Serializable {
         this.cuit = cuit;
     }
 
+
+    /**
+     * Gets the cbteFch value for this CbteAsoc.
+     * 
+     * @return cbteFch
+     */
+    public java.lang.String getCbteFch() {
+        return cbteFch;
+    }
+
+
+    /**
+     * Sets the cbteFch value for this CbteAsoc.
+     * 
+     * @param cbteFch
+     */
+    public void setCbteFch(java.lang.String cbteFch) {
+        this.cbteFch = cbteFch;
+    }
+
     private java.lang.Object __equalsCalc = null;
     public synchronized boolean equals(java.lang.Object obj) {
         if (!(obj instanceof CbteAsoc)) return false;
@@ -127,7 +151,10 @@ public class CbteAsoc  implements java.io.Serializable {
             this.nro == other.getNro() &&
             ((this.cuit==null && other.getCuit()==null) || 
              (this.cuit!=null &&
-              this.cuit.equals(other.getCuit())));
+              this.cuit.equals(other.getCuit()))) &&
+            ((this.cbteFch==null && other.getCbteFch()==null) || 
+             (this.cbteFch!=null &&
+              this.cbteFch.equals(other.getCbteFch())));
         __equalsCalc = null;
         return _equals;
     }
@@ -144,6 +171,9 @@ public class CbteAsoc  implements java.io.Serializable {
         _hashCode += new Long(getNro()).hashCode();
         if (getCuit() != null) {
             _hashCode += getCuit().hashCode();
+        }
+        if (getCbteFch() != null) {
+            _hashCode += getCbteFch().hashCode();
         }
         __hashCodeCalc = false;
         return _hashCode;
@@ -176,6 +206,13 @@ public class CbteAsoc  implements java.io.Serializable {
         elemField = new org.apache.axis.description.ElementDesc();
         elemField.setFieldName("cuit");
         elemField.setXmlName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.FEV1/", "Cuit"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "string"));
+        elemField.setMinOccurs(0);
+        elemField.setNillable(false);
+        typeDesc.addFieldDesc(elemField);
+        elemField = new org.apache.axis.description.ElementDesc();
+        elemField.setFieldName("cbteFch");
+        elemField.setXmlName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.FEV1/", "CbteFch"));
         elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "string"));
         elemField.setMinOccurs(0);
         elemField.setNillable(false);

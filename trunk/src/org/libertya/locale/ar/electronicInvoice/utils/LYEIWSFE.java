@@ -18,6 +18,7 @@ import org.openXpertya.model.MBPartner;
 import org.openXpertya.model.MBPartnerLocation;
 import org.openXpertya.model.MClientInfo;
 import org.openXpertya.model.MCurrency;
+import org.openXpertya.model.MDocType;
 import org.openXpertya.model.MInvoice;
 import org.openXpertya.model.MInvoiceTax;
 import org.openXpertya.model.MLocation;
@@ -28,6 +29,7 @@ import org.openXpertya.util.Env;
 import org.openXpertya.util.Util;
 
 import FEV1.dif.afip.gov.ar.AlicIva;
+import FEV1.dif.afip.gov.ar.CbteAsoc;
 import FEV1.dif.afip.gov.ar.Comprador;
 import FEV1.dif.afip.gov.ar.Err;
 import FEV1.dif.afip.gov.ar.FEAuthRequest;
@@ -50,7 +52,7 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 	/** Entidad comercial de la factura */
 	protected MBPartner partner; 
 	/** Tipo de documento de la factura */
-	protected X_C_DocType docType;
+	protected MDocType docType;
 	/** Moneda de la factura */
 	protected MCurrency currency;
 	/** Info de la compañía asociada a la factura */
@@ -94,7 +96,7 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 		if (posConfig!=null)
 			genConfig = new MLYEIElectronicInvoiceConfig(ctx, posConfig.getC_LYEIElectronicInvoiceConfig_ID(), null);
 		// Tipo de documento
-		docType = new X_C_DocType(ctx, inv.getC_DocTypeTarget_ID(), null);
+		docType = new MDocType(ctx, inv.getC_DocTypeTarget_ID(), null);
 		// Entidad Comercial de la factura
 		partner = new MBPartner(ctx, inv.getC_BPartner_ID(), null);
 		// Moneda de la factura 
@@ -162,8 +164,8 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			// Fecha del comprobante  (yyyymmdd). Si  no  se envía la	fecha del comprobante se   
 			// asignará la fecha de proceso
 			detReq.setCbteFch(getCbteFch());
-			// Fecha vencimiento pago. Si NO es Factura de Crédito no debe informarse.
-			if (shouldSendFechaVtoPago())
+			// Fecha vencimiento pago. Si el tipo de comprobante que está autorizando es MiPyMEs (FCE) tipos 201/206/211 (Factura A/B/C), es obligatorio informar FchVtoPago.
+			if (isFacturaMiPyME())
 				detReq.setFchVtoPago(getFechaVto());
 			// Código de  moneda  del comprobante. Consultar método FEParamGetTiposMonedas para valores posibles
 			detReq.setMonId(getMonId());
@@ -196,6 +198,17 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			detReq.setImpTotConc(getImpTotConc());
 			// Importe  exento.  Debe  ser  menor  o  igual  a Importe total y no puede ser menor a cero
 			detReq.setImpOpEx(getImpOpEx());
+			
+			// Opcionales
+			Opcional[] opcionales = getOpcionales();
+			if (opcionales!=null && opcionales.length>0) { 
+				detReq.setOpcionales(opcionales);
+			}
+			
+			CbteAsoc[] asociados = getAsociados();
+			if (asociados!=null && asociados.length>0) { 
+				detReq.setCbtesAsoc(asociados);
+			}
 			
 			// Invocar CAESolicitar
 			FECAERequest caeReq = new FECAERequest(cabReq, new FECAEDetRequest[] {detReq});
@@ -280,16 +293,21 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 					LYEIConstants.WSFE_BPARTNER_NO_ES_CONSUMIDOR_FINAL;
 	}
 	
-	/** Determinar si el campo FechaVtoPago debe ser enviado */
-	protected boolean shouldSendFechaVtoPago() {
-		// Si el tipo de comprobante que está autorizando es MiPyMEs (FCE), Tipo 
-		// 			201 - FACTURA DE CREDITO ELECTRONICA MiPyMEs (FCE) A / 
-		// 			206 - FACTURA DE CREDITO ELECTRONICA MiPyMEs (FCE) B / 
-		// 			211 - FACTURA DE CREDITO ELECTRONICA MiPyMEs (FCE) C, 
-		// es obligatorio informar FchVtoPago.
+	/** Retorna true si el tipo de documento es Factura MiPyme (A/B/C) o false en caso contrario */
+	protected boolean isFacturaMiPyME() {
 		return (X_C_DocType.DOCSUBTYPECAE_FacturasMiPyMEA.equals(docType.getdocsubtypecae()) ||
 				X_C_DocType.DOCSUBTYPECAE_FacturasMiPyMEB.equals(docType.getdocsubtypecae()) ||
 				X_C_DocType.DOCSUBTYPECAE_FacturasMiPyMEC.equals(docType.getdocsubtypecae()));
+	}
+	
+	/** Retorna true si el tipo de documento es NC/ND MiPyme (A/B/C) o false en caso contrario */
+	protected boolean isNCNDMiPyME() {
+		return (X_C_DocType.DOCSUBTYPECAE_NotasDeCreditoMiPyMEA.equals(docType.getdocsubtypecae()) ||
+				X_C_DocType.DOCSUBTYPECAE_NotasDeCreditoMiPyMEB.equals(docType.getdocsubtypecae()) ||
+				X_C_DocType.DOCSUBTYPECAE_NotasDeCreditoMiPyMEC.equals(docType.getdocsubtypecae()) ||
+				X_C_DocType.DOCSUBTYPECAE_NotasDeDebitoMiPyMEA.equals(docType.getdocsubtypecae()) ||
+				X_C_DocType.DOCSUBTYPECAE_NotasDeDebitoMiPyMEB.equals(docType.getdocsubtypecae()) ||
+				X_C_DocType.DOCSUBTYPECAE_NotasDeDebitoMiPyMEC.equals(docType.getdocsubtypecae()));
 	}
 	
 	/** Concepto de la FE segun existan productos y/o servicios en la misma */
@@ -442,7 +460,91 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 		return taxBaseAmt;
 	}
 
+	/** Nomina de opcionales a enviar, si es que corresponde */ 
+	protected Opcional[] getOpcionales() {
+		Opcional[] retValue = null;
+		int cant=0;
+		// Por el momento la especificacion de opcionales se requiere para MiPyME unicamente.
+		if (!docType.isMiPyME())
+			return retValue;
+		
+		ArrayList<Opcional> options = new ArrayList<Opcional>();
+		// Opcional anulacion. Si el tipo de comprobante que está autorizando es MiPyMEs (FCE), Factura (201,206, 211), no informar Código de Anulación
+		if (docType.isMiPyME() && isNCNDMiPyME()) {
+			cant++;
+			Opcional opcionalAnulacion = new Opcional();
+			opcionalAnulacion.setId(""+LYEIConstants.WSFE_OPCIONALES_ANULACION_CODIGO);
+			opcionalAnulacion.setValor("N");
+			options.add(opcionalAnulacion);
+		}
 
+		// Opcional CBU/Alias emisor. Si el tipo de comprobante que está autorizando es MiPyMEs (FCE), Debito (202, 207, 212) o Crédito (203, 208, 213) No informar CBU y ALIAS.
+		if (docType.isMiPyME() && isFacturaMiPyME()) {
+
+			// CBU
+			if (!Util.isEmpty(genConfig.getCBUEmisor())) {
+				cant++;
+				Opcional opcionalCBU = new Opcional();
+				opcionalCBU.setId(""+LYEIConstants.WSFE_OPCIONALES_CBU_EMISOR_CODIGO);
+				opcionalCBU.setValor(genConfig.getCBUEmisor());
+				options.add(opcionalCBU);
+			}
+			
+			// Alias
+			if (!Util.isEmpty(genConfig.getAliasEmisor())) {
+				cant++;
+				Opcional opcionalAlias = new Opcional();
+				opcionalAlias.setId(""+LYEIConstants.WSFE_OPCIONALES_ALIAS_EMISOR_CODIGO);
+				opcionalAlias.setValor(genConfig.getAliasEmisor());
+				options.add(opcionalAlias);
+			}
+		}
+		
+		if (cant>0) {
+			retValue = new Opcional[cant];
+			options.toArray(retValue);
+		}
+		return retValue;
+	}
+
+	/** Nomina de asociados a enviar, si es que corresponde */
+	protected CbteAsoc[] getAsociados() {
+		CbteAsoc[] retValue = null;
+		int cant=0;
+		
+		// Por el momento la especificacion de asociados se requiere para MiPyME unicamente.
+		if (!docType.isMiPyME())
+			return retValue;
+		
+		ArrayList<CbteAsoc> asociados = new ArrayList<CbteAsoc>();
+		// Solo informar si estoy registrando NC/ND MiPyME
+		if (isNCNDMiPyME() && inv.getC_Invoice_Orig_ID()>0) {
+			MInvoice origInv = new MInvoice(ctx, inv.getC_Invoice_Orig_ID(), trx);
+			MDocType origInvDT = new MDocType(ctx, origInv.getC_DocTypeTarget_ID(), trx);
+			int tipo = Integer.parseInt(origInvDT.getdocsubtypecae());
+			
+	        DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+	        Date date = new Date(origInv.getDateAcct().getTime());
+	        String cbteFch = dateFormat.format(date);
+			
+			CbteAsoc asoc = new CbteAsoc();
+			asoc.setCuit(genConfig.getCUIT());
+			asoc.setNro(origInv.getNumeroComprobante());
+			asoc.setPtoVta(origInv.getPuntoDeVenta());
+			asoc.setCbteFch(cbteFch);
+			asoc.setTipo(tipo);
+			cant++;
+			asociados.add(asoc);
+		}
+		
+		if (cant>0) {
+			retValue = new CbteAsoc[cant];
+			asociados.toArray(retValue);
+		}
+		
+		return retValue;
+	}
+	
 	public String getCAE() {
 		return electronicInvoiceCae;
 	}

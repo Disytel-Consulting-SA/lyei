@@ -10,6 +10,8 @@ package FEV1.dif.afip.gov.ar;
 public class FECAEADetRequest  extends FEV1.dif.afip.gov.ar.FEDetRequest  implements java.io.Serializable {
     private java.lang.String CAEA;
 
+    private java.lang.String cbteFchHsGen;
+
     public FECAEADetRequest() {
     }
 
@@ -36,7 +38,8 @@ public class FECAEADetRequest  extends FEV1.dif.afip.gov.ar.FEDetRequest  implem
            FEV1.dif.afip.gov.ar.AlicIva[] iva,
            FEV1.dif.afip.gov.ar.Opcional[] opcionales,
            FEV1.dif.afip.gov.ar.Comprador[] compradores,
-           java.lang.String CAEA) {
+           java.lang.String CAEA,
+           java.lang.String cbteFchHsGen) {
         super(
             concepto,
             docTipo,
@@ -61,6 +64,7 @@ public class FECAEADetRequest  extends FEV1.dif.afip.gov.ar.FEDetRequest  implem
             opcionales,
             compradores);
         this.CAEA = CAEA;
+        this.cbteFchHsGen = cbteFchHsGen;
     }
 
 
@@ -83,6 +87,26 @@ public class FECAEADetRequest  extends FEV1.dif.afip.gov.ar.FEDetRequest  implem
         this.CAEA = CAEA;
     }
 
+
+    /**
+     * Gets the cbteFchHsGen value for this FECAEADetRequest.
+     * 
+     * @return cbteFchHsGen
+     */
+    public java.lang.String getCbteFchHsGen() {
+        return cbteFchHsGen;
+    }
+
+
+    /**
+     * Sets the cbteFchHsGen value for this FECAEADetRequest.
+     * 
+     * @param cbteFchHsGen
+     */
+    public void setCbteFchHsGen(java.lang.String cbteFchHsGen) {
+        this.cbteFchHsGen = cbteFchHsGen;
+    }
+
     private java.lang.Object __equalsCalc = null;
     public synchronized boolean equals(java.lang.Object obj) {
         if (!(obj instanceof FECAEADetRequest)) return false;
@@ -97,7 +121,10 @@ public class FECAEADetRequest  extends FEV1.dif.afip.gov.ar.FEDetRequest  implem
         _equals = super.equals(obj) && 
             ((this.CAEA==null && other.getCAEA()==null) || 
              (this.CAEA!=null &&
-              this.CAEA.equals(other.getCAEA())));
+              this.CAEA.equals(other.getCAEA()))) &&
+            ((this.cbteFchHsGen==null && other.getCbteFchHsGen()==null) || 
+             (this.cbteFchHsGen!=null &&
+              this.cbteFchHsGen.equals(other.getCbteFchHsGen())));
         __equalsCalc = null;
         return _equals;
     }
@@ -112,6 +139,9 @@ public class FECAEADetRequest  extends FEV1.dif.afip.gov.ar.FEDetRequest  implem
         if (getCAEA() != null) {
             _hashCode += getCAEA().hashCode();
         }
+        if (getCbteFchHsGen() != null) {
+            _hashCode += getCbteFchHsGen().hashCode();
+        }
         __hashCodeCalc = false;
         return _hashCode;
     }
@@ -125,6 +155,13 @@ public class FECAEADetRequest  extends FEV1.dif.afip.gov.ar.FEDetRequest  implem
         org.apache.axis.description.ElementDesc elemField = new org.apache.axis.description.ElementDesc();
         elemField.setFieldName("CAEA");
         elemField.setXmlName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.FEV1/", "CAEA"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "string"));
+        elemField.setMinOccurs(0);
+        elemField.setNillable(false);
+        typeDesc.addFieldDesc(elemField);
+        elemField = new org.apache.axis.description.ElementDesc();
+        elemField.setFieldName("cbteFchHsGen");
+        elemField.setXmlName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.FEV1/", "CbteFchHsGen"));
         elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "string"));
         elemField.setMinOccurs(0);
         elemField.setNillable(false);
