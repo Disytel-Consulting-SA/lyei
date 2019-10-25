@@ -50,6 +50,18 @@ public class LYEIConstants {
 	/** Constante para WSFEV1. CONCEPTO PRODUCTOS Y SERVICIOS */
 	public static final int WSFE_CONCEPTO_PRODUCTOS_Y_SERVICIOS = 3;
 	
+	/** Codigo de opcional para indicar Anulacion */
+	public static final int WSFE_OPCIONALES_ANULACION_CODIGO = 22;
+
+	/** Codigo de opcional para indicar referencia comercial */
+	public static final int WSFE_OPCIONALES_REFERENCIA_COMERCIAL_CODIGO = 23;
+	
+	/** Codigo de opcional para indicar CBU del emisor */
+	public static final int WSFE_OPCIONALES_CBU_EMISOR_CODIGO = 2101;
+	
+	/** Codigo de opcional para indicar ALIAS del emisor */
+	public static final int WSFE_OPCIONALES_ALIAS_EMISOR_CODIGO = 2102;
+	
 	/** Constante para WSFEXV1. IDIOMA FACTURA ESPANOL */
 	public static final short WSFEX_IDIOMA_FACTURA_ESPANOL = 1;
 	

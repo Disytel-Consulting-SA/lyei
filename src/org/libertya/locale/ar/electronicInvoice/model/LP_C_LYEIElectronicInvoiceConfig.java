@@ -8,7 +8,7 @@ import java.math.*;
 import org.openXpertya.util.*;
 /** Modelo Generado por C_LYEIElectronicInvoiceConfig
  *  @author Comunidad de Desarrollo Libertya*         *Basado en Codigo Original Modificado, Revisado y Optimizado de:*         * Jorg Janke 
- *  @version  - 2017-10-23 20:29:18.642 */
+ *  @version  - 2019-10-24 10:55:11.354 */
 public class LP_C_LYEIElectronicInvoiceConfig extends org.openXpertya.model.PO
 {
 /** Constructor estándar */
@@ -20,7 +20,7 @@ super (ctx, C_LYEIElectronicInvoiceConfig_ID, trxName);
 setApplicant (null);
 setApplicantChanged (false);
 setC_LYEIElectronicInvoiceConfig_ID (0);
-setConfigType (null);
+setConfigType (null);	// C
 setCUIT (null);
 setCuitChanged (false);
 setName (null);
@@ -54,6 +54,21 @@ public String toString()
 StringBuffer sb = new StringBuffer ("LP_C_LYEIElectronicInvoiceConfig[").append(getID()).append("]");
 return sb.toString();
 }
+/** Set AliasEmisor */
+public void setAliasEmisor (String AliasEmisor)
+{
+if (AliasEmisor != null && AliasEmisor.length() > 100)
+{
+log.warning("Length > 100 - truncated");
+AliasEmisor = AliasEmisor.substring(0,100);
+}
+set_Value ("AliasEmisor", AliasEmisor);
+}
+/** Get AliasEmisor */
+public String getAliasEmisor() 
+{
+return (String)get_Value("AliasEmisor");
+}
 /** Set Applicant */
 public void setApplicant (String Applicant)
 {
@@ -85,6 +100,21 @@ if (oo != null)
  return "Y".equals(oo);
 }
 return false;
+}
+/** Set CBUEmisor */
+public void setCBUEmisor (String CBUEmisor)
+{
+if (CBUEmisor != null && CBUEmisor.length() > 100)
+{
+log.warning("Length > 100 - truncated");
+CBUEmisor = CBUEmisor.substring(0,100);
+}
+set_Value ("CBUEmisor", CBUEmisor);
+}
+/** Get CBUEmisor */
+public String getCBUEmisor() 
+{
+return (String)get_Value("CBUEmisor");
 }
 /** Set CleanCSR */
 public void setCleanCSR (String CleanCSR)
@@ -197,6 +227,10 @@ public String getCUIT()
 {
 return (String)get_Value("CUIT");
 }
+public KeyNamePair getKeyNamePair() 
+{
+return new KeyNamePair(getID(), getCUIT());
+}
 /** Set CuitChanged */
 public void setCuitChanged (boolean CuitChanged)
 {
@@ -260,10 +294,6 @@ Alphanumeric identifier of the entity */
 public String getName() 
 {
 return (String)get_Value("Name");
-}
-public KeyNamePair getKeyNamePair() 
-{
-return new KeyNamePair(getID(), getName());
 }
 /** Set NameChanged */
 public void setNameChanged (boolean NameChanged)
