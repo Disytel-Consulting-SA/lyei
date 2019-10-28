@@ -331,9 +331,16 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 	}
 	
 	/** Fecha de vencimiento de la factura */
-	protected String getFechaVto() {
+	protected String getFechaVto() throws Exception {
         DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
-        Date date = new Date(inv.getFechaVto().getTime());
+        Date date = null;
+        if (inv.isVoidProcess()) { 
+        	date = new Date();
+        } else if (inv.getFechaVto()!=null) {  
+        	date = new Date(inv.getFechaVto().getTime());
+        } else { 
+        	throw new Exception("Imposible obtener el dato para informar FechaVto");
+        }
         return dateFormat.format(date);
 	}
 	
@@ -474,7 +481,7 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			cant++;
 			Opcional opcionalAnulacion = new Opcional();
 			opcionalAnulacion.setId(""+LYEIConstants.WSFE_OPCIONALES_ANULACION_CODIGO);
-			opcionalAnulacion.setValor("N");
+			opcionalAnulacion.setValor(inv.isVoidProcess()?"S":"N");
 			options.add(opcionalAnulacion);
 		}
 
