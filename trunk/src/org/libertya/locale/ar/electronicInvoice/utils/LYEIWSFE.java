@@ -334,13 +334,17 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 	protected String getFechaVto() throws Exception {
         DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
         Date date = null;
+        // El campo FchVtoPago debe ser posterior o igual a la fecha de emision (CbteFch) o fecha de presentacion (fecha actual), la que sea posterior.
         if (inv.isVoidProcess()) { 
-        	date = new Date();
-        } else if (inv.getFechaVto()!=null) {  
+        	date = inv.getFechaVto();
+        	Date currDate = new Date();
+        	if (date == null || currDate.compareTo(date) > 0) { 
+        		date = currDate;
+        	}
+        // Si no es una anulacion...
+        } else {  
         	date = new Date(inv.getFechaVto().getTime());
-        } else { 
-        	throw new Exception("Imposible obtener el dato para informar FechaVto");
-        }
+        } 
         return dateFormat.format(date);
 	}
 	
