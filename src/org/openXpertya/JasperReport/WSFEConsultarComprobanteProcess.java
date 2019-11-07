@@ -11,12 +11,17 @@ import org.libertya.locale.ar.electronicInvoice.utils.LYEITools;
 import org.libertya.locale.ar.electronicInvoice.utils.LYEIWSAA;
 import org.openXpertya.JasperReport.DataSource.WSFEConsultarComprobanteDataSource;
 import org.openXpertya.model.MDocType;
+import org.openXpertya.model.MPreference;
 import org.openXpertya.model.MProcess;
 import org.openXpertya.model.X_C_DocType;
 import org.openXpertya.process.ProcessInfo;
 import org.openXpertya.process.ProcessInfoParameter;
 import org.openXpertya.process.SvrProcess;
 import org.openXpertya.util.Env;
+
+import fexv1.dif.afip.gov.ar.ClsFEXAuthRequest;
+import fexv1.dif.afip.gov.ar.ClsFEXGetCMP;
+import fexv1.dif.afip.gov.ar.FEXGetCMPResponse;
 
 import FEV1.dif.afip.gov.ar.Err;
 import FEV1.dif.afip.gov.ar.FEAuthRequest;
@@ -93,6 +98,10 @@ public class WSFEConsultarComprobanteProcess extends SvrProcess {
 		docTypeMap.put("CIM", Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_FacturasM));
 		docTypeMap.put("CDNM", Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_NotasDeDebitoM)); 
 		docTypeMap.put("CCNM", Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_NotasDeCreditoM)); 
+		// Comprobantes tipo E
+		docTypeMap.put("CIE", Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_FacturaDeExportaciónE));
+		docTypeMap.put("CDNE", Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_NotaDeDébitoPorOperacionesEnElExterior));
+		docTypeMap.put("CCNE", Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_NotaDeCréditoPorOperacionesEnElExterior));
 		// Comprobantes tipo MiPyME A 
 		docTypeMap.put("CIMPA", Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_FacturasMiPyMEA));
 		docTypeMap.put("CDNMPA", Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_NotasDeDebitoMiPyMEA));
@@ -304,7 +313,10 @@ public class WSFEConsultarComprobanteProcess extends SvrProcess {
 	protected void queryInvoices() throws Exception {
 		// Consultar cada comprobante e incorporar a la nómina de resultados
 		for (long i = cbteNroFrom; i <= cbteNroTo; i++)
-			retrievedDocuments.add(consultarCAE(i, cbteTipo, "", ptoVta));
+			if (!isExportacion(cbteTipo))
+				retrievedDocuments.add(consultarCAE(i, cbteTipo, "", ptoVta));
+			else
+				retrievedDocuments.add(consultarCAEX(i, cbteTipo, "", ptoVta));
 	}
 
 	
@@ -350,6 +362,88 @@ public class WSFEConsultarComprobanteProcess extends SvrProcess {
 				tipoCbte == Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_FacturasDeExportacionSimplificado));
 	}	
 	 
+	
+	/** Genera la consulta al WS de AFIP por el comprobante dado */
+	public HashMap<String, String> consultarCAEX(long cbteNro, int cbteTipo, String cbeTipoDesc, int ptoVta) throws Exception {
+		
+		// Valores minimos a retornar, bien sea error o no (numero de documento, tipo de comprobante y punto de venta)
+		HashMap<String, String> retValues = new HashMap<String, String>(); 
+		retValues.put("DocNro", 	"" + cbteNro);
+		retValues.put("CbteTipo", 	"" + cbteTipo);
+		retValues.put("PtoVta", 	"" + ptoVta);
+		
+		// Recuperar el servicio
+		fexv1.dif.afip.gov.ar.ServiceLocator locator = new fexv1.dif.afip.gov.ar.ServiceLocator();
+ 		// Se intenta recuperar preferencia indicando URL de consulta. En caso de no existir se toma valor por defecto (URL actual de producción)
+		String endPoint = LYEITools.getEndPointAddress(LYEIConstants.EXTERNAL_SERVICE_WSFEXV1_PREFIX, posConfig.getCurrentEnvironment());
+		locator.setServiceSoapEndpointAddress(endPoint);
+		fexv1.dif.afip.gov.ar.ServiceSoap service = null;
+		try {
+			service = locator.getServiceSoap();
+		} catch (Exception e) {
+			retValues.put("Resultado", "Error acceso WSFEX: " + e.toString());
+			log.saveError("[WSFEXCC] Error acceso WSFEX: ", e.toString());
+			return retValues;
+		}
+		
+		ClsFEXAuthRequest auth = new ClsFEXAuthRequest();
+		ClsFEXGetCMP consulta = new ClsFEXGetCMP();
+		
+		auth.setCuit(cuit);
+		auth.setSign(sign);
+		auth.setToken(token);
+		
+		consulta.setCbte_nro(cbteNro);
+		consulta.setCbte_tipo((short)cbteTipo);
+		consulta.setPunto_vta((short)ptoVta);
+
+		// Invocacion a la operacion
+		FEXGetCMPResponse response = null;
+		int tryNo = 0;
+		boolean endLoop = false;
+		while (!endLoop) {
+			try {
+				tryNo++;
+				response = service.FEXGetCMP(auth, consulta);
+				response.toString();	// <-- NPE check
+				endLoop = true;
+			} catch (Exception e) {
+				// Al capturar una excepción al RETRY_MAX intento, no continuar intentando
+				if (tryNo == RETRY_MAX) {
+					// Error al interactuar con WSFE de AFIP
+					retValues.put("Resultado", "Error de conexión: " + e.toString());
+					log.saveError("[WSFEXCC] Error de conexión: ", e.toString());
+					return retValues;
+				}
+			}
+		}
+		
+		// Error recibido desde WSFEX de AFIP
+		if (response.getFEXErr() != null && !"OK".equalsIgnoreCase(response.getFEXErr().getErrMsg())) {
+			StringBuffer completeErrorStr = new StringBuffer();
+			completeErrorStr.append(response.getFEXErr().getErrCode()).append(". ").append(response.getFEXErr().getErrMsg());
+			retValues.put("Resultado", "Error: " + completeErrorStr.toString());
+			log.saveError("[WSFEXCC] Error para cbteNro " + cbteNro + ", cbteTipo " + cbteTipo + ", ptoVta " + ptoVta + ": ", completeErrorStr.toString());
+			return retValues;
+		}
+		
+		// En este punto se supone valores recibidos conformes a un comprobante encontrado
+		retValues.put("CbteDesde", 			"" + response.getFEXResultGet().getCbte_nro());
+		retValues.put("CbteFch", 			"" + response.getFEXResultGet().getFecha_cbte());
+		retValues.put("CbteHasta", 			"" + response.getFEXResultGet().getCbte_nro());
+		retValues.put("CbteTipo", 			"" + response.getFEXResultGet().getCbte_tipo());
+		retValues.put("CodAutorizacion", 	"" + response.getFEXResultGet().getCae());
+		retValues.put("DocNro", 			"" + response.getFEXResultGet().getCbte_nro());
+		retValues.put("DocTipo", 			"" + response.getFEXResultGet().getTipo_expo());
+		retValues.put("FchVto", 			"" + response.getFEXResultGet().getFch_venc_Cae());
+		retValues.put("ImpTotal", 			"" + response.getFEXResultGet().getImp_total());
+		retValues.put("MonCotiz", 			"" + response.getFEXResultGet().getMoneda_ctz());
+		retValues.put("MonId", 				"" + response.getFEXResultGet().getMoneda_Id());
+		retValues.put("PtoVta", 			"" + response.getFEXResultGet().getPunto_vta());
+		retValues.put("Resultado", 			"" + response.getFEXResultGet().getResultado());
+		
+		return retValues; 
+	}
 
 	
 }
