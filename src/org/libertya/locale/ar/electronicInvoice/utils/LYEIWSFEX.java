@@ -140,9 +140,9 @@ public class LYEIWSFEX extends LYEIWSFE implements ElectronicInvoiceInterface {
 
 		} catch (Exception e) {
 			setErrorByException(serviceInvoked, e);
-			MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.SEVERE, inv.getC_Invoice_ID(), posConfig.getC_LYEIElectronicPOSConfig_ID(), genConfig.getC_LYEIElectronicInvoiceConfig_ID(), electronicInvoiceCaeError + ". InvoiceID: " + inv.getC_Invoice_ID());
+			MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.SEVERE, inv.getC_Invoice_ID(), posConfig!=null?posConfig.getC_LYEIElectronicPOSConfig_ID():null, genConfig!=null?genConfig.getC_LYEIElectronicInvoiceConfig_ID():null, electronicInvoiceCaeError + ". InvoiceID: " + inv.getC_Invoice_ID());
 		}
-		MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.INFO, inv.getC_Invoice_ID(), posConfig.getC_LYEIElectronicPOSConfig_ID(), genConfig.getC_LYEIElectronicInvoiceConfig_ID(), getFinSolicitarCAEActivityLog());
+		MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.INFO, inv.getC_Invoice_ID(), posConfig!=null?posConfig.getC_LYEIElectronicPOSConfig_ID():null, genConfig!=null?genConfig.getC_LYEIElectronicInvoiceConfig_ID():null, getFinSolicitarCAEActivityLog());
 		return electronicInvoiceCaeError.toString();
 	}
 	
