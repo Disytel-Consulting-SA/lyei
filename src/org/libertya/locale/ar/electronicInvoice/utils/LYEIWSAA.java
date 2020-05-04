@@ -96,7 +96,7 @@ public class LYEIWSAA {
 		for (int curPosConfigID : posConfigIDs) {
 			LP_C_LYEIElectronicPOSConfig curPOSConfig = new LP_C_LYEIElectronicPOSConfig(ctx, curPosConfigID, null);
 			// Comparación bajo ambiente de homologación 
-			if (LP_C_LYEIElectronicPOSConfig.CURRENTENVIRONMENT_Homo.equals(targetEnv))  {
+			if (LP_C_LYEIElectronicPOSConfig.CURRENTENVIRONMENT_Homo.equals(targetEnv)  && aConfig.getPOSService().equals(curPOSConfig.getPOSService()))  {
 				if (!requiresNewTA(curPOSConfig.getHomoTA())) {
 					aConfig.setHomoTA(curPOSConfig.getHomoTA());
 					aConfig.save();
@@ -104,7 +104,7 @@ public class LYEIWSAA {
 				}
 			} 
 			// Comparación bajo ambiente de producción 
-			if (LP_C_LYEIElectronicPOSConfig.CURRENTENVIRONMENT_Prod.equals(targetEnv))  {
+			if (LP_C_LYEIElectronicPOSConfig.CURRENTENVIRONMENT_Prod.equals(targetEnv)  && aConfig.getPOSService().equals(curPOSConfig.getPOSService()))  {
 				if (!requiresNewTA(curPOSConfig.getProdTA())) {
 					aConfig.setProdTA(curPOSConfig.getProdTA());
 					aConfig.save();
