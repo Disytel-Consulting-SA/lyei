@@ -21,12 +21,12 @@ import org.libertya.locale.ar.electronicInvoice.model.LP_C_LYEIElectronicPOSConf
 import org.libertya.locale.ar.electronicInvoice.model.MLYEIElectronicInvoiceLog;
 import org.openXpertya.model.PO;
 import org.openXpertya.util.CLogger;
-import org.openXpertya.util.Env;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 
 import ar.gov.afip.wsaa.ws.services.LoginCms.LoginCMS;
 import ar.gov.afip.wsaa.ws.services.LoginCms.LoginCMSServiceLocator;
+import ar.gov.afip.wsaa.ws.services.LoginCms.LoginCmsSoapBindingStub;
 
 public class LYEIWSAA {
 	
@@ -122,6 +122,9 @@ public class LYEIWSAA {
 	 * @throws exception en caso de error
 	 */
 	public static synchronized byte[] newTA(LP_C_LYEIElectronicPOSConfig aConfig, Properties ctx, String targetEnv) throws Exception {
+		String requestXML = null;
+		String responseXML = null;
+		LoginCMS login = null;
 		try {
 			// Conectar al servicio WSAA (homo o prod segun corresponda)
 			String endPointAddress = LYEITools.getEndPointAddress(LYEIConstants.EXTERNAL_SERVICE_WSAA_PREFIX, targetEnv);
@@ -130,7 +133,7 @@ public class LYEIWSAA {
 			
 			// Obtener un TA valido
 			MLYEIElectronicInvoiceLog.logActivity(LYEIWSAA.class, Level.INFO, null, aConfig.getC_LYEIElectronicPOSConfig_ID(), aConfig.getC_LYEIElectronicInvoiceConfig_ID(), "Invocando a loginCms para POS " + aConfig.getPOS() + " en " + endPointAddress);
-			LoginCMS login = locator.getLoginCms();
+			login = locator.getLoginCms();
 			String response = login.loginCms(generateTRABase64(aConfig, ctx, targetEnv));
 			if (response==null) 
 				throw new Exception("Sin respuesta desde WSAA");
@@ -146,7 +149,11 @@ public class LYEIWSAA {
 			// Ademas de almacenarlo, retornarlo
 			return response.getBytes();
 		} catch (Exception e) {
-			MLYEIElectronicInvoiceLog.logActivity(LYEIWSAA.class, Level.INFO, null, aConfig.getC_LYEIElectronicPOSConfig_ID(), aConfig.getC_LYEIElectronicInvoiceConfig_ID(), "Error al obtener nuevo TA. " + e.toString());
+			if (login!=null) {
+				requestXML = ((LoginCmsSoapBindingStub)login).getCallRequestXML();
+				responseXML = ((LoginCmsSoapBindingStub)login).getCallResponseXML();
+			}
+			MLYEIElectronicInvoiceLog.logActivity(LYEIWSAA.class, Level.INFO, null, aConfig.getC_LYEIElectronicPOSConfig_ID(), aConfig.getC_LYEIElectronicInvoiceConfig_ID(), "Error al obtener nuevo TA. " + e.toString() + (requestXML!=null?" RequestXML: "+requestXML:"") + (responseXML!=null?" ResponseXML: "+responseXML:""));
 			throw new Exception("Error al obtener nuevo TA. " + e.toString());
 		}
 	}

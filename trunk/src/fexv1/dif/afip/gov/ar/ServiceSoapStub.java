@@ -703,10 +703,14 @@ public class ServiceSoapStub extends org.apache.axis.client.Stub implements fexv
             cachedDeserFactories.add(beandf);
 
     }
-
+    
+    // Modificaciones ad-hoc para poder recuperar el XML request y response 
+    public String getCallRequestXML() {	try { return _call.getMessageContext().getRequestMessage().getSOAPPartAsString(); } catch (Exception e) { e.printStackTrace(); return ""; } } 
+    public String getCallResponseXML() { try { return _call.getMessageContext().getResponseMessage().getSOAPPartAsString(); } catch (Exception e) { e.printStackTrace(); return ""; } } 
+    
     protected org.apache.axis.client.Call createCall() throws java.rmi.RemoteException {
         try {
-            org.apache.axis.client.Call _call = super._createCall();
+            _call = super._createCall();
             if (super.maintainSessionSet) {
                 _call.setMaintainSession(super.maintainSession);
             }

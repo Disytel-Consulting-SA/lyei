@@ -79,6 +79,10 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 	protected String electronicInvoiceNroCbte;
 	/** Error(es) al obtener el CAE */ 
 	protected StringBuffer electronicInvoiceCaeError = new StringBuffer();
+	/** Request XML	 */
+	protected String requestXML = null;
+	/** Response XML */
+	protected String responseXML = null;
 	
 	/**
 	 * Constructor para servicio WSFEV1 de AFIP
@@ -221,6 +225,8 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			if (resp==null) {
 				throw new Exception ("No se ha obtenido unar respuesta por parte del WS de AFIP.");
 			}
+			requestXML = ((ServiceSoapStub)wsfe).getCallRequestXML();
+			responseXML = ((ServiceSoapStub)wsfe).getCallResponseXML();
 			
 			// Obtuvimos errores?
 			StringBuffer retErrors = null;
@@ -607,7 +613,8 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 				.append(inv.getDocumentNo()).append(" ")
 				.append((electronicInvoiceNroCbte!=null?"NRO:"+electronicInvoiceNroCbte:"")).append(" ")
 				.append((electronicInvoiceCae!=null?"CAE:"+electronicInvoiceCae:"")).append(" ")
-				.append(electronicInvoiceCaeError);
+				.append(electronicInvoiceCaeError)
+				.append(getXMLRequestResponse());
 		return retValue.toString();
 	}
 	
@@ -616,7 +623,16 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 		StringBuffer retValue = new StringBuffer();
 		retValue.append("Error en FECAESolicitar para factura ")
 				.append(inv.getDocumentNo()).append(" ")
-				.append(electronicInvoiceCaeError);
+				.append(electronicInvoiceCaeError)
+				.append(getXMLRequestResponse());
+		return retValue.toString();
+	}
+	
+	/** Log de XML request/response */
+	protected String getXMLRequestResponse() {
+		StringBuffer retValue = new StringBuffer();
+		retValue.append(requestXML!=null?" RequestXML: "+requestXML:"")
+				.append(responseXML!=null?" ResponseXML: "+responseXML:"");
 		return retValue.toString();
 	}
 	
