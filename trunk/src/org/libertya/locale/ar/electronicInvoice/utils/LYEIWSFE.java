@@ -427,12 +427,13 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			// Solo las percepciones deben contemplarse 
 			if (!tax.isPercepcion())
 				continue;
-			// Crear nueva entradda
+			// Crear nueva entrada
 			Tributo tributo = new Tributo();
 			tributo.setId((short)tax.getWSFECode());
 			tributo.setBaseImp(getTaxBaseAmt(invoiceTax.getTaxBaseAmt(), inv.getGrandTotal(), inv.getTaxesAmt()).doubleValue());
 			tributo.setImporte(invoiceTax.getTaxAmt().setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue());
 			tributo.setAlic(invoiceTax.getRate().setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue());
+			tributo.setDesc(tax.getName());
 			tributos.add(tributo);
 		}
 		return tributos.toArray(new Tributo[tributos.size()]);
