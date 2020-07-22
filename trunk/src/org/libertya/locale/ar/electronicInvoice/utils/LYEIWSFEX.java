@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.logging.Level;
 
+import org.apache.axis.AxisProperties;
 import org.libertya.locale.ar.electronicInvoice.model.MLYEIElectronicInvoiceLog;
 import org.openXpertya.electronicInvoice.ElectronicInvoiceInterface;
 import org.openXpertya.model.MClientInfo;
@@ -37,6 +38,12 @@ public class LYEIWSFEX extends LYEIWSFE implements ElectronicInvoiceInterface {
 
 	public synchronized String generateCAE() {
 
+		// Forzar TLS 1.2 si es que existe el factory correspondiente
+		try {
+			Class.forName("org.libertya.locale.ar.electronicInvoice.utils.TLS12SocketFactory");
+			AxisProperties.setProperty("axis.socketSecureFactory", "org.libertya.locale.ar.electronicInvoice.utils.TLS12SocketFactory");
+		} catch (Exception e) { /* Nada por hacer. Utilizar la version de SSL por defecto */}
+		
 		// En caso de existir un error, se dio durante la preparacion de los datos o luego de invocar al ws de afip?
 		boolean serviceInvoked = false;
 		try {

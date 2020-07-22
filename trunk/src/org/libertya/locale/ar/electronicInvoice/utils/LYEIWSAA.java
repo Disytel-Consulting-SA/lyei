@@ -16,6 +16,7 @@ import java.util.logging.Level;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.apache.axis.AxisProperties;
 import org.libertya.locale.ar.electronicInvoice.model.LP_C_LYEIElectronicInvoiceConfig;
 import org.libertya.locale.ar.electronicInvoice.model.LP_C_LYEIElectronicPOSConfig;
 import org.libertya.locale.ar.electronicInvoice.model.MLYEIElectronicInvoiceLog;
@@ -126,6 +127,13 @@ public class LYEIWSAA {
 		String responseXML = null;
 		LoginCMS login = null;
 		try {
+			
+			// Forzar TLS 1.2 si es que existe el factory correspondiente
+			try {
+				Class.forName("org.libertya.locale.ar.electronicInvoice.utils.TLS12SocketFactory");
+				AxisProperties.setProperty("axis.socketSecureFactory", "org.libertya.locale.ar.electronicInvoice.utils.TLS12SocketFactory");
+			} catch (Exception e) { /* Nada por hacer. Utilizar la version de SSL por defecto */}
+			
 			// Conectar al servicio WSAA (homo o prod segun corresponda)
 			String endPointAddress = LYEITools.getEndPointAddress(LYEIConstants.EXTERNAL_SERVICE_WSAA_PREFIX, targetEnv);
 			LoginCMSServiceLocator locator = new LoginCMSServiceLocator();
