@@ -20,6 +20,7 @@ import org.apache.axis.AxisProperties;
 import org.libertya.locale.ar.electronicInvoice.model.LP_C_LYEIElectronicInvoiceConfig;
 import org.libertya.locale.ar.electronicInvoice.model.LP_C_LYEIElectronicPOSConfig;
 import org.libertya.locale.ar.electronicInvoice.model.MLYEIElectronicInvoiceLog;
+import org.openXpertya.model.MPreference;
 import org.openXpertya.model.PO;
 import org.openXpertya.util.CLogger;
 import org.w3c.dom.Document;
@@ -208,24 +209,33 @@ public class LYEIWSAA {
 	}
 	
 	/**
-	 * Fecha de generacion del TRA 
+	 * Fecha de generacion del TRA.
+	 * Se resta un número de segundos (por defecto -120, pero configurable en la preferencia) 
+	 * a la fecha actual de manera preventiva dado que bajo ciertos casos en donde el equipo  
+	 * cliente tenia un pequeño desfazaje horario se podía llegar a obtener el error:
+	 * 	generationTime posee formato o dato inválido (ej: en el futuro o más de 24 horas de antigüedad)
 	 */
     public static String getGenTime(String format, Date date) {
-        DateFormat dateFormat = new SimpleDateFormat(format);
-        return dateFormat.format(date);
+		Calendar cal = Calendar.getInstance(); 
+	    cal.setTime(date); 
+	    cal.add(Calendar.SECOND, getGenTimeShift(-120)); 
+	    Date genDate = cal.getTime();
+	    DateFormat dateFormat = new SimpleDateFormat(format);
+	    return dateFormat.format(genDate);
     }
 	
 	/**
 	 * Peticion de expire en 23 horas a partir de la fecha recibida
-	 * Se suman 23 horas en lugar de 24, dado que bajo ciertos casos
-	 * en donde el equipo cliente tenia un pequeño desfazaje horario
+	 * Se suman 23 horas (o las horas definidas en la preferencia) 
+	 * en lugar de 24, dado que bajo ciertos casos en donde el 
+	 * equipo cliente tenia un pequeño desfazaje horario
 	 * y ya se obtenía un error: 
 	 * 	expirationTime posee formato o dato inválido (ej: vencimiento en más de 24 horas)
 	 */
 	protected static String getExpireTime(String format, Date date) {
 		Calendar cal = Calendar.getInstance(); 
 	    cal.setTime(date); 
-	    cal.add(Calendar.HOUR_OF_DAY, 23); 
+	    cal.add(Calendar.HOUR_OF_DAY, getExpireTimeShift(23)); 
 	    Date expDate = cal.getTime();
 	    DateFormat dateFormat = new SimpleDateFormat(format);
 	    return dateFormat.format(expDate);
@@ -302,6 +312,29 @@ public class LYEIWSAA {
 		}
 	}
 	
-	
+
+	/** Corrimiento preventivo del genTime o expireTime segun preferencia, expresado en segundos */
+	protected static int getGenTimeShift(int defaultValueSecs) {
+		int value = defaultValueSecs;
+		try {
+			String pref = MPreference.GetCustomPreferenceValue("LYEI_GEN_TIME_SHIFT_SECS");
+			if (pref!=null && pref.length()>0) {
+				value = Integer.parseInt(pref);
+			}
+		} catch (Exception e) {}
+		return value;
+	}
+
+	/** Corrimiento adicional del expireTime segun preferencia */
+	protected static int getExpireTimeShift(int defaultValueHours) {
+		int value = defaultValueHours;
+		try {
+			String pref = MPreference.GetCustomPreferenceValue("LYEI_EXP_TIME_SHIFT_HOURS");
+			if (pref!=null && pref.length()>0) {
+				value = Integer.parseInt(pref);
+			}
+		} catch (Exception e) {}
+		return value;
+	}
 
 }
