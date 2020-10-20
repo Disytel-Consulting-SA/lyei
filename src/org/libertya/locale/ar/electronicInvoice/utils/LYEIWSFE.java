@@ -537,13 +537,16 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 		CbteAsoc[] retValue = null;
 		int cant=0;
 		
+		// Se comenta por error 10197
 		// Por el momento la especificacion de asociados se requiere para MiPyME unicamente.
-		if (!docType.isMiPyME())
-			return retValue;
+		/*if (!docType.isMiPyME())
+			return retValue;*/
 		
 		ArrayList<CbteAsoc> asociados = new ArrayList<CbteAsoc>();
+		// Se comenta por error 10197
 		// Solo informar si estoy registrando NC/ND MiPyME
-		if (isNCNDMiPyME() && inv.getC_Invoice_Orig_ID()>0) {
+		//if (isNCNDMiPyME() && inv.getC_Invoice_Orig_ID()>0) {
+		if (inv.getC_Invoice_Orig_ID()>0) {
 			MInvoice origInv = new MInvoice(ctx, inv.getC_Invoice_Orig_ID(), trx);
 			MDocType origInvDT = new MDocType(ctx, origInv.getC_DocTypeTarget_ID(), trx);
 			int tipo = Integer.parseInt(origInvDT.getdocsubtypecae());
