@@ -3,6 +3,7 @@ package org.openXpertya.JasperReport;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Properties;
 
 import org.libertya.locale.ar.electronicInvoice.model.MLYEIElectronicInvoiceConfig;
 import org.libertya.locale.ar.electronicInvoice.model.MLYEIElectronicPOSConfig;
@@ -11,17 +12,13 @@ import org.libertya.locale.ar.electronicInvoice.utils.LYEITools;
 import org.libertya.locale.ar.electronicInvoice.utils.LYEIWSAA;
 import org.openXpertya.JasperReport.DataSource.WSFEConsultarComprobanteDataSource;
 import org.openXpertya.model.MDocType;
-import org.openXpertya.model.MPreference;
 import org.openXpertya.model.MProcess;
 import org.openXpertya.model.X_C_DocType;
 import org.openXpertya.process.ProcessInfo;
 import org.openXpertya.process.ProcessInfoParameter;
 import org.openXpertya.process.SvrProcess;
 import org.openXpertya.util.Env;
-
-import fexv1.dif.afip.gov.ar.ClsFEXAuthRequest;
-import fexv1.dif.afip.gov.ar.ClsFEXGetCMP;
-import fexv1.dif.afip.gov.ar.FEXGetCMPResponse;
+import org.openXpertya.util.Util;
 
 import FEV1.dif.afip.gov.ar.Err;
 import FEV1.dif.afip.gov.ar.FEAuthRequest;
@@ -29,6 +26,9 @@ import FEV1.dif.afip.gov.ar.FECompConsultaReq;
 import FEV1.dif.afip.gov.ar.FECompConsultaResponse;
 import FEV1.dif.afip.gov.ar.ServiceLocator;
 import FEV1.dif.afip.gov.ar.ServiceSoap;
+import fexv1.dif.afip.gov.ar.ClsFEXAuthRequest;
+import fexv1.dif.afip.gov.ar.ClsFEXGetCMP;
+import fexv1.dif.afip.gov.ar.FEXGetCMPResponse;
 
 public class WSFEConsultarComprobanteProcess extends SvrProcess {
 
@@ -38,7 +38,7 @@ public class WSFEConsultarComprobanteProcess extends SvrProcess {
 	public static final String TA_TAG_SIGN  = "sign";
 	
 	/** Nomina de comprobantes recuperados.  En cada posicion de la lista hay una map con todos los datos, o bien ERROR_KEY si no se pudo recuperar */
-	protected ArrayList<HashMap<String, String>> retrievedDocuments = new ArrayList<HashMap<String, String>>();
+	private ArrayList<HashMap<String, String>> retrievedDocuments = new ArrayList<HashMap<String, String>>();
 
 	/** Numero de reintentos por documento */
 	public static final int RETRY_MAX = 3;
@@ -50,6 +50,8 @@ public class WSFEConsultarComprobanteProcess extends SvrProcess {
 
 	/** ID de la compañía */
 	Integer clientID = null;
+	/** ID de la organización */
+	Integer orgID = null;
 	/** CUIT de la compañía */
 	Long cuit = null;	
 	/** Sign de acceso a WS de AFIP */
@@ -58,26 +60,30 @@ public class WSFEConsultarComprobanteProcess extends SvrProcess {
 	String token = null;
 
 	/** Numero de comprobante (desde) */
-	protected long cbteNroFrom = -1;
+	private long cbteNroFrom = -1;
 	/** Numero de comprobante (hasta) */
-	protected long cbteNroTo = -1;
+	private long cbteNroTo = -1;
 	/** Recuperacion un CAE en particular: punto de venta */
-	protected int ptoVta = -1;
+	private int ptoVta = -1;
 	/** Recuperacion un CAE en particular: tipo de comprobante */
-	protected int cbteTipo = -1;
+	private int cbteTipo = -1;
 	/** Tipo de documento (nombre) */
-	protected String cbteTipoNombre = "";
+	private String cbteTipoNombre = "";
 	/** Configuracion del POS asociado a la factura */
 	protected MLYEIElectronicPOSConfig posConfig;
 	/** Configuracion general asociado al POS de la factura */
 	protected MLYEIElectronicInvoiceConfig genConfig;
 	/** Tipo de documento sobre el cual consultar */
-	protected MDocType aDocType;
+	private MDocType aDocType;
 	
 	/** DataSource para interaccion con Jasper */ 
 	protected WSFEConsultarComprobanteDataSource ds;
 
-
+	/** Contexto local */
+	private Properties localCtx;
+	
+	/** Nombre de transacción local */
+	private String localTrxName;
 	
 	static {
 		// === TIPOS DE DOCUMENTOS A CONTEMPLAR EN LA BUSQUEDA === 
@@ -116,6 +122,12 @@ public class WSFEConsultarComprobanteProcess extends SvrProcess {
 		docTypeMap.put("CCNMPC", Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_NotasDeCreditoMiPyMEC));
 	}
 	
+	public WSFEConsultarComprobanteProcess(Properties ctx, Integer clientID, Integer orgID, String trxName) {
+		this.localCtx = ctx;
+		this.localTrxName = trxName;
+		this.clientID = clientID;
+		this.orgID = orgID;
+	}
 		
 	@Override
 	protected void prepare() {
@@ -131,16 +143,18 @@ public class WSFEConsultarComprobanteProcess extends SvrProcess {
 //				ptoVta = para[i].getParameterAsInt();
 //			}
 			else if (name.equalsIgnoreCase("C_DocType_ID")) {
-				aDocType = new MDocType(getCtx(), para[i].getParameterAsInt(), get_TrxName());
-				cbteTipo = getCbteTipo(aDocType);
-				cbteTipoNombre = aDocType.getName();
-				ptoVta = aDocType.getPosNumber(); 
+				setaDocType(new MDocType(getCtx(), para[i].getParameterAsInt(), get_TrxName()));
+				setCbteTipo(getCbteTipo(getaDocType()));
+				setCbteTipoNombre(getaDocType().getName());
+				setPtoVta(getaDocType().getPosNumber()); 
 			}
 			else if (name.equalsIgnoreCase("NroCbte")) {
-				cbteNroFrom = ((BigDecimal)para[i].getParameter()).longValue();
-				cbteNroTo = ((BigDecimal)para[i].getParameter_To()).longValue();
+				setCbteNroFrom(((BigDecimal)para[i].getParameter()).longValue());
+				setCbteNroTo(((BigDecimal)para[i].getParameter_To()).longValue());
 			}
 		}
+		clientID = getaDocType().getAD_Client_ID();
+		orgID = getaDocType().getAD_Org_ID();
 	}
 	
 	
@@ -260,7 +274,7 @@ public class WSFEConsultarComprobanteProcess extends SvrProcess {
 	/**
 	 * Retorna el tipo de comprobante segun la denominacion de AFIP a partir del doctype 
 	 */
-	protected int getCbteTipo(X_C_DocType aDocType) {
+	public int getCbteTipo(X_C_DocType aDocType) {
 		try {
 			StringBuffer type = new StringBuffer();
 			for (int i = 0; i < aDocType.getDocTypeKey().length(); i++) {
@@ -276,53 +290,50 @@ public class WSFEConsultarComprobanteProcess extends SvrProcess {
 
 	/** Validaciones preliminares */
 	protected void checkPreconditions() throws Exception {
-		if (cbteNroFrom == -1 || cbteNroTo == -1 || cbteNroFrom > cbteNroTo)
+		if (getCbteNroFrom() == -1 || getCbteNroTo() == -1 || getCbteNroFrom() > getCbteNroTo())
 			throw new Exception("Rango de comprobantes indicado invalido");
-		if (cbteNroTo - cbteNroFrom > MAX_DOCS )
+		if (getCbteNroTo() - getCbteNroFrom() > MAX_DOCS )
 			throw new Exception("Rango de comprobantes a consultar muy extenso. Máximo por ejecución: " + MAX_DOCS);
-		if (ptoVta == -1)
+		if (getPtoVta() == -1)
 			throw new Exception("Punto de venta indicado invalido");
-		if (cbteTipo == -1)
+		if (getCbteTipo() == -1)
 			throw new Exception("Tipo de documento indicado invalido");
 	}
 	
 	
 	/** Carga inicial */
-	protected void loadInitialValues() throws Exception {
+	public void loadInitialValues() throws Exception {
 		// Token & Sign
-		posConfig = MLYEIElectronicPOSConfig.get(ptoVta, aDocType.getAD_Org_ID(), getCtx(), null);
+		posConfig = MLYEIElectronicPOSConfig.get(getPtoVta(), getOrgID(), getCtx(), null);
 		if (posConfig==null) 
-			throw new Exception("No se ha encontrado configuracion electronica para el punto de venta " + ptoVta + " y la organizacion del tipo de documento (" + aDocType.getAD_Org_ID() + ")");
+			throw new Exception("No se ha encontrado configuracion electronica para el punto de venta " + getPtoVta()
+					+ " y la organizacion del tipo de documento (" + getOrgID() + ")");
 		HashMap<String, String> tokenAndSign = LYEIWSAA.getTokenAndSign(posConfig, getCtx(), posConfig.getCurrentEnvironment());
 		token = tokenAndSign.get(LYEIWSAA.TA_TOKEN);
 		sign = tokenAndSign.get(LYEIWSAA.TA_SIGN);		
-		// ClientID
-		clientID = getAD_Client_ID();
 		// Cuit
 		try {
 			genConfig = new  MLYEIElectronicInvoiceConfig(getCtx(), posConfig.getC_LYEIElectronicInvoiceConfig_ID(), null);
 			cuit = Long.parseLong(genConfig.getCUIT());
 		} catch (Exception ex) {
-			throw new Exception ("Error al recuperar CUIT de la BBDD de compañía " + clientID + ". " + ex.getMessage());
+			throw new Exception ("Error al recuperar CUIT de la BBDD de compañía " + getClientID() + ". " + ex.getMessage());
 		}
-			
-
 	}
 
 	/** Consultar cada una de los comprobantes */
-	protected void queryInvoices() throws Exception {
+	public void queryInvoices() throws Exception {
 		// Consultar cada comprobante e incorporar a la nómina de resultados
-		for (long i = cbteNroFrom; i <= cbteNroTo; i++)
-			if (!isExportacion(cbteTipo))
-				retrievedDocuments.add(consultarCAE(i, cbteTipo, "", ptoVta));
+		for (long i = getCbteNroFrom(); i <= getCbteNroTo(); i++)
+			if (!isExportacion(getCbteTipo()))
+				getRetrievedDocuments().add(consultarCAE(i, getCbteTipo(), "", getPtoVta()));
 			else
-				retrievedDocuments.add(consultarCAEX(i, cbteTipo, "", ptoVta));
+				getRetrievedDocuments().add(consultarCAEX(i, getCbteTipo(), "", getPtoVta()));
 	}
 
 	
 	/** Genera y visuaiza el informe Jasper */
 	protected void createReport() throws Exception {
-		ds = new WSFEConsultarComprobanteDataSource(retrievedDocuments);
+		ds = new WSFEConsultarComprobanteDataSource(getRetrievedDocuments());
 		
 		try {
 			ds.loadData();
@@ -338,10 +349,10 @@ public class WSFEConsultarComprobanteProcess extends SvrProcess {
 			throw new Exception ("No es informe Jasper");
 		MJasperReport jasperwrapper = new MJasperReport(getCtx(), proceso.getAD_JasperReport_ID(), get_TrxName());
 				
-		jasperwrapper.addParameter("P_CBTE_FROM", cbteNroFrom);
-		jasperwrapper.addParameter("P_CBTE_TO", cbteNroTo);
-		jasperwrapper.addParameter("P_PTOVTA", ptoVta);
-		jasperwrapper.addParameter("P_TIPO_CBTE", cbteTipoNombre);
+		jasperwrapper.addParameter("P_CBTE_FROM", getCbteNroFrom());
+		jasperwrapper.addParameter("P_CBTE_TO", getCbteNroTo());
+		jasperwrapper.addParameter("P_PTOVTA", getPtoVta());
+		jasperwrapper.addParameter("P_TIPO_CBTE", getCbteTipoNombre());
 		
 		try {
 			jasperwrapper.fillReport(ds);
@@ -445,5 +456,105 @@ public class WSFEConsultarComprobanteProcess extends SvrProcess {
 		return retValues; 
 	}
 
+
+	public MDocType getaDocType() {
+		return aDocType;
+	}
+
+
+	public void setaDocType(MDocType aDocType) {
+		this.aDocType = aDocType;
+	}
+
+
+	public int getCbteTipo() {
+		return cbteTipo;
+	}
+
+
+	public void setCbteTipo(int cbteTipo) {
+		this.cbteTipo = cbteTipo;
+	}
+
+
+	public int getPtoVta() {
+		return ptoVta;
+	}
+
+
+	public void setPtoVta(int ptoVta) {
+		this.ptoVta = ptoVta;
+	}
+
+
+	public String getCbteTipoNombre() {
+		return cbteTipoNombre;
+	}
+
+
+	public void setCbteTipoNombre(String cbteTipoNombre) {
+		this.cbteTipoNombre = cbteTipoNombre;
+	}
+
+
+	public long getCbteNroFrom() {
+		return cbteNroFrom;
+	}
+
+
+	public void setCbteNroFrom(long cbteNroFrom) {
+		this.cbteNroFrom = cbteNroFrom;
+	}
+
+
+	public long getCbteNroTo() {
+		return cbteNroTo;
+	}
+
+
+	public void setCbteNroTo(long cbteNroTo) {
+		this.cbteNroTo = cbteNroTo;
+	}
+
+	@Override
+	public Properties getCtx() {
+		if (localCtx != null) {
+			return localCtx;
+		} else {
+			return super.getCtx();
+		}
+	}
 	
+	@Override
+	public String get_TrxName() {
+		if (!Util.isEmpty(localTrxName, true)) {
+			return localTrxName;
+		} else {
+			return super.get_TrxName();
+		}
+	}
+	
+	public Integer getClientID() {
+		if (!Util.isEmpty(clientID, true)) {
+			return clientID;
+		} else {
+			return getaDocType().getAD_Client_ID();
+		}
+	}
+	
+	public Integer getOrgID() {
+		if (!Util.isEmpty(orgID, true)) {
+			return orgID;
+		} else {
+			return getaDocType().getAD_Org_ID();
+		}
+	}
+
+	public ArrayList<HashMap<String, String>> getRetrievedDocuments() {
+		return retrievedDocuments;
+	}
+
+	public void setRetrievedDocuments(ArrayList<HashMap<String, String>> retrievedDocuments) {
+		this.retrievedDocuments = retrievedDocuments;
+	}
 }
