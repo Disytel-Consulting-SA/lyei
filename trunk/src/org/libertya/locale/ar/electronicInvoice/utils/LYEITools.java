@@ -25,7 +25,7 @@ public class LYEITools {
 		p = Runtime.getRuntime().exec(command, null, directory);
 		p.waitFor();
 		if (p.exitValue() != 0) {
-			throw new Exception("Error en " + activity + ": " + getProcessError(p));
+			throw new Exception("Exit code " + p.exitValue() + " en actividad " + activity + ": " + getProcessError(p));
 		}
 	}
 	
