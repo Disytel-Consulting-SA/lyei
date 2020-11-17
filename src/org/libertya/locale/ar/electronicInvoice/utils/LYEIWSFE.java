@@ -479,7 +479,7 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 	
 	/** Obtine el taxBaseAmt (segun WsfeV1) */
 	protected BigDecimal getTaxBaseAmt(BigDecimal taxBaseAmt, BigDecimal grandTotal,	BigDecimal taxesAmt) {
-		if ((Math.abs((grandTotal.subtract(taxesAmt).subtract(taxBaseAmt)).doubleValue()) >= 0.01) && (Math.abs((grandTotal.subtract(taxesAmt).subtract(taxBaseAmt)).doubleValue()) <= 0.02)){
+		if ((Math.abs((grandTotal.subtract(taxesAmt).subtract(taxBaseAmt)).doubleValue()) >= 0.01) && (Math.abs((grandTotal.subtract(taxesAmt).subtract(taxBaseAmt)).doubleValue()) <= 0.03)){
 			return (grandTotal.subtract(taxesAmt));
 		}
 		return taxBaseAmt;
