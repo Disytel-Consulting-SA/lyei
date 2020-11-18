@@ -8,10 +8,14 @@ import javax.net.ssl.SSLSocket;
 
 import org.apache.axis.components.net.BooleanHolder;
 import org.apache.axis.components.net.JSSESocketFactory;
+import org.openXpertya.model.MPreference;
 
 /* According to: https://stackoverflow.com/questions/34180289/how-to-enforce-an-axis-client-to-use-tlsv1-2-protocol */
 
 public class TLS12SocketFactory extends JSSESocketFactory {
+	
+	/** Preferencia para determinar si hay que validar java 8 o superior para TLS12 de manera estricta */
+	public static String LYEI_CHECK_JAVA_PREFERENCE = "LYEI_TLS12_Strict_Java_Version";
 	
 	protected static Integer javaMajorVersion = null;
 	
@@ -22,7 +26,7 @@ public class TLS12SocketFactory extends JSSESocketFactory {
     @Override
     public Socket create(String host, int port, StringBuffer otherHeaders, BooleanHolder useFullURL) throws Exception{
     	// TLS1.2 es soportado a partir de Java 8
-        if (getVersion()!=null && getVersion() < 8)
+        if (getStrictJavaCheck() && getVersion()!=null && getVersion() < 8)
         	throw new RuntimeException("Se requiere Java 8 o superior para TLS1.2");
         Socket s = super.create(host, port, otherHeaders, useFullURL);
         ((SSLSocket)s).setEnabledProtocols(new String[] {/*"TLSv1.1",*/ "TLSv1.2"});
@@ -66,6 +70,17 @@ public class TLS12SocketFactory extends JSSESocketFactory {
     		e.printStackTrace();
     		return null;
     	}
+    }
+    
+    /** Validar version de Java? 
+     * 		Si la preferencia no existe o tiene cualquier valor distinto a N retorna true.  
+     * 		Si la preferncia existe y es igual a N retorna false 
+     */
+    protected static boolean getStrictJavaCheck() {
+    	String val = MPreference.GetCustomPreferenceValue(LYEI_CHECK_JAVA_PREFERENCE);
+    	if ("N".equalsIgnoreCase(val))
+    		return false;
+    	return true;
     }
     
 }
