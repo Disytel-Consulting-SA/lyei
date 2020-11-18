@@ -70,7 +70,7 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 		// Guardar el cierre electrónico para el punto de venta y fecha parámetro
 		saveClosingInfo();
 		
-		return "ProcessOK";
+		return "@ProcessOK@";
 	}
 
 	/**
