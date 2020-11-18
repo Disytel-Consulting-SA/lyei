@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.openXpertya.JasperReport.WSFEConsultarComprobanteProcess;
@@ -77,13 +79,14 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 	protected void requestData() throws Exception {
 		// Inicializar sus datos
 		WSFEConsultarComprobanteProcess wccp = new WSFEConsultarComprobanteProcess(getCtx(), getPos().getAD_Client_ID(), getPos().getAD_Org_ID(), get_TrxName());
-		wccp.setPtoVta(getPos().getID());
+		wccp.setPtoVta(getPos().getPOSNumber());
 		wccp.loadInitialValues();
 		// Iterar por todos los tipos de documento del punto de venta
 		PreparedStatement ps = DB.prepareStatement("select * " + 
 													"from c_doctype " + 
 													"where doctypekey ilike '%" + getPos().getPOSNumber() + "%' and isactive = 'Y' and ad_client_id = "
-													+ getPos().getAD_Client_ID(), get_TrxName());
+													+ getPos().getAD_Client_ID(), get_TrxName()
+													+ " order by doctypekey ");
 		ResultSet rs = ps.executeQuery();
 		MDocType dt;
 		int min, max;
@@ -96,17 +99,25 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 			wccp.setCbteTipo(wccp.getCbteTipo(dt));
 			// Consultar el mínimo anterior a la fecha actual, restando 10 por las dudas
 			min = getExtremeDocumentNos("min", dt.getID());
-			min = (min - DELTA_DAYS) < 0?0:min - DELTA_DAYS;
 			// Consultar el máximo de la fecha actual, agregando 10 por las dudas
 			max = getExtremeDocumentNos("max", dt.getID());
+			if(min <= 0 && max <= 0) continue;
+			// Al menos un mínimo y máximo existen
+			min = (min - DELTA_DAYS) < 0?0:min - DELTA_DAYS;
 			max = max + DELTA_DAYS;
 			// Consultar los datos en la iteración de facturas del wccp
 			wccp.setCbteNroFrom(min);
 			wccp.setCbteNroTo(max);
-			wccp.queryInvoices(); 
+			wccp.setRetrievedDocuments(new ArrayList<HashMap<String,String>>());
+			wccp.queryInvoices();
 			sign = new BigDecimal(dt.getsigno_issotrx());
 			BigDecimal taxAmt, compAmt, tribAmt;
+			String dateParamStr = new SimpleDateFormat("yyyyMMdd").format(getDateParam());
 			for (HashMap<String, String> invoices : wccp.getRetrievedDocuments()) {
+				if(invoices.get("ImpTotal") == null) continue;
+				// Verificar que la fecha del comprobante sea la fecha parámetro, sino no es de
+				// la misma fecha
+				if(!dateParamStr.equals(invoices.get("CbteFch"))) continue;
 				// Traerme los datos y sumar al objeto DTO del Fiscal Close
 				// Si es crédito va para lo que es creditnote y lo que es debito va para fiscal
 				compAmt = new BigDecimal(invoices.get("ImpTotal"));
@@ -164,9 +175,10 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 		int cInfoID = DB.getSQLValue(get_TrxName(),
 				"select c_controlador_fiscal_closing_info_id from c_controlador_fiscal_closing_info where ad_client_id = "
 						+ getPos().getAD_Client_ID() + " AND puntodeventa = " + getPos().getPOSNumber()
-						+ " AND fecha = '" + Env.getDateFormatted(getDateParam()) + "'::date ");
-		cInfoID = cInfoID < 0 ? 0 : cInfoID; 
-		cinfo = new MControladorFiscalClosingInfo(getCtx(), cInfoID, get_TrxName());
+						+ " AND fiscalclosingdate = '" + Env.getDateFormatted(getDateParam()) + "'::date ", true);
+		if(cInfoID > 0) {
+			cinfo = new MControladorFiscalClosingInfo(getCtx(), cInfoID, get_TrxName());
+		}
 		return cinfo;
 	}
 
@@ -191,10 +203,11 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 	 *         documento parámetro
 	 */
 	protected Integer getExtremeDocumentNos(String function, Integer docTypeID) {
-		return DB.getSQLValue(get_TrxName(),
-				"select " + function + "(numerocomprobante) "
+		String sql = "select " + function + "(numerocomprobante) "
 				+ "from c_invoice where c_doctypetarget_id = " + docTypeID
-						+ " and cae is not null");
+				+ " and dateacct::date = '" + Env.getDateFormatted(getDateParam()) + "'::date "
+				+ " and cae is not null ";
+		return DB.getSQLValue(get_TrxName(), sql, true);
 	}
 	
 	protected MPOS getPos() {
