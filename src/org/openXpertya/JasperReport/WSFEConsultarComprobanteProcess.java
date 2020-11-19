@@ -122,6 +122,8 @@ public class WSFEConsultarComprobanteProcess extends SvrProcess {
 		docTypeMap.put("CCNMPC", Integer.parseInt(X_C_DocType.DOCSUBTYPECAE_NotasDeCreditoMiPyMEC));
 	}
 	
+	public WSFEConsultarComprobanteProcess() {}
+		
 	public WSFEConsultarComprobanteProcess(Properties ctx, Integer clientID, Integer orgID, String trxName) {
 		this.localCtx = ctx;
 		this.localTrxName = trxName;
