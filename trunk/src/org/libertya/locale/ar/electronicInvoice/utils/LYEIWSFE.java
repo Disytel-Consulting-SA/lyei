@@ -185,7 +185,9 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			// Impuestos.  No deben ser enviados para comprobantes de tipo C
 			AlicIva[] iva = getIva();
 			double impIva = getImpIVA(iva);
-			if (!X_C_DocType.DOCSUBTYPECAE_FacturasC.equals(docType.getdocsubtypecae())) {
+			if (!X_C_DocType.DOCSUBTYPECAE_FacturasC.equals(docType.getdocsubtypecae())
+					&& !X_C_DocType.DOCSUBTYPECAE_NotasDeCreditoC.equals(docType.getdocsubtypecae())
+					&& !X_C_DocType.DOCSUBTYPECAE_NotasDeDebitoC.equals(docType.getdocsubtypecae())) {
 				// Array  para  informar  las  alícuotas  y  sus importes   asociados   a   un   comprobante <AlicIva>
 				detReq.setIva(iva);
 				// Suma de los importes del array de IVA
