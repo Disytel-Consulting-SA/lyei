@@ -120,9 +120,10 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 				if(!dateParamStr.equals(invoices.get("CbteFch"))) continue;
 				// Traerme los datos y sumar al objeto DTO del Fiscal Close
 				// Si es crédito va para lo que es creditnote y lo que es debito va para fiscal
-				compAmt = new BigDecimal(invoices.get("ImpTotal"));
-				taxAmt = invoices.get("ImpIVA") == null?BigDecimal.ZERO:new BigDecimal(invoices.get("ImpIVA"));
-				tribAmt = invoices.get("ImpTrib") == null?BigDecimal.ZERO:new BigDecimal(invoices.get("ImpTrib"));
+				BigDecimal monCotiz = new BigDecimal(invoices.get("MonCotiz"));
+				compAmt = new BigDecimal(invoices.get("ImpTotal")).multiply(monCotiz);
+				taxAmt = (invoices.get("ImpIVA") == null?BigDecimal.ZERO:new BigDecimal(invoices.get("ImpIVA"))).multiply(monCotiz);
+				tribAmt = (invoices.get("ImpTrib") == null?BigDecimal.ZERO:new BigDecimal(invoices.get("ImpTrib"))).multiply(monCotiz);
 				if(sign.compareTo(BigDecimal.ZERO) < 0) {
 					getResult().creditnoteamt = getResult().creditnoteamt.add(compAmt);
 					getResult().creditnotetaxamt = getResult().creditnotetaxamt.add(taxAmt);
@@ -148,9 +149,12 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 		
 		cinfo.setAD_Org_ID(getPos().getAD_Org_ID());
 		cinfo.setPOSName(getPos().getName());
+		cinfo.setPuntoDeVenta(getPos().getPOSNumber());
 		cinfo.setFiscalClosingType("Z");
 		cinfo.setFiscalClosingDate(getDateParam());
-		cinfo.setC_Controlador_Fiscal_ID(getControladorFiscalID());
+		int cid = getControladorFiscalID();
+		cid = cid < 0?0:cid;
+		cinfo.setC_Controlador_Fiscal_ID(cid);
 		
 		cinfo.setCreditNoteAmt(getResult().creditnoteamt);
 		cinfo.setCreditNotePerceptionAmt(getResult().creditnoteperceptionamt);
