@@ -559,4 +559,14 @@ public class WSFEConsultarComprobanteProcess extends SvrProcess {
 	public void setRetrievedDocuments(ArrayList<HashMap<String, String>> retrievedDocuments) {
 		this.retrievedDocuments = retrievedDocuments;
 	}
+
+	public void setClientID(Integer clientID) {
+		this.clientID = clientID;
+	}
+
+	public void setOrgID(Integer orgID) {
+		this.orgID = orgID;
+	}
+	
+	
 }
