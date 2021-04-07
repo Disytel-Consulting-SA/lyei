@@ -24,6 +24,7 @@ import org.openXpertya.model.MInvoice;
 import org.openXpertya.model.MInvoiceTax;
 import org.openXpertya.model.MLocation;
 import org.openXpertya.model.MOrgInfo;
+import org.openXpertya.model.MPreference;
 import org.openXpertya.model.MTax;
 import org.openXpertya.model.X_C_DocType;
 import org.openXpertya.util.Env;
@@ -217,7 +218,7 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			if (opcionales!=null && opcionales.length>0) { 
 				detReq.setOpcionales(opcionales);
 			}
-			
+
 			CbteAsoc[] asociados = getAsociados();
 			if (asociados!=null && asociados.length>0) { 
 				detReq.setCbtesAsoc(asociados);
@@ -488,7 +489,7 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 	}
 
 	/** Nomina de opcionales a enviar, si es que corresponde */ 
-	protected Opcional[] getOpcionales() {
+	protected Opcional[] getOpcionales() throws Exception {
 		Opcional[] retValue = null;
 		int cant=0;
 		// Por el momento la especificacion de opcionales se requiere para MiPyME unicamente.
@@ -523,6 +524,26 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 				Opcional opcionalAlias = new Opcional();
 				opcionalAlias.setId(""+LYEIConstants.WSFE_OPCIONALES_ALIAS_EMISOR_CODIGO);
 				opcionalAlias.setValor(genConfig.getAliasEmisor());
+				options.add(opcionalAlias);
+			}
+			
+			// Se debe informar para evitar OBS 10216 Si informa comprobante MiPyMEs (FCE) del tipo Factura, es obligatorio informar por RG con ID 27 y su valor correspondiente.
+			// Valores esperados: SCA = 'Sistema de Circulación Abierta' o ADC = 'Agentes de Depósito Colectivo'
+			if (docType.isMiPyME() && isFacturaMiPyME()) {
+				// Buscar la preferencia a nivel compañía
+				String cod27 = MPreference.GetCustomPreferenceValue(LYEIConstants.WSFE_OPCIONALES_MIPYME_SCA_O_ADC_PREFERENCE, inv.getAD_Client_ID());
+				if (cod27==null || cod27.length()==0) {
+					// Buscar la preferencia a nivel sistema
+					cod27 = MPreference.GetCustomPreferenceValue(LYEIConstants.WSFE_OPCIONALES_MIPYME_SCA_O_ADC_PREFERENCE);
+					// Si la preferencia no esta definida indicar el error
+					if (cod27==null || cod27.length()==0) {	
+						throw new Exception ("Para comprobante MiPyMEs (FCE) del tipo Factura debe especificar SCA (Sistema de Circulación Abierta) o ADC (Agentes de Depósito Colectivo) mediante una preferencia con nombre: LYEI_WSFE_OPCIONALES_MIPYME_SCA_O_ADC");
+					}
+				}
+				cant++;
+				Opcional opcionalAlias = new Opcional();
+				opcionalAlias.setId(""+LYEIConstants.WSFE_OPCIONALES_MIPYME_SCA_O_ADC_CODIGO);
+				opcionalAlias.setValor(cod27);
 				options.add(opcionalAlias);
 			}
 		}
