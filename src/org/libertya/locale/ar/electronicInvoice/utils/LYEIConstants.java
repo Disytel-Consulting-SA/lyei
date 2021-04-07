@@ -13,7 +13,7 @@ public class LYEIConstants {
 		
 	/** Nombre de la preferencia para especificar el directorio base de OpenSSL */
 	public static final String PREF_WSFE_OPENSSL_BASE_DIR = "WSFE_OPENSSL_BASE_DIR";
-	
+		
 	/** Prefijo servicio externo WSAA */
 	public static final String EXTERNAL_SERVICE_WSAA_PREFIX = "WSAA";
 	
@@ -61,6 +61,12 @@ public class LYEIConstants {
 	
 	/** Codigo de opcional para indicar ALIAS del emisor */
 	public static final int WSFE_OPCIONALES_ALIAS_EMISOR_CODIGO = 2102;
+	
+	/** Codigo de opcional para indicar SCA o ADC */
+	public static final int WSFE_OPCIONALES_MIPYME_SCA_O_ADC_CODIGO = 27;
+	
+	/** Nombre de la preferencia para especificar SCA o ADC */
+	public static final String WSFE_OPCIONALES_MIPYME_SCA_O_ADC_PREFERENCE = "LYEI_WSFE_OPCIONALES_MIPYME_SCA_O_ADC";
 	
 	/** Constante para WSFEXV1. IDIOMA FACTURA ESPANOL */
 	public static final short WSFEX_IDIOMA_FACTURA_ESPANOL = 1;
