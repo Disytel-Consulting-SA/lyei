@@ -8,7 +8,7 @@ import java.math.*;
 import org.openXpertya.util.*;
 /** Modelo Generado por C_LYEIElectronicPOSConfig
  *  @author Comunidad de Desarrollo Libertya*         *Basado en Codigo Original Modificado, Revisado y Optimizado de:*         * Jorg Janke 
- *  @version  - 2017-10-27 11:51:54.392 */
+ *  @version  - 2021-04-05 13:13:06.518 */
 public class LP_C_LYEIElectronicPOSConfig extends org.openXpertya.model.PO
 {
 /** Constructor estándar */
@@ -17,6 +17,7 @@ public LP_C_LYEIElectronicPOSConfig (Properties ctx, int C_LYEIElectronicPOSConf
 super (ctx, C_LYEIElectronicPOSConfig_ID, trxName);
 /** if (C_LYEIElectronicPOSConfig_ID == 0)
 {
+setCAEMethod (null);	// C
 setC_LYEIElectronicInvoiceConfig_ID (0);
 setC_LYEIElectronicPOSConfig_ID (0);
 setCurrentEnvironment (null);
@@ -49,6 +50,29 @@ public String toString()
 {
 StringBuffer sb = new StringBuffer ("LP_C_LYEIElectronicPOSConfig[").append(getID()).append("]");
 return sb.toString();
+}
+public static final int CAEMETHOD_AD_Reference_ID = MReference.getReferenceID("LYEICAEMethod");
+/** CAE = C */
+public static final String CAEMETHOD_CAE = "C";
+/** CAEA = A */
+public static final String CAEMETHOD_CAEA = "A";
+/** Set CAEMethod */
+public void setCAEMethod (String CAEMethod)
+{
+if (CAEMethod.equals("C") || CAEMethod.equals("A") || ( refContainsValue("LYEI-AD_Reference-20210405120640022-010708", CAEMethod) ) );
+ else throw new IllegalArgumentException ("CAEMethod Invalid value: " + CAEMethod + ".  Valid: " +  refValidOptions("LYEI-AD_Reference-20210405120640022-010708") );
+if (CAEMethod == null) throw new IllegalArgumentException ("CAEMethod is mandatory");
+if (CAEMethod.length() > 1)
+{
+log.warning("Length > 1 - truncated");
+CAEMethod = CAEMethod.substring(0,1);
+}
+set_Value ("CAEMethod", CAEMethod);
+}
+/** Get CAEMethod */
+public String getCAEMethod() 
+{
+return (String)get_Value("CAEMethod");
 }
 /** Set C_LYEIElectronicInvoiceConfig_ID */
 public void setC_LYEIElectronicInvoiceConfig_ID (int C_LYEIElectronicInvoiceConfig_ID)
@@ -120,6 +144,10 @@ public int getPOS()
 Integer ii = (Integer)get_Value("POS");
 if (ii == null) return 0;
 return ii.intValue();
+}
+public KeyNamePair getKeyNamePair() 
+{
+return new KeyNamePair(getID(), String.valueOf(getPOS()));
 }
 public static final int POSSERVICE_AD_Reference_ID = MReference.getReferenceID("LYEIPOSService");
 /** Facturacion Nacional = N */

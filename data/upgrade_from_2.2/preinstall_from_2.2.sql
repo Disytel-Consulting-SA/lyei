@@ -46,3 +46,7 @@ CREATE TABLE C_LYEICAEANotUsed
 
 --20210405-1108 CAEA: Nueva columna para tipo de solicitud de CAE (CAE o CAEA)
 update ad_system set dummy = (SELECT addcolumnifnotexists('C_LYEIElectronicPOSConfig','CAEMethod','character(1)'));
+
+--20210407-1154 CAEA: Nuevas columnas para indicar si el ambiente es homo o prod
+update ad_system set dummy = (SELECT addcolumnifnotexists('C_LYEICAEARequest','environment','character(1)'));
+update ad_system set dummy = (SELECT addcolumnifnotexists('C_LYEICAEANotUsed','environment','character(1)'));
