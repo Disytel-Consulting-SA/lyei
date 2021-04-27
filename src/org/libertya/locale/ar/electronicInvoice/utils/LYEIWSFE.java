@@ -11,6 +11,8 @@ import java.util.Properties;
 import java.util.logging.Level;
 
 import org.apache.axis.AxisProperties;
+import org.libertya.locale.ar.electronicInvoice.model.LP_C_Invoice;
+import org.libertya.locale.ar.electronicInvoice.model.LP_C_LYEIElectronicPOSConfig;
 import org.libertya.locale.ar.electronicInvoice.model.MLYEIElectronicInvoiceConfig;
 import org.libertya.locale.ar.electronicInvoice.model.MLYEIElectronicInvoiceLog;
 import org.libertya.locale.ar.electronicInvoice.model.MLYEIElectronicPOSConfig;
@@ -27,7 +29,6 @@ import org.openXpertya.model.MOrgInfo;
 import org.openXpertya.model.MPreference;
 import org.openXpertya.model.MTax;
 import org.openXpertya.model.X_C_DocType;
-import org.openXpertya.util.Env;
 import org.openXpertya.util.Util;
 
 import FEV1.dif.afip.gov.ar.AlicIva;
@@ -124,6 +125,38 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 	 */
 	public synchronized String generateCAE() {
 		
+		// El punto de venta electronico usa CAEA?
+		if (LP_C_LYEIElectronicPOSConfig.CAEMETHOD_CAEA.equals(posConfig.getCAEMethod())) {
+			try {
+				MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.INFO, inv.getC_Invoice_ID(), posConfig.getC_LYEIElectronicPOSConfig_ID(), genConfig.getC_LYEIElectronicInvoiceConfig_ID(), "Solicitando CAE mediante CAEA");
+				
+				// Recupear el caea para el periodo y orden actual, ya sea online o en la "cache" de CAEARequests
+				LYEIMTXCA mtxca = new LYEIMTXCA(inv, true);
+				mtxca.requestCAEA();
+				if (mtxca.currentCAEA()==null)
+					throw new Exception("No se encuentra un lote de CAEA asociado ");
+				
+				// CAEA obtenido
+				electronicInvoiceCae = mtxca.currentCAEA().getCAEA();
+				// CAE Vto
+				electronicInvoiceVtoCae = mtxca.currentCAEA().getFechaHasta(); 
+				// Sin errores
+				electronicInvoiceCaeError = null;
+				// Numero de comprobante no lo modifica este modulo bajo CAEA 
+				electronicInvoiceNroCbte = ""+inv.getNumeroComprobante(); 
+				// La factura debe marcarse como pendiente a informar
+				inv.set_Value("LYEICAEAInformed", LP_C_Invoice.LYEICAEAINFORMED_Pendiente);
+				return "";
+			} catch (Exception e) {
+				// No se pudo obtener CAE desde CAEA, elevar la excepción
+				MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.SEVERE, inv.getC_Invoice_ID(), posConfig.getC_LYEIElectronicPOSConfig_ID(), genConfig.getC_LYEIElectronicInvoiceConfig_ID(), "Error en obtencion CAEA: " + e.getMessage());
+				electronicInvoiceCae = null;
+				electronicInvoiceVtoCae = null;
+				electronicInvoiceNroCbte = null;
+				return e.toString();
+			}
+		}
+		
 		// Forzar TLS 1.2 si es que existe el factory correspondiente
 		try {
 			Class.forName("org.libertya.locale.ar.electronicInvoice.utils.TLS12SocketFactory");
@@ -158,7 +191,7 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			auth.setSign(sign);
 	
 			// Comprobante - Cabecera
-			FECAECabRequest cabReq = new FECAECabRequest(1, inv.getPuntoDeVenta(), getCbteTipo());
+			FECAECabRequest cabReq = new FECAECabRequest(1, inv.getPuntoDeVenta(), LYEICommons.getCbteTipo(docType));
 			
 			// Comprobante - Detalle
 			FECAEDetRequest detReq = new FECAEDetRequest();
@@ -168,21 +201,21 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			// Nro. de comprobante hasta
 			detReq.setCbteHasta(cbteNro);
 			// Concepto de la factura. Valores permitidos: 01 Productos. 02 Servicios. 03 Productos y Servicios.
-			detReq.setConcepto(getConcepto());
+			detReq.setConcepto(LYEICommons.getConcepto());
 			// Código   de   documento   identificatorio   del	comprador
-			detReq.setDocTipo(getDocTipo());
+			detReq.setDocTipo(LYEICommons.getDocTipo(partner));
 			// Nro.  de identificación del comprador
-			detReq.setDocNro(getDocNro());
+			detReq.setDocNro(LYEICommons.getDocNro(partner, inv));
 			// Fecha del comprobante  (yyyymmdd). Si  no  se envía la	fecha del comprobante se   
 			// asignará la fecha de proceso
-			detReq.setCbteFch(getCbteFch());
+			detReq.setCbteFch(LYEICommons.getCbteFchString(inv));
 			// Fecha vencimiento pago. Si el tipo de comprobante que está autorizando es MiPyMEs (FCE) tipos 201/206/211 (Factura A/B/C), es obligatorio informar FchVtoPago.
 			if (isFacturaMiPyME())
-				detReq.setFchVtoPago(getFechaVto());
+				detReq.setFchVtoPago(LYEICommons.getFechaVtoString(inv));
 			// Código de  moneda  del comprobante. Consultar método FEParamGetTiposMonedas para valores posibles
-			detReq.setMonId(getMonId());
+			detReq.setMonId(LYEICommons.getMonId(currency));
 			// Cotizacion de  la  moneda  informada.  Para PES, pesos argentinos  la misma debe ser 1
-			detReq.setMonCotiz(getMonCotiz());
+			detReq.setMonCotiz(LYEICommons.getMonCotiz(inv, ctx));
 			// Impuestos.  No deben ser enviados para comprobantes de tipo C
 			AlicIva[] iva = getIva();
 			double impIva = getImpIVA(iva);
@@ -203,15 +236,15 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 				detReq.setImpTrib(getImpTrib(tributos));
 			}
 			// Importe  neto    gravado.  Debe  ser  menor  o igual a Importe total y no puede ser menor a cero.
-			detReq.setImpNeto(getImpNeto(impIva)); 
+			detReq.setImpNeto(LYEICommons.getImpNeto(impIva, docType, inv)); 
 			// Importe total  del comprobante, Debe ser igual  a  Importe  neto  no  gravado  +  Importe 
 			// exento + Importe neto gravado + todos los campos  de  IVA    al  XX%  +  Importe  de	tributos
-			detReq.setImpTotal(getImpTotal());
+			detReq.setImpTotal(LYEICommons.getImpTotal(inv));
 			// Importe neto no gravado. Debe ser menor o igual a Importe total y no puede ser menor a cero. 
 			// No  puede  ser  mayor  al  Importe  total  de  la operación ni menor a cero (0)
-			detReq.setImpTotConc(getImpTotConc());
+			detReq.setImpTotConc(LYEICommons.getImpTotConc());
 			// Importe  exento.  Debe  ser  menor  o  igual  a Importe total y no puede ser menor a cero
-			detReq.setImpOpEx(getImpOpEx());
+			detReq.setImpOpEx(LYEICommons.getImpOpEx());
 			
 			// Opcionales
 			Opcional[] opcionales = getOpcionales();
@@ -233,7 +266,7 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 	
 			// No obtuvimos respuesta alguna?
 			if (resp==null) {
-				throw new Exception ("No se ha obtenido unar respuesta por parte del WS de AFIP.");
+				throw new Exception ("No se ha obtenido una respuesta por parte del WS de AFIP.");
 			}
 			requestXML = ((ServiceSoapStub)wsfe).getCallRequestXML();
 			responseXML = ((ServiceSoapStub)wsfe).getCallResponseXML();
@@ -281,7 +314,7 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 	/** Retorna el siguiente valor al ultimo comprobante registrado */
 	protected long getSigCbteNro(ServiceSoap wsfe, FEAuthRequest auth) throws Exception {
 		MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.INFO, inv.getC_Invoice_ID(), posConfig.getC_LYEIElectronicPOSConfig_ID(), genConfig.getC_LYEIElectronicInvoiceConfig_ID(), "Invocando a RECompUltimoAutorizado");
-		FERecuperaLastCbteResponse ult = wsfe.FECompUltimoAutorizado(auth, inv.getPuntoDeVenta(), getCbteTipo());
+		FERecuperaLastCbteResponse ult = wsfe.FECompUltimoAutorizado(auth, inv.getPuntoDeVenta(), LYEICommons.getCbteTipo(docType));
 		MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.INFO, inv.getC_Invoice_ID(), posConfig.getC_LYEIElectronicPOSConfig_ID(), genConfig.getC_LYEIElectronicInvoiceConfig_ID(), "RECompUltimoAutorizado obtenido " + ult.getCbteNro());
 		return ult.getCbteNro() + 1L;
 	}
@@ -289,24 +322,6 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 	/** Retorna el numero de comprobante */
 	protected long getCbteNro() {
 		return inv.getNumeroComprobante();
-	}
-	
-	/** Codigo preestablecido de AFIP segun el tipo de documento. */
-	protected int getCbteTipo() throws Exception {
-		int tipo = -1;
-		try {
-			tipo = Integer.parseInt(docType.getdocsubtypecae());
-		} catch (Exception e) {
-			throw new Exception ("Error al obtener el cbteTipo.  DocSubTypeCAE no especificado o incorrecto.");
-		}
-		return tipo;
-	}
-
-	/** Tipo de documento segun el cliente es CF o no */
-	protected int getDocTipo() {
-		return partner.isConsumidorFinal() ? 
-					LYEIConstants.WSFE_BPARTNER_ES_CONSUMIDOR_FINAL : 
-					LYEIConstants.WSFE_BPARTNER_NO_ES_CONSUMIDOR_FINAL;
 	}
 	
 	/** Retorna true si el tipo de documento es Factura MiPyme (A/B/C) o false en caso contrario */
@@ -325,90 +340,7 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 				X_C_DocType.DOCSUBTYPECAE_NotasDeDebitoMiPyMEB.equals(docType.getdocsubtypecae()) ||
 				X_C_DocType.DOCSUBTYPECAE_NotasDeDebitoMiPyMEC.equals(docType.getdocsubtypecae()));
 	}
-	
-	/** Concepto de la FE segun existan productos y/o servicios en la misma */
-	protected int getConcepto() {
-		// TODO: VERIFICAR CORRECTITUD DE USO DE PRODUCTOS
-		return LYEIConstants.WSFE_CONCEPTO_PRODUCTOS;
-	}
-	
-	/** CUIT del cliente */
-	protected long getDocNro() {
-		if (partner.isConsumidorFinal()) 
-			return 1L;
-		return Long.parseLong(inv.getCUIT().replace("-", "").replace(" ", ""));
-	}
-	
-	/** Fecha de la factura */
-	protected String getCbteFch() {
-        DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
-        Date date = new Date(inv.getDateAcct().getTime());
-        return dateFormat.format(date);
-	}
-	
-	/** Fecha de vencimiento de la factura */
-	protected String getFechaVto() throws Exception {
-        DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
-        Date date = null;
-        // El campo FchVtoPago debe ser posterior o igual a la fecha de emision (CbteFch) o fecha de presentacion (fecha actual), la que sea posterior.
-        if (inv.isVoidProcess()) { 
-        	date = inv.getFechaVto();
-        	Date currDate = new Date();
-        	if (date == null || currDate.compareTo(date) > 0) { 
-        		date = currDate;
-        	}
-        // Si no es una anulacion...
-        } else {  
-        	date = new Date(inv.getFechaVto().getTime());
-        } 
-        return dateFormat.format(date);
-	}
-	
-	/** Moneda de la factura */
-	protected String getMonId() throws Exception {
-		if (currency.getWSFECode()==null || currency.getWSFECode().length()==0)
-			throw new Exception("No se ha configurado el codigo de la moneda");
-		return currency.getWSFECode();
-	}
-	
-	/** Cotizacion de la moneda */
-	protected double getMonCotiz() {
-		BigDecimal cotizacion = 
-				MCurrency.currencyConvert(	Env.ONE,
-											inv.getC_Currency_ID(), 
-											Env.getContextAsInt(ctx, "$C_Currency_ID"), 
-											inv.getDateAcct(), 
-											0,
-											ctx);
-		return cotizacion.doubleValue();
-	}
-	
-	/** Total de la factura */
-	protected double getImpTotal() {
-		return inv.getGrandTotal().setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
-	}
-	
-	/** Neto de la factura */
-	protected double getImpNeto(double impIva) {
-		// Para facturas C no se discrimina IVA. Se considera neto+iva-tributos como neto
-		if (X_C_DocType.DOCSUBTYPECAE_FacturasC.equals(docType.getdocsubtypecae())) {
-			return inv.getNetAmount().add(new BigDecimal(impIva)).setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
-		}
-		return inv.getNetAmount().setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
-	}
-	
-	/** Importe exento */ 
-	protected double getImpOpEx() {
-		// TODO: VER QUE VALOR PASAR!
-		return 0.0;
-	}
-	
-	/** Importe neto no gravado */
-	protected double getImpTotConc() {
-		// TODO: VER QUE VALOR PASAR!
-		return 0.0;
-	}
-	
+		
 	/** Impuestos */
 	protected AlicIva[] getIva() {
 		ArrayList<AlicIva> alicsIva = new ArrayList<AlicIva>();
@@ -421,7 +353,7 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			// Crear nueva entradda
 			AlicIva alicIva = new AlicIva();
 			alicIva.setId(tax.getWSFECode());
-			alicIva.setBaseImp(getTaxBaseAmt(invoiceTax.getTaxBaseAmt(), inv.getGrandTotal(), inv.getTaxesAmt()).doubleValue());
+			alicIva.setBaseImp(LYEICommons.getTaxBaseAmt(invoiceTax.getTaxBaseAmt(), inv.getGrandTotal(), inv.getTaxesAmt()).doubleValue());
 			alicIva.setImporte(invoiceTax.getTaxAmt().setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue());
 			alicsIva.add(alicIva);
 		}
@@ -440,7 +372,7 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			// Crear nueva entrada
 			Tributo tributo = new Tributo();
 			tributo.setId((short)tax.getWSFECode());
-			tributo.setBaseImp(getTaxBaseAmt(invoiceTax.getTaxBaseAmt(), inv.getGrandTotal(), inv.getTaxesAmt()).doubleValue());
+			tributo.setBaseImp(LYEICommons.getTaxBaseAmt(invoiceTax.getTaxBaseAmt(), inv.getGrandTotal(), inv.getTaxesAmt()).doubleValue());
 			tributo.setImporte(invoiceTax.getTaxAmt().setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue());
 			tributo.setAlic(invoiceTax.getRate().setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue());
 			tributo.setDesc(tax.getName());
@@ -480,13 +412,6 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 		return inv.getInvoice_Adress();
 	}
 	
-	/** Obtine el taxBaseAmt (segun WsfeV1) */
-	protected BigDecimal getTaxBaseAmt(BigDecimal taxBaseAmt, BigDecimal grandTotal,	BigDecimal taxesAmt) {
-		if ((Math.abs((grandTotal.subtract(taxesAmt).subtract(taxBaseAmt)).doubleValue()) >= 0.01) && (Math.abs((grandTotal.subtract(taxesAmt).subtract(taxBaseAmt)).doubleValue()) <= 0.03)){
-			return (grandTotal.subtract(taxesAmt));
-		}
-		return taxBaseAmt;
-	}
 
 	/** Nomina de opcionales a enviar, si es que corresponde */ 
 	protected Opcional[] getOpcionales() throws Exception {

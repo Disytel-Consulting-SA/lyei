@@ -22,6 +22,9 @@ public class LYEIConstants {
 	
 	/** Prefijo servicio externo WSFEXV1 */
 	public static final String EXTERNAL_SERVICE_WSFEXV1_PREFIX = "WSFEXV1";
+	
+	/** Prefijo servicio externo MTXCA */
+	public static final String EXTERNAL_SERVICE_MTXCA_PREFIX = "MTXCA";
 
 	/** Sufijo de Homologacion */
 	public static final String EXTERNAL_SERVICE_HOMOLOGACION_SUFFIX = "HOMO";

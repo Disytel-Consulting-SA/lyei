@@ -76,9 +76,9 @@ public class LYEIWSFEX extends LYEIWSFE implements ElectronicInvoiceInterface {
 			// Identificador del requerimiento. TODO: La política de uso de un identificador podría definirse según configuración (usar c_invoice_id? currentTimeMillis? Una secuencia ad_hoc?, etc)
 			cmp.setId(System.currentTimeMillis());  
 			// Tipo de comprobante
-			cmp.setCbte_Tipo((short)getCbteTipo()); // 19 20 o 21
+			cmp.setCbte_Tipo((short)LYEICommons.getCbteTipo(docType)); // 19 20 o 21
 			// Fecha Comprobante
-			cmp.setFecha_cbte(getCbteFch());
+			cmp.setFecha_cbte(LYEICommons.getCbteFchString(inv));
 			// Punto de venta
 			cmp.setPunto_vta(getPtoVta());
 			// Numero de comprobante que se solicta
@@ -96,11 +96,11 @@ public class LYEIWSFEX extends LYEIWSFE implements ElectronicInvoiceInterface {
 			// Clave de identificacion tributaria del comprador
 			cmp.setId_impositivo(getIdImpositivo()); 
 			// Codigo de moneda
-			cmp.setMoneda_Id(getMonId());
+			cmp.setMoneda_Id(LYEICommons.getMonId(currency));
 			// Cotizacion de moneda
-			cmp.setMoneda_ctz(new BigDecimal(getMonCotiz()));
+			cmp.setMoneda_ctz(new BigDecimal(LYEICommons.getMonCotiz(inv, ctx)));
 			// Importe total
-			cmp.setImp_total(new BigDecimal(getImpTotal()));
+			cmp.setImp_total(new BigDecimal(LYEICommons.getImpTotal(inv)));
 			// Idioma comprobante. 1=español. 2=ingles. 3=portugues
 			cmp.setIdioma_cbte(getIdiomaCbte());
 			
@@ -159,7 +159,7 @@ public class LYEIWSFEX extends LYEIWSFE implements ElectronicInvoiceInterface {
 	/** Retorna el siguiente valor al ultimo comprobante registrado */	
 	protected long getSigCbteNro(ServiceSoap wsfex, String token, String sign) throws Exception {
 		MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.INFO, inv.getC_Invoice_ID(), posConfig.getC_LYEIElectronicPOSConfig_ID(), genConfig.getC_LYEIElectronicInvoiceConfig_ID(), "Invocando a ClsFEX_LastCMP");
-		ClsFEX_LastCMP auth = new ClsFEX_LastCMP(token, sign, Long.parseLong(genConfig.getCUIT()), getPtoVta(), (short)getCbteTipo());		
+		ClsFEX_LastCMP auth = new ClsFEX_LastCMP(token, sign, Long.parseLong(genConfig.getCUIT()), getPtoVta(), (short)LYEICommons.getCbteTipo(docType));		
 		FEXResponseLast_CMP resp = wsfex.FEXGetLast_CMP(auth);
 		MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.INFO, inv.getC_Invoice_ID(), posConfig.getC_LYEIElectronicPOSConfig_ID(), genConfig.getC_LYEIElectronicInvoiceConfig_ID(), "ClsFEX_LastCMP obtenido " + resp.getFEXResult_LastCMP().getCbte_nro());
 		return resp.getFEXResult_LastCMP().getCbte_nro() + 1;
