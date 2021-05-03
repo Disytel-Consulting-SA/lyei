@@ -103,7 +103,7 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 				result.append(status).append(". \n");
 				ok++;
 			} catch (Exception e) {
-				result.append(e.getMessage());
+				result.append(e.getMessage()).append(". \n");
 				ko++;				
 			}
 		}
@@ -120,10 +120,10 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 				" FROM C_Invoice i " +
 				" WHERE AD_Client_ID = " + clientID +
 				" AND lyeicaeainformed IN ('P', 'E') " +
-				(orgID > 0 ? "AND AD_Org_ID 	= " + orgID : "") +
-				(invID > 0 ? "AND C_Invoice_ID 	= " + invID : "") +
-				(pos   > 0 ? "AND puntodeventa 	= " + pos : "") +
-				(caea!=null? "AND cae 			= '" + caea : "'");			
+				(orgID > 0 ? " AND AD_Org_ID 		= " + orgID : "") +
+				(invID > 0 ? " AND C_Invoice_ID 	= " + invID : "") +
+				(pos   > 0 ? " AND puntodeventa 	= " + pos : "") +
+				(!Util.isEmpty(caea)? " AND cae 	= '" + caea + "'" : "");			
 	}
 	
 	/** Efectiviza la notificacion a AFIP 
@@ -522,7 +522,7 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 	// ------------------------ INVOCACION DESDE TERMINAL -------------------------
 
 	/** UID del proceso sincronizador */
-	public static final String CAEA_NOTIFY_DOCUMENT_PROCESS_UID	= 	""; // TODO: PENDING;  TODO: Crear el proceso
+	public static final String CAEA_NOTIFY_DOCUMENT_PROCESS_UID	= 	"LYEI-AD_Process-20210423095016716-372957";
 	
 	/** Parametro ayuda */
 	static final String PARAM_HELP			 			=	"-help";
@@ -583,12 +583,12 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 
 	  	// Invocacion
 	  	try {
-			// Recuperar ID del proceso de sincronización con tienda nube a partir del UID 
+			// Recuperar ID del proceso 
 			int processID = DB.getSQLValue(null, " SELECT AD_PROCESS_ID FROM AD_PROCESS WHERE AD_ComponentObjectUID = '" + CAEA_NOTIFY_DOCUMENT_PROCESS_UID + "' ");
 			if (processID<=0) {
-				showHelp("No se ha podido recuperar la informacion del proceso de notificacion");
+				showHelp("No se ha podido recuperar la informacion del proceso de notificacion de comprobante CAEA");
 			}
-			ProcessInfo pi = new ProcessInfo("CAEA Request", processID);
+			ProcessInfo pi = new ProcessInfo("CAEA Notify Document", processID);
 			
 			// Parametros: cia
 			addProcessParam(pi, "AD_Client_ID", clientID);
@@ -625,7 +625,7 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 	
 	/** Mesajes de ayuda al usuario */
 	protected static String getHelpMessage() {
-		return 	" Pedido de CAEA \n\n" +
+		return 	" Informar comprobante CAEA \n\n" +
 				" Argumentos: \n" +
 				"   " + PARAM_HELP 				+ " muestra esta ayuda \n" + 
 				"   " + PARAM_CLIENT 			+ " AD_Client_ID (obligatorio) \n" +

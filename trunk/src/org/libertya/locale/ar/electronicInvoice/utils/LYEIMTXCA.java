@@ -165,7 +165,7 @@ public class LYEIMTXCA {
 			}
 			
 			// Hubo errores?
-			String errors = stringFromArray(response.getArrayErrores()); 
+			String errors = LYEICommons.stringFromArray(response.getArrayErrores()); 
 			if (errors!=null) {
 				throw new Exception(errors);
 			}
@@ -197,7 +197,7 @@ public class LYEIMTXCA {
 			// Ambiente de ejecucion (homo o prod)
 			currentCAEA.setEnvironment(posConfig.getCurrentEnvironment());
 			// Posibles observaciones
-			String obs = stringFromArray(response.getCAEAResponse().getArrayObservaciones());
+			String obs = LYEICommons.stringFromArray(response.getCAEAResponse().getArrayObservaciones());
 			if (obs!=null) {
 				currentCAEA.setObservaciones(obs);
 			}
@@ -218,9 +218,8 @@ public class LYEIMTXCA {
 										" SELECT pc.* " +
 										" FROM C_LYEIElectronicPOSConfig pc " +
 										" INNER JOIN C_LYEIElectronicInvoiceConfig ic ON pc.C_LYEIElectronicInvoiceConfig_ID = ic.C_LYEIElectronicInvoiceConfig_ID " +
-										" WHERE AD_Client_ID = " + clientID +
+										" WHERE pc.AD_Client_ID = " + clientID +
 										" AND pc.AD_Org_ID = " + orgID +
-										" AND ic.ad_client_id = " + Env.getAD_Client_ID(Env.getCtx()) +
 										" AND pc.isactive = 'Y' " +
 										" AND pc.caemethod = 'A' " + // Debe ser de tipo CAEA
 										" AND pc." + (prodEnv?"production":"test") + "crtstatus = 'V' "  // Debe tener el certificado valido
@@ -248,20 +247,6 @@ public class LYEIMTXCA {
 		if (rs.next())
 			return new LP_C_LYEICAEARequest(Env.getCtx(), rs, null);
 		return null;
-	}
-	
-	/** Retorna el array como un String */
-	protected String stringFromArray(CodigoDescripcionType[] array) {
-		// Ninguna entrada?
-		if (array==null || array.length==0)
-			return null;
-		
-		// Concatenarlas todas
-		StringBuffer result = new StringBuffer(); 
-		for (CodigoDescripcionType elem : array) {
-			result.append(elem.getCodigo()).append(":").append(elem.getDescripcion()).append(". ");
-		}
-		return result.toString();
 	}
 	
 	/** Retorna el potencial CAEA Request previamente recuperado */

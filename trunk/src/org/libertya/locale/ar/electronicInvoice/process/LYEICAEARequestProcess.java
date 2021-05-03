@@ -58,7 +58,7 @@ public class LYEICAEARequestProcess extends SvrProcess {
 
 	
 	/** UID del proceso sincronizador */
-	public static final String CAEA_REQUEST_PROCESS_UID	= 	""; // TODO: PENDING;  TODO: Crear el proceso
+	public static final String CAEA_REQUEST_PROCESS_UID	= 	"LYEI-AD_Process-20210423093156401-074898";
 	
 	
 	/** Parametro ayuda */
@@ -116,7 +116,7 @@ public class LYEICAEARequestProcess extends SvrProcess {
 
 	  	// Invocacion
 	  	try {
-			// Recuperar ID del proceso de sincronización con tienda nube a partir del UID 
+			// Recuperar ID del proceso 
 			int processID = DB.getSQLValue(null, " SELECT AD_PROCESS_ID FROM AD_PROCESS WHERE AD_ComponentObjectUID = '" + CAEA_REQUEST_PROCESS_UID + "' ");
 			if (processID<=0) {
 				showHelp("No se ha podido recuperar la informacion del proceso de pedido de CAEA");
