@@ -149,7 +149,7 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 				return "";
 			} catch (Exception e) {
 				// No se pudo obtener CAE desde CAEA, elevar la excepción
-				MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.SEVERE, inv.getC_Invoice_ID(), posConfig.getC_LYEIElectronicPOSConfig_ID(), genConfig.getC_LYEIElectronicInvoiceConfig_ID(), "Error en obtencion CAEA: " + e.getMessage());
+				MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.SEVERE, inv.getC_Invoice_ID(), posConfig!=null?posConfig.getC_LYEIElectronicPOSConfig_ID():null, genConfig!=null?genConfig.getC_LYEIElectronicInvoiceConfig_ID():null, "Error en obtencion CAEA: " + e.getMessage());
 				electronicInvoiceCae = null;
 				electronicInvoiceVtoCae = null;
 				electronicInvoiceNroCbte = null;

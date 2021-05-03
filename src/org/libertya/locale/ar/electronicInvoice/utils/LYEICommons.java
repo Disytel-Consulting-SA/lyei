@@ -13,6 +13,8 @@ import org.openXpertya.model.MInvoice;
 import org.openXpertya.model.X_C_DocType;
 import org.openXpertya.util.Env;
 
+import ar.gov.afip.wsmtxca.service.impl.service.CodigoDescripcionType;
+
 public class LYEICommons {
 
 	/** Convierte una fecha a formato yyyyMMdd */
@@ -139,5 +141,18 @@ public class LYEICommons {
 		return 0.0;
 	}
 	
+	/** Retorna el array como un String */
+	public static String stringFromArray(CodigoDescripcionType[] array) {
+		// Ninguna entrada?
+		if (array==null || array.length==0)
+			return null;
+		
+		// Concatenarlas todas
+		StringBuffer result = new StringBuffer(); 
+		for (CodigoDescripcionType elem : array) {
+			result.append(elem.getCodigo()).append(":").append(elem.getDescripcion()).append(". ");
+		}
+		return result.toString();
+	}
 	
 }
