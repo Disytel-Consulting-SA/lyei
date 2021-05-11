@@ -11,6 +11,7 @@ import java.util.Properties;
 import java.util.logging.Level;
 
 import org.apache.axis.AxisProperties;
+import org.libertya.locale.ar.electronicInvoice.model.LP_AD_Sequence;
 import org.libertya.locale.ar.electronicInvoice.model.LP_C_Invoice;
 import org.libertya.locale.ar.electronicInvoice.model.LP_C_LYEIElectronicPOSConfig;
 import org.libertya.locale.ar.electronicInvoice.model.MLYEIElectronicInvoiceConfig;
@@ -27,8 +28,11 @@ import org.openXpertya.model.MInvoiceTax;
 import org.openXpertya.model.MLocation;
 import org.openXpertya.model.MOrgInfo;
 import org.openXpertya.model.MPreference;
+import org.openXpertya.model.MSequence;
 import org.openXpertya.model.MTax;
 import org.openXpertya.model.X_C_DocType;
+import org.openXpertya.util.CLogger;
+import org.openXpertya.util.Env;
 import org.openXpertya.util.Util;
 
 import FEV1.dif.afip.gov.ar.AlicIva;
@@ -142,8 +146,8 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 				electronicInvoiceVtoCae = mtxca.currentCAEA().getFechaHasta(); 
 				// Sin errores
 				electronicInvoiceCaeError = null;
-				// Numero de comprobante no lo modifica este modulo bajo CAEA 
-				electronicInvoiceNroCbte = ""+inv.getNumeroComprobante(); 
+				// Numero de comprobante... 
+				electronicInvoiceNroCbte = generateNroComprobanteCAEA(); 
 				// La factura debe marcarse como pendiente a informar
 				inv.set_Value("LYEICAEAInformed", LP_C_Invoice.LYEICAEAINFORMED_Pendiente);
 				return "";
@@ -519,6 +523,40 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 		}
 		
 		return retValue;
+	}
+	
+	/** Crea el nro comprobante para el nuevo tipo de documento */
+	protected String generateNroComprobanteCAEA() throws Exception {
+		LP_AD_Sequence seq = new LP_AD_Sequence(ctx, docType.getDocNoSequence_ID(), trx);
+		boolean prodEnv = LP_C_LYEIElectronicPOSConfig.CURRENTENVIRONMENT_Prod.equalsIgnoreCase(posConfig.getCurrentEnvironment()); 
+		BigDecimal next = null;	
+		
+		// Recuperar current seq CAEA (homo / prod)
+		if (prodEnv) {
+			next = seq.getLYEICurrentNextCAEAProd();
+		} else {
+			next = seq.getLYEICurrentNextCAEAHomo();
+		}
+
+		// Incrementar next. Si next es 0 o null, setearlo a 1
+		if (next==null || next.compareTo(BigDecimal.ONE)<0) {
+			next = BigDecimal.ONE;
+		} else {
+			next = next.add(BigDecimal.ONE);
+		}
+		
+		// Actualizar current seq CAEA (homo / prod)
+		if (prodEnv) {
+			seq.setLYEICurrentNextCAEAProd(next);
+		} else {
+			seq.setLYEICurrentNextCAEAHomo(next);
+		}
+		
+		// Persistir y retornar
+		if (!seq.save()) {
+			throw new Exception ("Error al gestionar secuencia CAEA: " + CLogger.retrieveErrorAsString());
+		}		
+		return next.toString();
 	}
 	
 	public String getCAE() {

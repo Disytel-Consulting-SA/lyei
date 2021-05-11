@@ -50,3 +50,7 @@ update ad_system set dummy = (SELECT addcolumnifnotexists('C_LYEIElectronicPOSCo
 --20210407-1154 CAEA: Nuevas columnas para indicar si el ambiente es homo o prod
 update ad_system set dummy = (SELECT addcolumnifnotexists('C_LYEICAEARequest','environment','character(1)'));
 update ad_system set dummy = (SELECT addcolumnifnotexists('C_LYEICAEANotUsed','environment','character(1)'));
+
+--20210510-0932 CAEA: Nueva columna para secuencias CAEA (Prod / Homo)
+update ad_system set dummy = (SELECT addcolumnifnotexists('AD_Sequence','lyeicurrentnextcaeaprod','numeric(18,0)'));
+update ad_system set dummy = (SELECT addcolumnifnotexists('AD_Sequence','lyeicurrentnextcaeahomo','numeric(18,0)'));
