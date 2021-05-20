@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.logging.Level;
 
 import org.libertya.locale.ar.electronicInvoice.model.LP_C_Invoice;
+import org.libertya.locale.ar.electronicInvoice.model.LP_M_Product;
 import org.libertya.locale.ar.electronicInvoice.model.MLYEIElectronicInvoiceConfig;
 import org.libertya.locale.ar.electronicInvoice.model.MLYEIElectronicInvoiceLog;
 import org.libertya.locale.ar.electronicInvoice.model.MLYEIElectronicPOSConfig;
@@ -24,10 +25,12 @@ import org.openXpertya.model.MDocType;
 import org.openXpertya.model.MInvoice;
 import org.openXpertya.model.MInvoiceLine;
 import org.openXpertya.model.MInvoiceTax;
+import org.openXpertya.model.MPreference;
 import org.openXpertya.model.MProcess;
 import org.openXpertya.model.MProduct;
 import org.openXpertya.model.MTax;
 import org.openXpertya.model.MUOM;
+import org.openXpertya.model.X_C_DocType;
 import org.openXpertya.process.ProcessInfo;
 import org.openXpertya.process.ProcessInfoParameter;
 import org.openXpertya.process.ProcessInfoUtil;
@@ -71,6 +74,9 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 	/** Detalle de la ejecucion */
 	protected StringBuffer result = new StringBuffer();
 	
+	/** Preferencia con el codigo predeterminado para el campo CodigoMtx */
+	public static final String LYEI_CODIGO_MTX_PREDETERMINADO_PREFERENCE = "LYEI_CODIGO_MTX_PREDETERMINADO";
+	
 	@Override
 	protected void prepare() {
 		ProcessInfoParameter[] para = getParameter();
@@ -100,17 +106,17 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 			result.append(" Informando ").append(anInvoice.getDocumentNo()).append("... ");
 			try {
 				String status = notifyInvoice(anInvoice);	
-				result.append(status).append(". \n");
+				result.append(status).append(". \n<br>");
 				ok++;
 			} catch (Exception e) {
-				result.append(e.getMessage()).append(". \n");
+				result.append(e.getMessage()).append(". \n<br>");
 				ko++;				
 			}
 		}
-		return  " Finalizado. \n " +
-				" \n" +
+		return  " Finalizado. \n<br> " +
+				" \n<br>" +
 				result.toString() +
-				" \n " +
+				" \n<br> " +
 				" Total informadas OK:" + ok + ", total KO:" + ko;
 	}
 
@@ -119,11 +125,12 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 		return 	" SELECT * " +
 				" FROM C_Invoice i " +
 				" WHERE AD_Client_ID = " + clientID +
-				" AND lyeicaeainformed IN ('P', 'E') " +
+				" AND lyeicaeainformed IN ('" + LP_C_Invoice.LYEICAEAINFORMED_Pendiente + "', '" + LP_C_Invoice.LYEICAEAINFORMED_Rechazado + "') " +
 				(orgID > 0 ? " AND AD_Org_ID 		= " + orgID : "") +
 				(invID > 0 ? " AND C_Invoice_ID 	= " + invID : "") +
 				(pos   > 0 ? " AND puntodeventa 	= " + pos : "") +
-				(!Util.isEmpty(caea)? " AND cae 	= '" + caea + "'" : "");			
+				(!Util.isEmpty(caea)? " AND cae 	= '" + caea + "'" : "") +
+				" ORDER BY documentno ASC ";
 	}
 	
 	/** Efectiviza la notificacion a AFIP 
@@ -150,7 +157,7 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 	
 			// Pedir WSAA segun la factura
 			// token & sign
-			HashMap<String, String> tokenAndSign = LYEIWSAA.getTokenAndSign(posConfig, Env.getCtx(), posConfig.getCurrentEnvironment());
+			HashMap<String, String> tokenAndSign = LYEIWSAA.getTokenAndSign(posConfig, posConfig.getCtx(), posConfig.getCurrentEnvironment());
 			String token = tokenAndSign.get(LYEIWSAA.TA_TOKEN);
 			String sign = tokenAndSign.get(LYEIWSAA.TA_SIGN);
 			
@@ -181,18 +188,15 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 			/* Código de autorización (Código de Autorización Electrónico o Código de Autorización Electrónico Anticipado, según lo indique el campo codigoTipoAutorizacion) */
 			comp.setCodigoAutorizacion(Long.parseLong(inv.getcae()));
 			
-			/* Fecha de vencimiento del código de autorización */
-			comp.setFechaVencimiento(LYEICommons.getFechaVtoDate(inv));
+			/* Fecha de vencimiento del código de autorización (Opcional) Si se informa, debe coincidir con la Fecha Hasta del CAEA */	
+			// comp.setFechaVencimiento(LYEICommons.getFechaVtoDate(inv));
 			
 			/* Código de documento del receptor del comprobante. Los posibles valores pueden ser consultados en el método consultarTiposDocumento */
 			comp.setCodigoTipoDocumento((short)LYEICommons.getDocTipo(partner));
 			
 			/* Número de documento del receptor del comprobante */
 			comp.setNumeroDocumento(LYEICommons.getDocNro(partner, inv));
-			
-			/* Importe total del comprobante */
-			comp.setImporteTotal(new BigDecimal(LYEICommons.getImpTotal(inv)));
-			
+						
 			/* Código de la moneda en que se emite el comprobante. */
 			comp.setCodigoMoneda(LYEICommons.getMonId(currency));
 			
@@ -203,32 +207,38 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 			comp.setCodigoConcepto((short)LYEICommons.getConcepto());
 			
 			/* Array. Detalle de los ítems que componen el comprobante. */
-			comp.setArrayItems(getArrayItems(inv));
+			comp.setArrayItems(getArrayItems(inv, docType));
 			
 			/* Array. Detalle de las Alícuotas de IVA e importes de IVA liquidados en el comprobante */
 			SubtotalIVAType[] iva = getArraySubtotalesIVA(inv);
-			double impIva = getImpIVA(iva);
-			comp.setArraySubtotalesIVA(iva);
-			
+			BigDecimal impIva = getImpIVA(iva);
+			if (iva!=null && iva.length>0) {
+				comp.setArraySubtotalesIVA(iva);	
+			}
+						
 			/* Array. Detalle de los tributos alistados en el comprobante. */
 			OtroTributoType[] otrosTrib = getArrayOtrosTributos(inv);
-			double impOtrosTrib = getImpOtrosTrib(otrosTrib);		
-			comp.setArrayOtrosTributos(otrosTrib);
-					
+			if (otrosTrib!=null && otrosTrib.length>0) {
+				comp.setArrayOtrosTributos(otrosTrib);
+				BigDecimal impOtrosTrib = getImpOtrosTrib(otrosTrib);				
+				/* Importe total de Otros Tributos */
+				comp.setImporteOtrosTributos(impOtrosTrib);	
+			}
+
 			/* Importe neto total de conceptos gravados */
-			comp.setImporteGravado(new BigDecimal(LYEICommons.getImpNeto(impIva, docType, inv)));
+			comp.setImporteGravado(LYEICommons.getImpNetoBigDecimal(impIva, docType, inv));
 			
 			/* Importe total de conceptos no gravados. */
-			comp.setImporteNoGravado(new BigDecimal(LYEICommons.getImpTotConc()));
+			comp.setImporteNoGravado(LYEICommons.getImpTotConcBigDecimal());
 			
 			/* Importe total de conceptos exentos */
-			comp.setImporteExento(new BigDecimal(LYEICommons.getImpOpEx()));
+			comp.setImporteExento(LYEICommons.getImpOpExBigDecimal());
 			
 			/* Importe subtotal del comprobante */
 			comp.setImporteSubtotal(getImporteSubtotal(impIva, docType, inv));
 			
-			/* Importe total de Otros Tributos */
-			comp.setImporteOtrosTributos(new BigDecimal(impOtrosTrib));
+			/* Importe total del comprobante */
+			comp.setImporteTotal(LYEICommons.getImpTotalBigDecimal(inv));			
 			
 			/* Array. Detalle de los datos adicionales incluidos en el comprobante con sus respectivos valores */
 			//comp.setArrayDatosAdicionales(getArrayDatosAdicionales());  No es obligatorio
@@ -363,33 +373,33 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 	
 	
 	/** Total impuestos */
-	protected double getImpIVA(SubtotalIVAType[] alicsIva) {
+	protected BigDecimal getImpIVA(SubtotalIVAType[] alicsIva) {
 		BigDecimal total = BigDecimal.ZERO;
 		for (SubtotalIVAType alicIva : alicsIva)
 			total = total.add(alicIva.getImporte());
-		return total.setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
+		return total.setScale(2, BigDecimal.ROUND_HALF_UP);
 	}
 	
 	/** Total otros tributos */
-	protected double getImpOtrosTrib(OtroTributoType[] alicsOT) {
+	protected BigDecimal getImpOtrosTrib(OtroTributoType[] alicsOT) {
 		BigDecimal total = BigDecimal.ZERO;
 		for (OtroTributoType otroTrib : alicsOT)
 			total = total.add(otroTrib.getImporte());
-		return total.setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
+		return total.setScale(2, BigDecimal.ROUND_HALF_UP);
 	}
 
 	/** Importe gravado + no gravado + exento */
-	protected BigDecimal getImporteSubtotal(double impIva, MDocType docType, MInvoice inv) {
-		return new BigDecimal (LYEICommons.getImpNeto(impIva, docType, inv) + LYEICommons.getImpTotConc() + LYEICommons.getImpOpEx());
+	protected BigDecimal getImporteSubtotal(BigDecimal impIva, MDocType docType, MInvoice inv) {
+		return LYEICommons.getImpNetoBigDecimal(impIva, docType, inv).add(LYEICommons.getImpTotConcBigDecimal()).add(LYEICommons.getImpOpExBigDecimal());
 	}
 	
 	/** Items de la factura */
-	protected ItemType[] getArrayItems(LP_C_Invoice inv) {
+	protected ItemType[] getArrayItems(LP_C_Invoice inv, MDocType docType) throws Exception {
 		
 		ArrayList<ItemType> items = new ArrayList<ItemType>();
 		
 		for (MInvoiceLine line : inv.getLines()) {
-			MProduct aProduct = new MProduct(inv.getCtx(), line.getM_Product_ID(), inv.get_TrxName());
+			LP_M_Product aProduct = new LP_M_Product(inv.getCtx(), line.getM_Product_ID(), inv.get_TrxName());
 			MTax aTax = new MTax(inv.getCtx(), line.getC_Tax_ID(), inv.get_TrxName());
 			MUOM aUOM = new MUOM(inv.getCtx(), line.getC_UOM_ID(), inv.get_TrxName());
 			
@@ -399,8 +409,10 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 			/* Cantidad */
 			item.setCantidad(line.getQtyInvoiced());
 			
-			/* Código interno asignado por la empresa (Importante: NO es necesario completar con espacios) */
-			item.setCodigo(aProduct.getValue());
+			/* Código interno asignado por la empresa (Importante: NO es necesario completar con espacios) (Opcional) */
+			if (aProduct.getM_Product_ID()>0) {
+				item.setCodigo(aProduct.getValue());
+			}
 			
 			/* Codigo de IVA. Para obtener los posibles valores consultar método consultarCondicionesIVA 
 			   1: No gravado, 2: Exento, 3: 0%, 4: 10,5%, 5: 21%, 6: 27% */
@@ -411,16 +423,25 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 			item.setCodigoUnidadMedida(Short.parseShort(aUOM.getUOMCodeFE()));
 			
 			/* Descripción del Producto (Importante: NO es necesario completar con espacios) */
-			item.setDescripcion(aProduct.getDescription());
+			item.setDescripcion(getItemDescription(line, aProduct));
 			
 			/* Importe Descuento o Bonificación*/
 			// item.setImporteBonificacion(BigDecimal.ZERO);	// No es obligatorio
 			
-			/* Importe total del ítem */
-			item.setImporteItem(line.getLineNetAmt().add(line.getTaxAmt()));
-			
-			/* Importe IVA según codigoCondicionIVA indicado */
-			item.setImporteIVA(line.getTaxAmt());
+			/* Importe total del ítem e Importe IVA. El Importe IVA del ítem no debe informarse para Tipos de Comprobante B (6, 7 u 8) */
+			if (!X_C_DocType.DOCSUBTYPECAE_FacturasB.equals(docType.getdocsubtypecae())
+					&& !X_C_DocType.DOCSUBTYPECAE_NotasDeCreditoB.equals(docType.getdocsubtypecae())
+					&& !X_C_DocType.DOCSUBTYPECAE_NotasDeDebitoB.equals(docType.getdocsubtypecae())) {
+				
+				/* Importe IVA según codigoCondicionIVA indicado. */
+				item.setImporteIVA(line.getTaxAmt());
+				
+				/* Importe total del ítem */
+				item.setImporteItem(line.getLineNetAmt().setScale(2, BigDecimal.ROUND_HALF_UP));
+			} else {
+				/* Importe total del ítem */
+				item.setImporteItem((line.getLineNetAmt().add(line.getTaxAmt())).setScale(2, BigDecimal.ROUND_HALF_UP));
+			}
 			
 			/* Precio Unitario. Para comprobantes clase A no debe incluir el IVA, en cambio para los clase B si debe incluir IVA. */
 			if ("B".equals(inv.getLetra())) {
@@ -432,17 +453,39 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 			/* Unidad de Referencia del código Producto/Servicio. Cuando la comercialización de los productos se realice en presentaciones distintas a la unidad de consumo
 			 *	minorista o presentación al consumidor final, a la que hace referencia la codificación del producto, se deberán indicar las cantidades de unidades de consumo 
 			 *	minoristas contenidas en la presentación que se comercializa. En caso que el producto ya se encuentre individualizado en su unidad de consumo minorista, 
-			 *	la unidad de referencia deberá ser igual a UNO (1) */
-			// item.setUnidadesMtx(unidadesMtx);		No es obligatorio
+			 *	la unidad de referencia deberá ser igual a UNO (1) 
+			 *  Es opcional si <codigoUnidadMedida> es 99 (bonificacion) ó 97 (seña), para el resto de los casos es obligatorio. */
+			item.setUnidadesMtx(aProduct.getM_Product_ID()>0 && aProduct.getLYEIUnidadesMtx()>0 ? aProduct.getLYEIUnidadesMtx() : 1);	
 			
 			/* Código de Producto/Servicio.  Deberán corresponder a la estructura provista por la ASOCIACION ARGENTINA DE CODIFICACION DE PRODUCTOS COMERCIALES — CODIGO—, 
-			 * códigos GTIN 13, GTIN 12 y GTIN 8, correspondientes a la unidad de consumo minorista o presentación al consumidor final */
-			// item.setCodigoMtx(codigoMtx);				No es obligatorio
+			 * códigos GTIN 13, GTIN 12 y GTIN 8, correspondientes a la unidad de consumo minorista o presentación al consumidor final
+			 * Es opcional si <codigoUnidadMedida> es 99 ó 97, para el resto de los casos es obligatorio. */
+			// SEGUN: http://www.afip.gov.ar/genericos/guiavirtual/consultas_detalle.aspx?id=14553833. 
+			// Por ejemplo: 7790001001054 = Ventas varias.
+			String defaultCodigoMxt = null;
+			if (!Util.isEmpty(MPreference.GetCustomPreferenceValue(LYEI_CODIGO_MTX_PREDETERMINADO_PREFERENCE))) {
+				defaultCodigoMxt = MPreference.GetCustomPreferenceValue(LYEI_CODIGO_MTX_PREDETERMINADO_PREFERENCE);
+			}
+			String codigoMtx = (aProduct.getM_Product_ID()>0 && !Util.isEmpty(aProduct.getLYEICodigoMtx()) ? aProduct.getLYEICodigoMtx() : defaultCodigoMxt);
+			if (Util.isEmpty(codigoMtx)) {
+				throw new Exception("Es obligatorio informar CodigoMtx. Especificarlo en el campo 'Codigo unidad minorista' del articulo o de manera general como valor predeterminado: LYEI_CODIGO_MTX_PREDETERMINADO");
+			}
+			item.setCodigoMtx(codigoMtx);
 			
 			// Incorporar item a la nomina de items
 			items.add(item);
 		}
 		return items.toArray(new ItemType[items.size()]);
+	}
+	
+	/** Retorna la descripcion de la linea */
+	protected String getItemDescription(MInvoiceLine line, MProduct aProduct) {
+		StringBuffer result = new StringBuffer();
+		result.append(line.getLine())
+			.append(". ")
+			.append(Util.isEmpty(aProduct.getDescription()) ? "" : aProduct.getDescription())
+			.append(Util.isEmpty(line.getDescription()) ? "" : line.getDescription());
+		return result.toString();
 	}
 	
 	/** Comprobante asociado al documento */

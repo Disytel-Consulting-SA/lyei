@@ -57,3 +57,6 @@ update ad_system set dummy = (SELECT addcolumnifnotexists('AD_Sequence','lyeicur
 
 --20210517-0838 CAEA: Nueva columna para unidad de referencia minorista (dato a enviar: UnidadesMtx)
 update ad_system set dummy = (SELECT addcolumnifnotexists('M_Product','lyeiunidadesmtx','int'));
+
+--20210517-0925 CAEA: Nueva columna para codigo de unidad de consumo minorista (dato a enviar: CodigoMtx)
+update ad_system set dummy = (SELECT addcolumnifnotexists('M_Product','lyeicodigomtx','varchar'));

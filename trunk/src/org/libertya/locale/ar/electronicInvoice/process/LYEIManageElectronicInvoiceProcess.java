@@ -168,7 +168,7 @@ public class LYEIManageElectronicInvoiceProcess extends WSFEConsultarComprobante
 	protected boolean dataMatches(X_C_Invoice anInvoice) {
 		// Codigo de AFIP para Moneda de la factura
 		// (en instancias viejas pueden no tenerlo configurado, en ese caso se omite la validacion por este dato)
-		X_C_Currency aCurrency = new X_C_Currency(Env.getCtx(), anInvoice.getC_Currency_ID(), null);
+		X_C_Currency aCurrency = new X_C_Currency(anInvoice.getCtx(), anInvoice.getC_Currency_ID(), null);
 		
 		// Informacion recibida desde AFIP
 		// IMPORTANTE: Si bien se podría consultar por mas criterios bajo WSFE, para los casos donde  

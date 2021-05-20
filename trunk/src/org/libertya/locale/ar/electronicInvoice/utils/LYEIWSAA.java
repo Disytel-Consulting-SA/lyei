@@ -204,8 +204,20 @@ public class LYEIWSAA {
 				"<loginTicketRequest version=\"1.0\">"+
 				"<header><uniqueId>"+Math.abs((int)System.currentTimeMillis())+"</uniqueId><generationTime>"+getGenTime("yyyy-MM-dd'T'HH:mm:ss.SSS", now)+"</generationTime><expirationTime>"+getExpireTime("yyyy-MM-dd'T'HH:mm:ss.SSS", now)+"</expirationTime>"+
 				"</header>"+
-				"<service>" + LYEIConstants.serviceMapper.get(aConfig.getPOSService()) + "</service>"+		
+				"<service>" + getServiceName(aConfig) + "</service>"+		
 				"</loginTicketRequest>";
+	}
+	
+	/**
+	 * Retorna el nombre del servicio contra el cual recuperar el TA
+	 * @return
+	 */
+	protected static String getServiceName(LP_C_LYEIElectronicPOSConfig aConfig) {
+		// Si es CAEA se toma directo de ahi
+		if (LP_C_LYEIElectronicPOSConfig.CAEMETHOD_CAEA.equals(aConfig.getCAEMethod()))
+			return LYEIConstants.serviceMapper.get(aConfig.getCAEMethod());
+		// Si es CAE dependera de nacional o exportacion
+		return LYEIConstants.serviceMapper.get(aConfig.getPOSService());
 	}
 	
 	/**

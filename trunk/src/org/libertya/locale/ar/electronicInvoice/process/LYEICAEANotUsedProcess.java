@@ -42,8 +42,11 @@ public class LYEICAEANotUsedProcess extends SvrProcess {
 	protected int orgID = -1;
 	/** CAEA a notificar */
 	protected String caea = null;
+	/** Request asociado al caea */
+	protected LP_C_LYEICAEARequest targetRequest = null;
 	/** Ambiente de produccion? */
 	protected boolean prodEnv;
+
 	
 	/** Detalle de la ejecucion */
 	protected StringBuffer result = new StringBuffer();
@@ -67,41 +70,46 @@ public class LYEICAEANotUsedProcess extends SvrProcess {
 
 	@Override
 	protected String doIt() throws Exception {
+		
+		// Cargar el request asociado al caea especificado (si es que se especifo uno)
+		loadTargetRequestCAEA();
+		
+		// Recorrer puntos de venta
 		PreparedStatement pstmt = DB.prepareStatement(getPtosVtasQuery(), null);
 		ResultSet rs = pstmt.executeQuery();
-		result.append("CAEA no utilizado a informar: ").append(getTargetCAEA()).append(". \n");
+		result.append("CAEA no utilizado a informar: ").append(caea).append(". \n<br>");
 		while (rs.next()) {
 			// ID Configuracion Pto Vta electronico
-			int posConfigID = rs.getInt("C_LYEIElectronicPOSConfig");
+			int posConfigID = rs.getInt("C_LYEIElectronicPOSConfig_ID");
 			// Punto de venta
 			int pos = rs.getInt("pos");
 			// Cantidad emitidos
 			int cant = rs.getInt("cantidad");
-			
-			
+						
 			// Si se emitieron comprobantes para el punto de venta en cuestion, saltear
 			if (cant > 0) {
-				result.append(" Ptovta ").append(pos).append(" con comprobantes, omitiendo. \n");
+				result.append(" Ptovta ").append(pos).append(" con comprobantes, omitiendo. \n<br>");
 				continue;
 			}
 			
 			// verificar si ya existe la entrada en c_lyeicaeanotused 
 			if (alreadyNotifiedNotUsed(posConfigID)) {
-				result.append(" Ptovta ").append(pos).append(" no utilizado ya informado, omitiendo. \n");
+				result.append(" Ptovta ").append(pos).append(" no utilizado ya informado, omitiendo. \n<br>");
+				continue;
 			}
 			
 			// Notificar CAEA no utilizado
 			try {
 				result.append(" Ptovta ").append(pos).append(" sin comprobantes, informando... ");
 				String status = notifyPosNotUsed(pos);
-				result.append(status).append(". \n");
+				result.append(status).append(". \n<br>");
 			} catch (Exception e) {
-				result.append(e.getMessage()).append(". \n");
+				result.append(e.getMessage()).append(". \n<br>");
 			}
 			
 		}
-		return "Finalizado. \n " +
-				" \n" +
+		return "Finalizado. \n<br> " +
+				" \n<br>" +
 				result.toString();
 	}
 	
@@ -119,7 +127,7 @@ public class LYEICAEANotUsedProcess extends SvrProcess {
 		MLYEIElectronicInvoiceConfig genConfig = new MLYEIElectronicInvoiceConfig(posConfig.getCtx(), posConfig.getC_LYEIElectronicInvoiceConfig_ID(), null);
 
 		// WSAA -> token & sign
-		HashMap<String, String> tokenAndSign = LYEIWSAA.getTokenAndSign(posConfig, Env.getCtx(), posConfig.getCurrentEnvironment());
+		HashMap<String, String> tokenAndSign = LYEIWSAA.getTokenAndSign(posConfig, posConfig.getCtx(), posConfig.getCurrentEnvironment());
 		String token = tokenAndSign.get(LYEIWSAA.TA_TOKEN);
 		String sign = tokenAndSign.get(LYEIWSAA.TA_SIGN);
 
@@ -142,7 +150,7 @@ public class LYEICAEANotUsedProcess extends SvrProcess {
 		
 		request.setAuthRequest(auth);
 		request.setNumeroPuntoVenta(pos);
-		request.setCAEA(Long.parseLong(getTargetCAEA()));
+		request.setCAEA(Long.parseLong(caea));
 		
 		InformarCAEANoUtilizadoPtoVtaResponseType response = caeaService.informarCAEANoUtilizadoPtoVta(request);
 		
@@ -163,6 +171,9 @@ public class LYEICAEANotUsedProcess extends SvrProcess {
 		// Compañía / organizacion
 		notUsed.setClientOrg(clientID, orgID);
 		
+		// Request asociado
+		notUsed.setC_LYEICAEARequest_ID(targetRequest.getC_LYEICAEARequest_ID());
+		
 		// Ambiente: homo o prod
 		notUsed.setEnvironment(prodEnv?LP_C_LYEICAEANotUsed.ENVIRONMENT_Prod:LP_C_LYEICAEANotUsed.ENVIRONMENT_Homo);
 		
@@ -179,8 +190,8 @@ public class LYEICAEANotUsedProcess extends SvrProcess {
 		}
 		
 		// Persistir entrada
-		if (notUsed.save()) {
-			throw new Exception("Error almacenando entra en CAEA no utilizados: " + CLogger.retrieveErrorAsString());
+		if (!notUsed.save()) {
+			throw new Exception("Error almacenando entrada en CAEA no utilizados: " + CLogger.retrieveErrorAsString());
 		}
 		
 		// Retorna el valor devuelto por AFIP
@@ -198,7 +209,7 @@ public class LYEICAEANotUsedProcess extends SvrProcess {
 				" 			WHERE ad_client_id = " + clientID +
 				(orgID > 0 ? " AND AD_Org_ID = " + orgID : "") +
 				"			AND puntodeventa = pc.pos " +
-				"			AND CAE = '" + getTargetCAEA() + "' " + 
+				"			AND CAE = '" + caea + "' " + 
 				" 			AND lyeicaeainformed IS NOT NULL" +
 				"		) as cantidad " +
 				" FROM C_LYEIElectronicPOSConfig pc" +
@@ -211,29 +222,40 @@ public class LYEICAEANotUsedProcess extends SvrProcess {
 	
 	
 	/** Obtiene el CAEA sobre el cual informar */
-	protected String getTargetCAEA() throws Exception {
+	protected LP_C_LYEICAEARequest loadTargetRequestCAEA() throws Exception {
 		// Se forzó un caea?
-		if (!Util.isEmpty(caea)) {
-			return caea;
+		if (targetRequest!=null) {
+			return targetRequest;
 		}
 	
-		// Se obtiene el caea con fechahasta vencido mas reciente. 
-		caea = DB.getSQLValueString(	null, 
-										" SELECT CAEA " +
+		// Se obtiene el caea con fechahasta vencido mas reciente.
+		// Si se especifica un caea en los parametros de invocacion, no se consideran las fechas 
+		PreparedStatement pstmt = DB.prepareStatement(
+										" SELECT * " +
 										" FROM c_lyeicaearequest " +
-										" WHERE AD_Client_ID = ? " +
+										" WHERE AD_Client_ID = " + clientID + 
 										(orgID > 0 ? " AND AD_Org_ID = " + orgID : "") +
-										" AND fechahasta < now()::date " +
+										(Util.isEmpty(caea) ? " AND fechahasta::date <= now()::date " : "") +
+										(Util.isEmpty(caea) ? " AND fechatopeinforme::date >= now()::date " : "") +
 										" AND environment = '" + (prodEnv?LP_C_LYEICAEARequest.ENVIRONMENT_Prod:LP_C_LYEICAEARequest.ENVIRONMENT_Homo) + "' " +
+										(!Util.isEmpty(caea) ? " AND caea = '" + caea + "' " : "") +  
 										" ORDER BY fechahasta DESC " +
-										" LIMIT 1",
-										clientID);
-		
+										" LIMIT 1", null, true);
+		ResultSet rs = pstmt.executeQuery();
 		// Se pudo recuperar uno?
-		if (Util.isEmpty(caea))
-			throw new Exception("No se ha podido recuperar un CAEA del historico de solicitudes.");
+		if (!rs.next()) {
+			String detail = !Util.isEmpty(caea) ? ("para el CAEA ingresado: " + caea) : " cuya fecha hasta sea mayor a la actual pero menor a la fecha tope de informe";
+			throw new Exception("No se ha podido recuperar un CAEA a informar del historico de solicitudes " + detail);
+		}
 		
-		return caea;
+		targetRequest = new LP_C_LYEICAEARequest(getCtx(), rs, null);
+		// Se asigna para los casos en que no se especificó 
+		caea = targetRequest.getCAEA();
+		
+		rs.close();
+		pstmt.close();
+		
+		return targetRequest;
 	}
 	
 	/** Retorna true si ya fue notificado un ptovta para un CAEA en particular */
@@ -241,8 +263,8 @@ public class LYEICAEANotUsedProcess extends SvrProcess {
 		int cant = DB.getSQLValue(null, 	" SELECT COUNT(1) " +
 											" FROM c_lyeicaeanotused nu " +
 											" INNER JOIN c_lyeicaearequest r ON nu.c_lyeicaearequest_id = r.c_lyeicaearequest_id " + 
-											" WHERE nu.C_LYEIElectronicPOSConfig = " + posConfigID +
-											" AND r.caea = '" + getTargetCAEA() + "'" );
+											" WHERE nu.C_LYEIElectronicPOSConfig_ID = " + posConfigID +
+											" AND r.caea = '" + caea + "'" );
 		return cant>0;
 	}
 	

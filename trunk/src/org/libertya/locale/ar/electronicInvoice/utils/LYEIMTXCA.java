@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.util.HashMap;
+import java.util.Properties;
 import java.util.logging.Level;
 
 import org.libertya.locale.ar.electronicInvoice.model.LP_C_LYEICAEARequest;
@@ -39,6 +40,8 @@ public class LYEIMTXCA {
 	protected Short orden = null;
 	/** Registro con el CAEA obtenido */
 	LP_C_LYEICAEARequest currentCAEA = null;
+	/** Contexto */
+	protected Properties ctx = null;
 	
 	/** Instanciar CAEA a partir de compañía/organizacion 
 	 *  Se utiliza cuando se desea obtener un CAEA sin estar completando una factura (proceso croneado por ejemplo).
@@ -50,10 +53,10 @@ public class LYEIMTXCA {
 	 *  @param currentPeriod periodo actual o siguiente?
 	 *  @param nombre de la transaccion, si corresponde
 	 */
-	public LYEIMTXCA(int clientID, int orgID, boolean prodEnv, boolean currentPeriod) throws Exception {
+	public LYEIMTXCA(int clientID, int orgID, boolean prodEnv, boolean currentPeriod, Properties ctx) throws Exception {
+		this.ctx = ctx;
 		setPeriodoOrden(currentPeriod);
 		posConfig = getPosConfig(clientID, orgID, prodEnv);
-
 	}
 		
 	/** Obtener CAEA a partir de factura. 
@@ -63,6 +66,7 @@ public class LYEIMTXCA {
 	 *  @param currentPeriod periodo actual o siguiente?
 	 */
 	public LYEIMTXCA(MInvoice inv, boolean currentPeriod) {
+		this.ctx = inv.getCtx();
 		setPeriodoOrden(currentPeriod);
 		posConfig = MLYEIElectronicPOSConfig.get(inv.getPuntoDeVenta(), inv.getAD_Org_ID(), inv.getCtx(), null);
 	}
@@ -128,7 +132,7 @@ public class LYEIMTXCA {
 			MLYEIElectronicInvoiceLog.logActivity(LYEIMTXCA.class, Level.INFO, inv!=null?inv.getC_Invoice_ID():null, posConfig.getC_LYEIElectronicPOSConfig_ID(), genConfig.getC_LYEIElectronicInvoiceConfig_ID(), "Obteniendo nuevo CAEA. Periodo:" + periodo + ". Orden:" + orden);
 			
 			// token & sign
-			HashMap<String, String> tokenAndSign = LYEIWSAA.getTokenAndSign(posConfig, Env.getCtx(), posConfig.getCurrentEnvironment());
+			HashMap<String, String> tokenAndSign = LYEIWSAA.getTokenAndSign(posConfig, posConfig.getCtx(), posConfig.getCurrentEnvironment());
 			String token = tokenAndSign.get(LYEIWSAA.TA_TOKEN);
 			String sign = tokenAndSign.get(LYEIWSAA.TA_SIGN);
 			
@@ -179,9 +183,9 @@ public class LYEIMTXCA {
 			MLYEIElectronicInvoiceLog.logActivity(LYEIMTXCA.class, Level.INFO, inv!=null?inv.getC_Invoice_ID():null, posConfig.getC_LYEIElectronicPOSConfig_ID(), genConfig.getC_LYEIElectronicInvoiceConfig_ID(), "CAEA obtenido: " + response.getCAEAResponse().getCAEA());
 			
 			// Almacenar en el historico de CAEAs aceptados
-			currentCAEA = new LP_C_LYEICAEARequest(Env.getCtx(), 0, null); 
+			currentCAEA = new LP_C_LYEICAEARequest(posConfig.getCtx(), 0, null); 
 			// Compañía y organizacion
-			currentCAEA.setClientOrg(Env.getAD_Client_ID(Env.getCtx()), Env.getAD_Org_ID(Env.getCtx()));
+			currentCAEA.setClientOrg(Env.getAD_Client_ID(posConfig.getCtx()), Env.getAD_Org_ID(posConfig.getCtx()));
 			// CAEA Obtenido
 			currentCAEA.setCAEA(""+response.getCAEAResponse().getCAEA());
 			// Periodo correspondiente
@@ -229,7 +233,7 @@ public class LYEIMTXCA {
 		// Tenemos algun resultado?
 		if (!rs.next()) 
 			throw new Exception("No se ha encontrado un punto de venta electronico de tipo CAEA activo con certificado valido en " + (prodEnv?"produccion":"homologacion") + " para la organizacion y compañía especificados.");
-		return new MLYEIElectronicPOSConfig(Env.getCtx(), rs, null);
+		return new MLYEIElectronicPOSConfig(ctx, rs, null);
 	}
 	
 	
@@ -238,14 +242,14 @@ public class LYEIMTXCA {
 		PreparedStatement pstmt = DB.prepareStatement(		
 									" SELECT * " +
 									" FROM C_LYEICAEAREQUEST " +
-									" WHERE ad_client_id = " + Env.getAD_Client_ID(Env.getCtx()) +
+									" WHERE ad_client_id = " + Env.getAD_Client_ID(ctx) +
 									" AND isactive = 'Y' " +
 									" AND environment = '" + posConfig.getCurrentEnvironment() + "' " +  
 									" AND periodo = " + periodo +
 									" AND orden = " + orden);
 		ResultSet rs = pstmt.executeQuery();
 		if (rs.next())
-			return new LP_C_LYEICAEARequest(Env.getCtx(), rs, null);
+			return new LP_C_LYEICAEARequest(ctx, rs, null);
 		return null;
 	}
 	
