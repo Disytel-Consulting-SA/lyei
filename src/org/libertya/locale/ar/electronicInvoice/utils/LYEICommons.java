@@ -81,14 +81,23 @@ public class LYEICommons {
 		return Long.parseLong(inv.getCUIT().replace("-", "").replace(" ", ""));
 	}
 
+	/** Neto de la factura */
+	public static double getImpNeto(BigDecimal impIva, MDocType docType, MInvoice inv) {
+		return getImpNetoBigDecimal(impIva, docType, inv).doubleValue();
+	}
 	
 	/** Neto de la factura */
 	public static double getImpNeto(double impIva, MDocType docType, MInvoice inv) {
+		return getImpNetoBigDecimal(new BigDecimal(impIva), docType, inv).doubleValue();
+	}
+	
+	/** Neto de la factura */
+	public static BigDecimal getImpNetoBigDecimal(BigDecimal impIva, MDocType docType, MInvoice inv) {
 		// Para facturas C no se discrimina IVA. Se considera neto+iva-tributos como neto
 		if (X_C_DocType.DOCSUBTYPECAE_FacturasC.equals(docType.getdocsubtypecae())) {
-			return inv.getNetAmount().add(new BigDecimal(impIva)).setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
+			return inv.getNetAmount().add(impIva).setScale(2, BigDecimal.ROUND_HALF_UP);
 		}
-		return inv.getNetAmount().setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
+		return inv.getNetAmount().setScale(2, BigDecimal.ROUND_HALF_UP);
 	}
 
 	/** Moneda de la factura */
@@ -100,6 +109,11 @@ public class LYEICommons {
 	
 	/** Cotizacion de la moneda */
 	public static double getMonCotiz(MInvoice inv, Properties ctx) {
+		return getMonCotizBigDecimal(inv, ctx).doubleValue();
+	}
+	
+	/** Cotizacion de la moneda */
+	public static BigDecimal getMonCotizBigDecimal(MInvoice inv, Properties ctx) {
 		BigDecimal cotizacion = 
 				MCurrency.currencyConvert(	Env.ONE,
 											inv.getC_Currency_ID(), 
@@ -107,7 +121,7 @@ public class LYEICommons {
 											inv.getDateAcct(), 
 											0,
 											ctx);
-		return cotizacion.doubleValue();
+		return cotizacion;
 	}
 	
 	/** Concepto de la FE segun existan productos y/o servicios en la misma */
@@ -118,7 +132,12 @@ public class LYEICommons {
 	
 	/** Total de la factura */
 	public static double getImpTotal(MInvoice inv) {
-		return inv.getGrandTotal().setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
+		return getImpTotalBigDecimal(inv).doubleValue();
+	}
+	
+	/** Total de la factura */
+	public static BigDecimal getImpTotalBigDecimal(MInvoice inv) {
+		return inv.getGrandTotal().setScale(2, BigDecimal.ROUND_HALF_UP);
 	}
 	
 	/** Obtine el taxBaseAmt (segun WsfeV1) */
@@ -131,14 +150,24 @@ public class LYEICommons {
 	
 	/** Importe neto no gravado */
 	public static double getImpTotConc() {
+		return getImpTotConcBigDecimal().doubleValue();
+	}
+	
+	/** Importe neto no gravado */
+	public static BigDecimal getImpTotConcBigDecimal() {
 		// TODO: Pending
-		return 0.0;
+		return BigDecimal.ZERO;
+	}
+
+	/** Importe exento */ 
+	public static double getImpOpEx() {
+		return getImpOpExBigDecimal().doubleValue();
 	}
 	
 	/** Importe exento */ 
-	public static double getImpOpEx() {
+	public static BigDecimal getImpOpExBigDecimal() {
 		// TODO: Pending
-		return 0.0;
+		return BigDecimal.ZERO;
 	}
 	
 	/** Retorna el array como un String */

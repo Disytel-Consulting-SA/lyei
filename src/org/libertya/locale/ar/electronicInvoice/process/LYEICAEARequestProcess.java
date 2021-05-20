@@ -44,7 +44,7 @@ public class LYEICAEARequestProcess extends SvrProcess {
 	@Override
 	protected String doIt() throws Exception {
 		// Recuperar CAEA
-		LYEIMTXCA mtxca = new LYEIMTXCA(clientID, orgID, prodEnv, currentPeriod);
+		LYEIMTXCA mtxca = new LYEIMTXCA(clientID, orgID, prodEnv, currentPeriod, getCtx());
 		mtxca.requestCAEA();
 		if (mtxca.currentCAEA()==null) {
 			throw new Exception("No fue posible recuperar un CAEA. Verifique la informacion de los logs. ");

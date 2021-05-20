@@ -8,7 +8,7 @@ import java.math.*;
 import org.openXpertya.util.*;
 /** Modelo Generado por M_Product
  *  @author Comunidad de Desarrollo Libertya*         *Basado en Codigo Original Modificado, Revisado y Optimizado de:*         * Jorg Janke 
- *  @version  - 2021-05-17 09:03:13.324 */
+ *  @version  - 2021-05-17 09:47:35.55 */
 public class LP_M_Product extends org.openXpertya.model.MProduct
 {
 /** Constructor estándar */
@@ -29,6 +29,21 @@ public String toString()
 {
 StringBuffer sb = new StringBuffer ("LP_M_Product[").append(getID()).append("]");
 return sb.toString();
+}
+/** Set LYEICodigoMtx */
+public void setLYEICodigoMtx (String LYEICodigoMtx)
+{
+if (LYEICodigoMtx != null && LYEICodigoMtx.length() > 100)
+{
+log.warning("Length > 100 - truncated");
+LYEICodigoMtx = LYEICodigoMtx.substring(0,100);
+}
+set_Value ("LYEICodigoMtx", LYEICodigoMtx);
+}
+/** Get LYEICodigoMtx */
+public String getLYEICodigoMtx() 
+{
+return (String)get_Value("LYEICodigoMtx");
 }
 /** Set LYEIUnidadesMtx */
 public void setLYEIUnidadesMtx (int LYEIUnidadesMtx)
