@@ -77,6 +77,13 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 	/** Preferencia con el codigo predeterminado para el campo CodigoMtx */
 	public static final String LYEI_CODIGO_MTX_PREDETERMINADO_PREFERENCE = "LYEI_CODIGO_MTX_PREDETERMINADO";
 	
+	/** El documento fue aprobado */
+	public static final String DOC_STATUS_APROBADO = "APROBADO";
+	/** El documento fue observado */
+	public static final String DOC_STATUS_OBSERVADO = "OBSERVADO";
+	/** El documento fue rechazado */
+	public static final String DOC_STATUS_RECHAZADO = "RECHAZADO";
+	
 	@Override
 	protected void prepare() {
 		ProcessInfoParameter[] para = getParameter();
@@ -107,7 +114,12 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 			try {
 				String status = notifyInvoice(anInvoice);	
 				result.append(status).append(". \n<br>");
-				ok++;
+				// Solo sumar a OK si fue aceptado u observado
+				if (status!=null && (status.startsWith(DOC_STATUS_APROBADO) || status.startsWith(DOC_STATUS_OBSERVADO))) {
+					ok++;
+				} else {
+					ko++;
+				}
 			} catch (Exception e) {
 				result.append(e.getMessage()).append(". \n<br>");
 				ko++;				
@@ -304,7 +316,7 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 				inv.setLYEICAEAInformed(LP_C_Invoice.LYEICAEAINFORMED_Rechazado);
 				inv.setLYEICAEAInformedDetail(errors);
 				inv.save();
-				return ("RECHAZADO: " + errors);
+				return DOC_STATUS_RECHAZADO + ": " + errors;
 			}
 			
 			// Fue Observado?			
@@ -313,14 +325,14 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 				inv.setLYEICAEAInformed(LP_C_Invoice.LYEICAEAINFORMED_Observado);
 				inv.setLYEICAEAInformedDetail(obs);
 				inv.save();
-				return ("OBSERVADO: " + obs);
+				return DOC_STATUS_OBSERVADO + ": " + obs;
 			} 
 			
 			// Fue Aprobado
 			if (LP_C_Invoice.LYEICAEAINFORMED_Aprobado.equals(response.getResultado().getValue())) {
 				inv.setLYEICAEAInformed(LP_C_Invoice.LYEICAEAINFORMED_Aprobado);
 				inv.save();
-				return ("APROBADO");
+				return DOC_STATUS_APROBADO;
 			}
 			
 			// No es A, O o R?
@@ -333,13 +345,19 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 	}
 		
 	/** Impuestos */
-	protected SubtotalIVAType[] getArraySubtotalesIVA(LP_C_Invoice inv) {
+	protected SubtotalIVAType[] getArraySubtotalesIVA(LP_C_Invoice inv) throws Exception {
 		ArrayList<SubtotalIVAType> alicsIva = new ArrayList<SubtotalIVAType>();
 		// Recorrer todos los impuestos de la factura
 		for (MInvoiceTax invoiceTax : inv.getTaxes(false)){
 			MTax tax = MTax.get(inv.getCtx(), invoiceTax.getC_Tax_ID(), inv.get_TrxName());
 			// Las percepciones van aparte 
 			if (tax.isPercepcion())
+				continue;
+			// Esta configurado el wsfecode?
+			if (tax.getWSFECode()<=0)
+				throw new Exception("Debe definir el codigo wsfecode del impuesto " + tax.getName());
+			// Solo codigos 4 5 o 6. De informar otras alicuotas se presenta error: Codigo de Alicuota Invalido. Valores permitidos 4, 5 o 6.
+			if (tax.getWSFECode()<4 || tax.getWSFECode()>6)
 				continue;
 			// Crear nueva entradda
 			SubtotalIVAType alicIva = new SubtotalIVAType();
@@ -436,16 +454,14 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 				/* Importe IVA según codigoCondicionIVA indicado. */
 				item.setImporteIVA(line.getTaxAmt());
 				
-				/* Importe total del ítem */
-				item.setImporteItem(line.getLineNetAmt().setScale(2, BigDecimal.ROUND_HALF_UP));
-			} else {
-				/* Importe total del ítem */
-				item.setImporteItem((line.getLineNetAmt().add(line.getTaxAmt())).setScale(2, BigDecimal.ROUND_HALF_UP));
 			}
 			
+			/* Importe total del ítem */
+			item.setImporteItem((line.getLineNetAmt().add(line.getTaxAmt())).setScale(2, BigDecimal.ROUND_HALF_UP));
+		
 			/* Precio Unitario. Para comprobantes clase A no debe incluir el IVA, en cambio para los clase B si debe incluir IVA. */
 			if ("B".equals(inv.getLetra())) {
-				item.setPrecioUnitario(line.getPriceEntered());
+				item.setPrecioUnitario(line.getPriceEnteredNet().add(line.getUnityAmt(line.getTaxAmt()))); 
 			} else {
 				item.setPrecioUnitario(line.getPriceEnteredNet());
 			}
