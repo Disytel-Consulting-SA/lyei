@@ -55,32 +55,44 @@ public class LYEIMTXCA {
 	 */
 	public LYEIMTXCA(int clientID, int orgID, boolean prodEnv, boolean currentPeriod, Properties ctx) throws Exception {
 		this.ctx = ctx;
-		setPeriodoOrden(currentPeriod);
+		setPeriodoOrden(currentPeriod, null);
 		posConfig = getPosConfig(clientID, orgID, prodEnv);
 	}
 		
 	/** Obtener CAEA a partir de factura. 
 	 *  Se utiliza cuando se desea obtener un CAEA al momento de estar emitiendo una factura
 	 *  El posConfig a recuperar estara determinado por el punto de venta de la factura 
-	 *  El periodo y orden se toman a partir de la fecha actual, a menos que se fuerce a uno distinto mediante los argumentos
+	 *  El periodo y orden se toman a partir de la fecha de la factura
 	 *  @param currentPeriod periodo actual o siguiente?
 	 */
-	public LYEIMTXCA(MInvoice inv, boolean currentPeriod) {
+	public LYEIMTXCA(MInvoice inv) {
 		this.ctx = inv.getCtx();
-		setPeriodoOrden(currentPeriod);
+		setPeriodoOrden(true, inv.getC_Invoice_ID());
 		posConfig = MLYEIElectronicPOSConfig.get(inv.getPuntoDeVenta(), inv.getAD_Org_ID(), inv.getCtx(), null);
 	}
 	
 	/**
 	 * Asigna el periodo y orden segun la informacion suministrada
+	 * Si se recibe una factura, toma la fecha de la factura como fecha base.
+	 * Si no se recibe una factura, toma la fecha actual
+	 * @param currentPeriod permite especificar si debe obtenerse para el periodo actual (a partir de la fecha base) o bien para el siguiente periodo.
 	 */
-	protected void setPeriodoOrden(boolean currentPeriod) {
+	protected void setPeriodoOrden(boolean currentPeriod, Integer invoiceID) {
+		/* Fecha de base es la fecha actual? */
+		String baseTime = "now()";
+		String clause = "";
+		if (invoiceID!=null) {
+			/* Fecha de base es la fecha de la factura */
+			baseTime = "dateinvoiced";
+			clause   = "from c_invoice where c_invoice_id = " + invoiceID;
+		}
+		
 		/* Asignacion de periodo: YYYYMM */
-		periodo = DB.getSQLValue(null, "select (date_part('year', now())::varchar || lpad(date_part('month', now())::varchar, 2, '0'))::int");
+		periodo = DB.getSQLValue(null, "select (date_part('year', "+baseTime+")::varchar || lpad(date_part('month', "+baseTime+")::varchar, 2, '0'))::int " + clause);
 
 		/* Asignacion de orden: 1 o 2. */ 
 		// "Habrá dos quincenas, la primera abarca desde el primero hasta el quince de cada mes y la segunda desde el dieciséis hasta el último día del mes"
-		orden = (short)DB.getSQLValue(null, "select case when date_part('day', now()) <= 15 then 1 else 2 end");
+		orden = (short)DB.getSQLValue(null, "select case when date_part('day', "+baseTime+") <= 15 then 1 else 2 end " + clause);
 		
 		// Debe pedirse para el siguiente periodo? YYYYMMPP puede pasar a YYYY MM P+1 o YYYY MM+1 P-1 o YYYY+1 01 1
 		// Ejemplos: 202112-1 -> 202112-2  //  202112-2 -> 202201-1

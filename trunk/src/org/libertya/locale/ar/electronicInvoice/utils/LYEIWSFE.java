@@ -135,7 +135,7 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 				MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.INFO, inv.getC_Invoice_ID(), posConfig.getC_LYEIElectronicPOSConfig_ID(), genConfig.getC_LYEIElectronicInvoiceConfig_ID(), "Solicitando CAE mediante CAEA");
 				
 				// Recupear el caea para el periodo y orden actual, ya sea online o en la "cache" de CAEARequests
-				LYEIMTXCA mtxca = new LYEIMTXCA(inv, true);
+				LYEIMTXCA mtxca = new LYEIMTXCA(inv);
 				mtxca.requestCAEA();
 				if (mtxca.currentCAEA()==null)
 					throw new Exception("No se encuentra un lote de CAEA asociado ");
