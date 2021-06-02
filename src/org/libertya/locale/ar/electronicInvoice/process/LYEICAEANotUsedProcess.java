@@ -165,8 +165,13 @@ public class LYEICAEANotUsedProcess extends SvrProcess {
 		// String responseXML = ((MTXCAServiceSoap11BindingStub)caeaService).getCallResponseXML();
 		MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.INFO, null, posConfig.getC_LYEIElectronicPOSConfig_ID(), genConfig.getC_LYEIElectronicInvoiceConfig_ID(), getCAEANotifyNotUsedResponseLog(pos, response));
 
-		// Nueva entrada en CAEAs no utilizados
-		LP_C_LYEICAEANotUsed notUsed = new LP_C_LYEICAEANotUsed(getCtx(), 0, null);
+		// Nueva entrada en CAEAs no utilizados o actualizar una existente
+		int id = DB.getSQLValue(null, 		" SELECT C_LYEICAEANotUsed_ID " +
+											" FROM C_LYEICAEANotUsed " +
+											" WHERE C_LYEICAEARequest_ID = " + targetRequest.getC_LYEICAEARequest_ID() + 
+											" AND C_LYEIElectronicPOSConfig_ID = " + posConfig.getC_LYEIElectronicPOSConfig_ID() +
+											" AND environment = '" + (prodEnv?LP_C_LYEICAEANotUsed.ENVIRONMENT_Prod:LP_C_LYEICAEANotUsed.ENVIRONMENT_Homo) + "'");
+		LP_C_LYEICAEANotUsed notUsed = new LP_C_LYEICAEANotUsed(getCtx(), (id<0?0:id), null);
 		
 		// Compañía / organizacion
 		notUsed.setClientOrg(clientID, orgID);
@@ -258,13 +263,14 @@ public class LYEICAEANotUsedProcess extends SvrProcess {
 		return targetRequest;
 	}
 	
-	/** Retorna true si ya fue notificado un ptovta para un CAEA en particular */
+	/** Retorna true si ya fue notificado y aceptado un ptovta para un CAEA en particular */
 	protected boolean alreadyNotifiedNotUsed(int posConfigID) throws Exception {
 		int cant = DB.getSQLValue(null, 	" SELECT COUNT(1) " +
 											" FROM c_lyeicaeanotused nu " +
 											" INNER JOIN c_lyeicaearequest r ON nu.c_lyeicaearequest_id = r.c_lyeicaearequest_id " + 
 											" WHERE nu.C_LYEIElectronicPOSConfig_ID = " + posConfigID +
-											" AND r.caea = '" + caea + "'" );
+											" AND r.caea = '" + caea + "'" +
+											" AND nu.status = 'A'");
 		return cant>0;
 	}
 	
