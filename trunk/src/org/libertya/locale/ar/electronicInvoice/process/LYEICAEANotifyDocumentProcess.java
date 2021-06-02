@@ -163,7 +163,7 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 			
 			// Configuracion electronica general asociada al pto vta. De no existir luego se eleva excepcion
 			if (posConfig==null || posConfig.getC_LYEIElectronicPOSConfig_ID()==0) {
-				throw new Exception("Configuracion de punto de venta electronico nulo o no inicializado correctamente");		
+				throw new Exception("Configuracion de punto de venta electronico nulo o no inicializado correctamente para punto de venta " + inv.getPuntoDeVenta());		
 			}
 			genConfig = new MLYEIElectronicInvoiceConfig(posConfig.getCtx(), posConfig.getC_LYEIElectronicInvoiceConfig_ID(), null);
 	

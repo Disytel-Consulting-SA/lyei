@@ -63,7 +63,7 @@ public class LYEICAEANotUsedProcess extends SvrProcess {
 	        	orgID = para[ i ].getParameterAsInt();
 	        else if( name.equalsIgnoreCase( "CAEA" ))
 	        	caea = (String)para[ i ].getParameter();	
-	        else if( name.equalsIgnoreCase( "ProdEnv" ))
+	        else if( name.equalsIgnoreCase( "Environment" ))
 	        	prodEnv = "P".equals((String)para[ i ].getParameter());	        
         }
 	}
@@ -315,7 +315,7 @@ public class LYEICAEANotUsedProcess extends SvrProcess {
 
 		int clientID = -1;
 		int orgID = -1;
-		boolean prodEnv = true;
+		boolean prodEnv = false;
 		String caea = null;
 		
 		for (String arg : args) {
@@ -364,8 +364,8 @@ public class LYEICAEANotUsedProcess extends SvrProcess {
 			addProcessParam(pi, "AD_Client_ID", clientID);
 			// Parametros: org
 			addProcessParam(pi, "AD_Org_ID", orgID);
-			// Parametros: prodEnv
-			addProcessParam(pi, "ProdEnv", prodEnv);
+			// Parametros: Environment
+			addProcessParam(pi, "Environment", prodEnv);
 			// Parametros: caea
 			addProcessParam(pi, "CAEA", caea!=null?caea:null);			
 			

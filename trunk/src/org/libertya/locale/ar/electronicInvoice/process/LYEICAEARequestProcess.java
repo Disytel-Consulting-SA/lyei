@@ -34,7 +34,7 @@ public class LYEICAEARequestProcess extends SvrProcess {
 	        	clientID = para[ i ].getParameterAsInt();
 	        else if( name.equalsIgnoreCase( "AD_Org_ID" ))
 	        	orgID = para[ i ].getParameterAsInt();
-	        else if( name.equalsIgnoreCase( "ProdEnv" ))
+	        else if( name.equalsIgnoreCase( "Environment" ))
 	        	prodEnv = "P".equals((String)para[ i ].getParameter());
 	        else if( name.equalsIgnoreCase( "CurrentPeriod" ))
 	        	currentPeriod = "Y".equals((String)para[ i ].getParameter());	        
@@ -78,7 +78,7 @@ public class LYEICAEARequestProcess extends SvrProcess {
 
 		int clientID = -1;
 		int orgID = -1;
-		boolean prodEnv = true;
+		boolean prodEnv = false;
 		boolean currentPeriod = true;
 		
 		for (String arg : args) {
@@ -128,7 +128,7 @@ public class LYEICAEARequestProcess extends SvrProcess {
 			// Parametros: org
 			addProcessParam(pi, "AD_Org_ID", orgID);
 			// Parametros: prod o homo
-			addProcessParam(pi, "ProdEnv", prodEnv?"Y":"N");
+			addProcessParam(pi, "Environment", prodEnv?"Y":"N");
 			// Parametros: periodo actual o siguiente
 			addProcessParam(pi, "CurrentPeriod", currentPeriod?"Y":"N");
 			
