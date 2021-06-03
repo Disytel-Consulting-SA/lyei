@@ -67,7 +67,7 @@ public class LYEIMTXCA {
 	 */
 	public LYEIMTXCA(MInvoice inv) {
 		this.ctx = inv.getCtx();
-		setPeriodoOrden(true, inv.getC_Invoice_ID());
+		setPeriodoOrden(true, inv);
 		posConfig = MLYEIElectronicPOSConfig.get(inv.getPuntoDeVenta(), inv.getAD_Org_ID(), inv.getCtx(), null);
 	}
 	
@@ -77,22 +77,24 @@ public class LYEIMTXCA {
 	 * Si no se recibe una factura, toma la fecha actual
 	 * @param currentPeriod permite especificar si debe obtenerse para el periodo actual (a partir de la fecha base) o bien para el siguiente periodo.
 	 */
-	protected void setPeriodoOrden(boolean currentPeriod, Integer invoiceID) {
+	protected void setPeriodoOrden(boolean currentPeriod, MInvoice invoice) {
 		/* Fecha de base es la fecha actual? */
+		String trxName = null;
 		String baseTime = "now()";
 		String clause = "";
-		if (invoiceID!=null) {
+		if (invoice!=null) {
 			/* Fecha de base es la fecha de la factura */
+			trxName = invoice.get_TrxName();
 			baseTime = "dateinvoiced";
-			clause   = "from c_invoice where c_invoice_id = " + invoiceID;
+			clause   = "from c_invoice where c_invoice_id = " + invoice.getC_Invoice_ID();
 		}
 		
 		/* Asignacion de periodo: YYYYMM */
-		periodo = DB.getSQLValue(null, "select (date_part('year', "+baseTime+")::varchar || lpad(date_part('month', "+baseTime+")::varchar, 2, '0'))::int " + clause);
+		periodo = DB.getSQLValue(trxName, "select (date_part('year', "+baseTime+")::varchar || lpad(date_part('month', "+baseTime+")::varchar, 2, '0'))::int " + clause);
 
 		/* Asignacion de orden: 1 o 2. */ 
 		// "Habrá dos quincenas, la primera abarca desde el primero hasta el quince de cada mes y la segunda desde el dieciséis hasta el último día del mes"
-		orden = (short)DB.getSQLValue(null, "select case when date_part('day', "+baseTime+") <= 15 then 1 else 2 end " + clause);
+		orden = (short)DB.getSQLValue(trxName, "select case when date_part('day', "+baseTime+") <= 15 then 1 else 2 end " + clause);
 		
 		// Debe pedirse para el siguiente periodo? YYYYMMPP puede pasar a YYYY MM P+1 o YYYY MM+1 P-1 o YYYY+1 01 1
 		// Ejemplos: 202112-1 -> 202112-2  //  202112-2 -> 202201-1
