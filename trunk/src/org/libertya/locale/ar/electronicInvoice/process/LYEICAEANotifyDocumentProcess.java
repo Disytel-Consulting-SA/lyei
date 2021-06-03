@@ -110,9 +110,10 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 		ResultSet rs = pstmt.executeQuery();
 		while (rs.next()) {
 			LP_C_Invoice anInvoice = new LP_C_Invoice(getCtx(), rs, null);
-			result.append(" Informando ").append(anInvoice.getDocumentNo()).append("... ");
+			MDocType docType = new MDocType(getCtx(), anInvoice.getC_DocTypeTarget_ID(), null);
+			result.append(" Informando ").append(docType.getName()).append(" ").append(anInvoice.getDocumentNo()).append("... ");
 			try {
-				String status = notifyInvoice(anInvoice);	
+				String status = notifyInvoice(anInvoice, docType);	
 				result.append(status).append(". \n<br>");
 				// Solo sumar a OK si fue aceptado u observado
 				if (status!=null && (status.startsWith(DOC_STATUS_APROBADO) || status.startsWith(DOC_STATUS_OBSERVADO))) {
@@ -149,10 +150,8 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 	 * @return el estado de la notificacion, que puede ser Aprobado, Observado o Rechazado
 	 * @throws excepcion ante algun error de configuración, comunicación, etc.
 	 * */
-	protected String notifyInvoice(LP_C_Invoice inv) throws Exception {
+	protected String notifyInvoice(LP_C_Invoice inv, MDocType docType) throws Exception {
 		try {
-			// Tipo de documento
-			MDocType docType = new MDocType(getCtx(), inv.getC_DocTypeTarget_ID(), null);
 			// EC 
 			MBPartner partner = new MBPartner(getCtx(), inv.getC_BPartner_ID(), null);
 			// Moneda de la factura
@@ -519,7 +518,8 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 			
 	        ComprobanteAsociadoType asoc = new ComprobanteAsociadoType();
 			asoc.setCodigoTipoComprobante((short)tipo);
-	        asoc.setCuit(Long.parseLong(genConfig.getCUIT().replace("-", "").replace(" ", "")));
+			// El campo cuit es opcional.  Se comenta para evitar error 804: no corresponde enviar el campo cuit para el tipo de comprobante asociado indicado
+	        //asoc.setCuit(Long.parseLong(genConfig.getCUIT().replace("-", "").replace(" ", "")));
 	        asoc.setFechaEmision(date);
 	        asoc.setNumeroComprobante(origInv.getNumeroComprobante());
 	        asoc.setNumeroPuntoVenta(origInv.getPuntoDeVenta());
