@@ -60,3 +60,199 @@ update ad_system set dummy = (SELECT addcolumnifnotexists('M_Product','lyeiunida
 
 --20210517-0925 CAEA: Nueva columna para codigo de unidad de consumo minorista (dato a enviar: CodigoMtx)
 update ad_system set dummy = (SELECT addcolumnifnotexists('M_Product','lyeicodigomtx','varchar'));
+
+--20210603-1004 CAEA: TYPE PARA REPORTE DE DOCUMENTOS PENDIENTES A INFORMAR
+--DROP TYPE if exists v_caea_pending_documents_type;
+CREATE TYPE v_caea_pending_documents_type AS (
+	ad_client_id integer, 
+	ad_org_id integer, 
+	ambiente character,
+	periodo integer,
+	orden integer,
+	c_doctype_id integer, 
+	c_invoice_id integer, 
+	documentno varchar,
+	ptovta integer,
+	dateinvoiced date, 
+	grandtotal numeric(20,2), 
+	c_bpartner_id integer, 
+	lyeicaeainformed character, 
+	lyeicaeainformeddetail varchar
+);
+
+--20210603-1004 CAEA: FUNCTION PARA REPORTE DE DOCUMENTOS PENDIENTES A INFORMAR
+-- DROP FUNCTION v_caea_pending_documents(clientID integer, orgID integer, periodo integer, orden integer, ptovta integer, ambiente character)
+CREATE OR REPLACE FUNCTION v_caea_pending_documents(clientID integer, orgID integer, periodo integer, orden integer, ptovta integer, ambiente character)
+RETURNS SETOF v_caea_pending_documents_type AS
+$BODY$
+DECLARE
+consulta varchar;
+periodquery varchar;
+ordenquery varchar;
+adocument v_caea_pending_documents_type;
+BEGIN
+periodquery = '(select (date_part(''year'', dateinvoiced)::varchar || lpad(date_part(''month'', dateinvoiced)::varchar, 2, ''0''))::int) as periodo, ';
+ordenquery = '(select case when date_part(''day'', dateinvoiced) <= 15 then 1 else 2 end) as orden, ';
+
+-- Comprobantes pendientes de informar
+consulta = ' SELECT ad_client_id, ad_org_id, ''' || ambiente || ''',' || periodquery || ordenquery || ' c_doctype_id, c_invoice_id, documentno, puntodeventa as ptovta, dateinvoiced::date, grandtotal, c_bpartner_id, lyeicaeainformed, lyeicaeainformeddetail '||
+	   ' FROM C_Invoice i ' ||
+	   ' WHERE lyeicaeainformed IN (''P'', ''R'') ' ||
+	   ' AND cae IN (	select caea ' ||
+	   ' 	 		from c_lyeicaearequest ' ||
+	   ' 			where (1=1) ';
+
+-- Periodo?
+if (periodo is not null and periodo>0) then
+consulta = consulta ||
+	   '			and periodo = ' || periodo;
+end if;
+
+-- Orden?
+if (orden is not null and orden>0) then
+consulta = consulta ||
+	   ' 			and orden = ' || orden;
+end if;
+
+consulta = consulta ||
+	   '			and ad_client_id = ' || clientID ||	   
+	   '	 		and environment = ''' || ambiente || ''') ' ||
+	   ' AND ad_client_id = ' || clientID;
+
+-- Organizacion?
+if (orgID is not null and orgID > 0) THEN
+consulta = consulta || 
+	   ' AND ad_org_id = ' || orgID;
+end if;
+
+-- PtoVta?
+if (ptovta is not null and ptovta > 0) THEN
+consulta = consulta || 
+	   ' AND puntodeventa = ' || ptovta;
+end if;
+
+consulta = consulta || ' ORDER BY c_doctype_id, documentno ASC ';
+
+--raise notice '%', consulta;
+FOR adocument IN EXECUTE consulta LOOP
+	return next adocument;
+END LOOP;
+
+END
+$BODY$
+ LANGUAGE plpgsql VOLATILE;
+
+--20210603-1004 CAEA: TABLA PARA REPORTE DE DOCUMENTOS PENDIENTES A INFORMAR
+CREATE TABLE t_caea_pending_documents (
+	created timestamp,
+	ad_pinstance_id integer,
+	ad_client_id integer, 
+	ad_org_id integer, 
+	ambiente character,
+	periodo integer,
+	orden integer,
+	c_doctype_id integer, 
+	c_invoice_id integer, 
+	documentno varchar,
+	ptovta integer,
+	dateinvoiced date, 
+	grandtotal numeric(20,2), 
+	c_bpartner_id integer, 
+	lyeicaeainformed character, 
+	lyeicaeainformeddetail varchar
+);
+
+--20210604-0930 CAEA: TYPE PARA REPORTE DE CAEA SIN UTILIZAR PENDIENTES A INFORMAR
+--DROP TYPE if exists v_caea_not_used_type;
+CREATE TYPE v_caea_not_used_type AS (
+	ad_client_id integer,
+	ad_org_id integer,
+	ambiente character,
+	caea varchar,
+	periodo integer,
+	orden integer,
+	ptovta integer,
+	status character,
+	detail varchar
+);
+
+--20210604-0930 CAEA: FUNCTION PARA REPORTE DE CAEA SIN UTILIZAR PENDIENTES A INFORMAR
+-- DROP FUNCTION v_caea_not_used(clientID integer, orgID integer, periodo integer, orden integer, ptovta integer, ambiente character)
+CREATE OR REPLACE FUNCTION v_caea_not_used(clientID integer, orgID integer, periodo integer, orden integer, ptovta integer, ambiente character)
+RETURNS SETOF v_caea_not_used_type AS
+$BODY$
+DECLARE
+consulta varchar;
+countquery varchar;
+adocument v_caea_not_used_type;
+BEGIN
+-- Cantidad de comprobantes CAEA emitidos para el ptovta dado que coincidan con el caea evaluado
+countquery = '(select count(1) from c_invoice where puntodeventa = pc.pos AND CAE = cr.caea AND lyeicaeainformed is not null) as comp_emitidos, ';
+
+-- CAEA sin usar por punto de venta 
+consulta =
+' SELECT foo.ad_client_id, foo.ad_org_id, foo.environment as ambiente, foo.caea, foo.periodo, foo.orden, foo.pos as ptovta, foo.status, foo.detail ' ||
+' FROM ( ' ||
+	-- CAEA para informar o informados con error, y numero de comprobantes emitidos en cada caso
+'	select cr.ad_client_id, cr.ad_org_id, cr.environment, cr.caea, cr.periodo, cr.orden, pc.pos, ' || countquery || ' cnu.status, cnu.detail ' ||
+'	FROM c_lyeicaearequest cr ' ||
+'	LEFT JOIN C_LYEIElectronicPOSConfig pc ON pc.caemethod = ''A''  ' || -- Necesitamos conocer todos los puntos de venta de tipo CAEA
+'	LEFT JOIN C_LYEICAEANotUsed cnu ON cr.c_lyeicaearequest_id = cnu.c_lyeicaearequest_id and pc.C_LYEIElectronicPOSConfig_id = cnu.C_LYEIElectronicPOSConfig_id ' ||
+'	WHERE cr.ad_client_id = ' || clientID;
+
+if (orgID is not null and orgID > 0) then
+consulta = consulta ||
+'	and cr.ad_org_id = ' || orgID;
+end if;
+
+consulta = consulta ||
+'	and cr.environment = ''' || ambiente || '''' ||
+'	and cr.periodo = ' || periodo;
+
+if (orden is not null and orden>0) then
+consulta = consulta ||
+'	and cr.orden =  ' || orden;
+end if;
+
+if (ptovta is not null and ptovta>0) then
+consulta = consulta ||
+'	and pc.pos = ' || ptovta;
+end if;
+
+consulta = consulta ||
+'	and (C_LYEICAEANotUsed_id is null or cnu.C_LYEICAEANotUsed_id not in ( ' ||
+		-- Ya notificados y aprobados 
+'		SELECT C_LYEICAEANotUsed_id ' ||
+'		FROM C_LYEICAEANotUsed ' ||
+'		WHERE environment = ''' || ambiente || '''' ||
+'		AND status = ''A'' ' ||
+'	)) ' ||
+' ) as foo ' ||
+' WHERE comp_emitidos = 0 ' ||
+' ORDER BY periodo asc, orden asc ';
+
+
+raise notice '%', consulta;
+FOR adocument IN EXECUTE consulta LOOP
+	return next adocument;
+END LOOP;
+
+END
+$BODY$
+ LANGUAGE plpgsql VOLATILE;
+
+--20210604-0930 CAEA: TABLE PARA REPORTE DE CAEA SIN UTILIZAR PENDIENTES A INFORMAR
+-- drop table T_caea_not_used 
+CREATE TABLE T_caea_not_used (
+	created timestamp,
+	ad_pinstance_id integer,
+	ad_client_id integer,
+	ad_org_id integer,
+	ambiente character,
+	caea varchar,
+	periodo integer,
+	orden integer,
+	ptovta integer,
+	status character,
+	detail varchar
+);
