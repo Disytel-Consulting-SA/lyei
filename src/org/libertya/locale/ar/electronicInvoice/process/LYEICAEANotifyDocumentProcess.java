@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.logging.Level;
@@ -111,7 +112,7 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 		while (rs.next()) {
 			LP_C_Invoice anInvoice = new LP_C_Invoice(getCtx(), rs, null);
 			MDocType docType = new MDocType(getCtx(), anInvoice.getC_DocTypeTarget_ID(), null);
-			result.append(" Informando ").append(docType.getName()).append(" ").append(anInvoice.getDocumentNo()).append("... ");
+			result.append(" Informando ").append(docType.getName()).append(" ").append(anInvoice.getDocumentNo()).append(": ");
 			try {
 				String status = notifyInvoice(anInvoice, docType);	
 				result.append(status).append(". \n<br>");
@@ -126,11 +127,14 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 				ko++;				
 			}
 		}
-		return  " Finalizado. \n<br> " +
+		String retValue = 
+				" Finalizado. Detalle: \n<br> " +
 				" \n<br>" +
 				result.toString() +
 				" \n<br> " +
 				" Total informadas OK:" + ok + ", total KO:" + ko;
+		System.out.println(retValue.replace("<br>", ""));
+		return retValue;
 	}
 
 	/** Recupera los documentos a informar */
@@ -612,17 +616,20 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 				clientID = Integer.parseInt(arg.substring(PARAM_CLIENT.length()));
 			} else if (arg.toLowerCase().startsWith(PARAM_ORG)) {
 				orgID = Integer.parseInt(arg.substring(PARAM_ORG.length()));
-			} else if (arg.toLowerCase().equals(PARAM_INV)) {
+			} else if (arg.toLowerCase().startsWith(PARAM_INV)) {
 				invoiceID = Integer.parseInt(arg.substring(PARAM_INV.length()));
-			} else if (arg.toLowerCase().equals(PARAM_POS)) {
+			} else if (arg.toLowerCase().startsWith(PARAM_POS)) {
 				pos = Integer.parseInt(arg.substring(PARAM_POS.length()));
-			} else if (arg.toLowerCase().equals(PARAM_CAEA)) {
+			} else if (arg.toLowerCase().startsWith(PARAM_CAEA)) {
 				caea = arg.substring(PARAM_CAEA.length());				
 			} else {
 				showHelp("ERROR: Argumento " + arg + " no reconocido");
 				System.exit(1);
 			}
 		}
+		
+		// Argumentos de invocacion
+		System.out.println("[Client] Argumentos: " + Arrays.toString(args));
 		
 	  	// OXP_HOME seteada?
 	  	String oxpHomeDir = System.getenv("OXP_HOME"); 
@@ -633,13 +640,21 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 	  	System.setProperty("OXP_HOME", oxpHomeDir);
 	  	if (!OpenXpertya.startupEnvironment( false ))
 	  		showHelp("ERROR: Error al iniciar el ambiente cliente.  Revise la configuración");
+	  	System.out.println("[Client] Host: " + DB.getDatabaseInfo());
 	  	
 	  	// Configuracion
 	  	if (clientID == -1 || orgID == -1)
 	  		showHelp("ERROR: Debe especificar ID compañía y ID de organizacion (la cual puede ser 0)");
 	  	Env.setContext(Env.getCtx(), "#AD_Client_ID", clientID);
 	  	Env.setContext(Env.getCtx(), "#AD_Org_ID", orgID);
-
+	  	
+	  	// Moneda de la compañía
+	  	int currencyID = DB.getSQLValue(null, "select c_currency_id from c_acctschema where ad_client_id = " + clientID);
+	  	if (currencyID<=0) {
+	  		showHelp("No se pudo determinar la moneda de la compañia desde el esquema contable");
+	  	}
+	  	Env.setContext(Env.getCtx(), "$C_Currency_ID", currencyID);
+	  	
 	  	// Invocacion
 	  	try {
 			// Recuperar ID del proceso 
