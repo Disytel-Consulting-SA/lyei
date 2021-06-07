@@ -1,5 +1,8 @@
 package org.libertya.locale.ar.electronicInvoice.process;
 
+import java.util.Arrays;
+
+import org.libertya.locale.ar.electronicInvoice.model.LP_C_LYEIElectronicPOSConfig;
 import org.libertya.locale.ar.electronicInvoice.utils.LYEIMTXCA;
 import org.openXpertya.OpenXpertya;
 import org.openXpertya.model.MProcess;
@@ -43,13 +46,23 @@ public class LYEICAEARequestProcess extends SvrProcess {
 	
 	@Override
 	protected String doIt() throws Exception {
-		// Recuperar CAEA
-		LYEIMTXCA mtxca = new LYEIMTXCA(clientID, orgID, prodEnv, currentPeriod, getCtx());
-		mtxca.requestCAEA();
-		if (mtxca.currentCAEA()==null) {
-			throw new Exception("No fue posible recuperar un CAEA. Verifique la informacion de los logs. ");
+		LYEIMTXCA mtxca = null;
+		try {
+			// Recuperar CAEA
+			mtxca = new LYEIMTXCA(clientID, orgID, prodEnv, currentPeriod, getCtx());
+			mtxca.requestCAEA();
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+			throw e;
+		}
+		if (mtxca==null || mtxca.currentCAEA()==null) {
+			String err = "No fue posible recuperar un CAEA. Verifique la informacion de los logs. ";
+			System.out.println(err);
+			throw new Exception(err);
 		} else {
-			return " CAEA obtenido: " + mtxca.currentCAEA().getCAEA();
+			String val = "CAEA obtenido/recuperado: " + mtxca.currentCAEA().getCAEA();
+			System.out.println(val);
+			return val;
 		}
 	}
 
@@ -76,9 +89,13 @@ public class LYEICAEARequestProcess extends SvrProcess {
 	
 	public static void main(String[] args) {
 
+		/** Compañía */
 		int clientID = -1;
+		/** Organización */
 		int orgID = -1;
-		boolean prodEnv = false;
+		/** Ambiente (H o P) */
+		String env = LP_C_LYEIElectronicPOSConfig.CURRENTENVIRONMENT_Homo;
+		/** Periodo actual o siguiente inmediato? */
 		boolean currentPeriod = true;
 		
 		for (String arg : args) {
@@ -88,15 +105,18 @@ public class LYEICAEARequestProcess extends SvrProcess {
 				clientID = Integer.parseInt(arg.substring(PARAM_CLIENT.length()));
 			} else if (arg.toLowerCase().startsWith(PARAM_ORG)) {
 				orgID = Integer.parseInt(arg.substring(PARAM_ORG.length()));
-			} else if (arg.toLowerCase().equals(PARAM_ENV)) {
-				prodEnv = "P".equalsIgnoreCase(arg.substring(PARAM_ENV.length()));
-			} else if (arg.toLowerCase().equals(PARAM_CURRENT_PERIOD)) {
+			} else if (arg.toLowerCase().startsWith(PARAM_ENV)) {
+				env = arg.substring(PARAM_ENV.length());
+			} else if (arg.toLowerCase().startsWith(PARAM_CURRENT_PERIOD)) {
 				currentPeriod = "Y".equalsIgnoreCase(arg.substring(PARAM_CURRENT_PERIOD.length()));
 			} else {
 				showHelp("ERROR: Argumento " + arg + " no reconocido");
 				System.exit(1);
 			}
 		}
+		
+		// Argumentos de invocacion
+		System.out.println("[Client] Argumentos: " + Arrays.toString(args));
 		
 	  	// OXP_HOME seteada?
 	  	String oxpHomeDir = System.getenv("OXP_HOME"); 
@@ -107,12 +127,20 @@ public class LYEICAEARequestProcess extends SvrProcess {
 	  	System.setProperty("OXP_HOME", oxpHomeDir);
 	  	if (!OpenXpertya.startupEnvironment( false ))
 	  		showHelp("ERROR: Error al iniciar el ambiente cliente.  Revise la configuración");
+	  	System.out.println("[Client] Host: " + DB.getDatabaseInfo());	  	
 	  	
 	  	// Configuracion
 	  	if (clientID == -1 || orgID == -1)
 	  		showHelp("ERROR: Debe especificar ID compañía y ID de organizacion (la cual puede ser 0)");
 	  	Env.setContext(Env.getCtx(), "#AD_Client_ID", clientID);
 	  	Env.setContext(Env.getCtx(), "#AD_Org_ID", orgID);
+	  	
+	  	// Moneda de la compañía
+	  	int currencyID = DB.getSQLValue(null, "select c_currency_id from c_acctschema where ad_client_id = " + clientID);
+	  	if (currencyID<=0) {
+	  		showHelp("No se pudo determinar la moneda de la compañia desde el esquema contable");
+	  	}
+	  	Env.setContext(Env.getCtx(), "$C_Currency_ID", currencyID);
 
 	  	// Invocacion
 	  	try {
@@ -128,7 +156,7 @@ public class LYEICAEARequestProcess extends SvrProcess {
 			// Parametros: org
 			addProcessParam(pi, "AD_Org_ID", orgID);
 			// Parametros: prod o homo
-			addProcessParam(pi, "Environment", prodEnv?"Y":"N");
+			addProcessParam(pi, "Environment", env);
 			// Parametros: periodo actual o siguiente
 			addProcessParam(pi, "CurrentPeriod", currentPeriod?"Y":"N");
 			
@@ -161,8 +189,8 @@ public class LYEICAEARequestProcess extends SvrProcess {
 				"   " + PARAM_HELP 				+ " muestra esta ayuda \n" + 
 				"   " + PARAM_CLIENT 			+ " AD_Client_ID (obligatorio) \n" +
 				"   " + PARAM_ORG 				+ " AD_Org_ID (obligatorio, puede ser 0) \n" +				
-				"   " + PARAM_ENV 				+ " ambiente (H)omologacio o (P)roduccion (obligatorio) \n" +
-				"   " + PARAM_CURRENT_PERIOD 	+ " periodo actual? (Y/N) Si no es actual pide por el siguiente (obligatorio) \n" +				
+				"   " + PARAM_ENV 				+ " ambiente (H)omologacio o (P)roduccion. Si no se especifica, se supone homologacion \n" +
+				"   " + PARAM_CURRENT_PERIOD 	+ " periodo actual? (Y/N) Si no es actual pide por el siguiente. Si no se especifica, se supone el actual \n" +				
 				" \n" +
 				" El AD_Client_ID y el AD_Org_ID se utilizan para determinar la configuración utilizar.\n" +
 				" El nombre de argumento y su correspondiente valor no deben tener espacios!";

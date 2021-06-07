@@ -237,10 +237,11 @@ public class LYEIMTXCA {
 										" FROM C_LYEIElectronicPOSConfig pc " +
 										" INNER JOIN C_LYEIElectronicInvoiceConfig ic ON pc.C_LYEIElectronicInvoiceConfig_ID = ic.C_LYEIElectronicInvoiceConfig_ID " +
 										" WHERE pc.AD_Client_ID = " + clientID +
-										" AND pc.AD_Org_ID = " + orgID +
+										(orgID>0? " AND pc.AD_Org_ID = " + orgID : "") +
 										" AND pc.isactive = 'Y' " +
 										" AND pc.caemethod = 'A' " + // Debe ser de tipo CAEA
-										" AND pc." + (prodEnv?"production":"test") + "crtstatus = 'V' "  // Debe tener el certificado valido
+										" AND pc." + (prodEnv?"production":"test") + "crtstatus = 'V' " + // Debe tener el certificado valido
+										" LIMIT 1"
 									);
 		ResultSet rs = pstmt.executeQuery();
 		

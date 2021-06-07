@@ -2,6 +2,7 @@ package org.libertya.locale.ar.electronicInvoice.process;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.logging.Level;
 
@@ -71,46 +72,55 @@ public class LYEICAEANotUsedProcess extends SvrProcess {
 	@Override
 	protected String doIt() throws Exception {
 		
-		// Cargar el request asociado al caea especificado (si es que se especifo uno)
-		loadTargetRequestCAEA();
-		
-		// Recorrer puntos de venta
-		PreparedStatement pstmt = DB.prepareStatement(getPtosVtasQuery(), null);
-		ResultSet rs = pstmt.executeQuery();
-		result.append("CAEA no utilizado a informar: ").append(caea).append(". \n<br>");
-		while (rs.next()) {
-			// ID Configuracion Pto Vta electronico
-			int posConfigID = rs.getInt("C_LYEIElectronicPOSConfig_ID");
-			// Punto de venta
-			int pos = rs.getInt("pos");
-			// Cantidad emitidos
-			int cant = rs.getInt("cantidad");
-						
-			// Si se emitieron comprobantes para el punto de venta en cuestion, saltear
-			if (cant > 0) {
-				result.append(" Ptovta ").append(pos).append(" con comprobantes, omitiendo. \n<br>");
-				continue;
-			}
+		try {
+			// Cargar el request asociado al caea especificado (si es que se especifo uno)
+			loadTargetRequestCAEA();
 			
-			// verificar si ya existe la entrada en c_lyeicaeanotused 
-			if (alreadyNotifiedNotUsed(posConfigID)) {
-				result.append(" Ptovta ").append(pos).append(" no utilizado ya informado, omitiendo. \n<br>");
-				continue;
+			// Recorrer puntos de venta
+			PreparedStatement pstmt = DB.prepareStatement(getPtosVtasQuery(), null);
+			ResultSet rs = pstmt.executeQuery();
+			result.append("CAEA no utilizado a informar: ").append(caea).append(". \n<br>");
+			while (rs.next()) {
+				// ID Configuracion Pto Vta electronico
+				int posConfigID = rs.getInt("C_LYEIElectronicPOSConfig_ID");
+				// Punto de venta
+				int pos = rs.getInt("pos");
+				// Cantidad emitidos
+				int cant = rs.getInt("cantidad");
+							
+				// Si se emitieron comprobantes para el punto de venta en cuestion, saltear
+				if (cant > 0) {
+					result.append(" Ptovta ").append(pos).append(" con comprobantes, omitiendo. \n<br>");
+					continue;
+				}
+				
+				// verificar si ya existe la entrada en c_lyeicaeanotused 
+				if (alreadyNotifiedNotUsed(posConfigID)) {
+					result.append(" Ptovta ").append(pos).append(" no utilizado ya informado, omitiendo. \n<br>");
+					continue;
+				}
+				
+				// Notificar CAEA no utilizado
+				try {
+					result.append(" Ptovta ").append(pos).append(" sin comprobantes, informando... ");
+					String status = notifyPosNotUsed(pos);
+					result.append(status).append(". \n<br>");
+				} catch (Exception e) {
+					result.append(e.getMessage()).append(". \n<br>");
+				}
+				
 			}
-			
-			// Notificar CAEA no utilizado
-			try {
-				result.append(" Ptovta ").append(pos).append(" sin comprobantes, informando... ");
-				String status = notifyPosNotUsed(pos);
-				result.append(status).append(". \n<br>");
-			} catch (Exception e) {
-				result.append(e.getMessage()).append(". \n<br>");
-			}
-			
+			String retValue =
+					"Finalizado. Detalle: \n<br> " +
+					" \n<br>" +
+					result.toString();
+			System.out.println(retValue.replace("<br>", ""));
+			return retValue;
+		} catch (Exception e) {
+			String err = "Error: " + e.getMessage();
+			System.out.println(err);
+			throw e;
 		}
-		return "Finalizado. \n<br> " +
-				" \n<br>" +
-				result.toString();
 	}
 	
 	
@@ -118,7 +128,7 @@ public class LYEICAEANotUsedProcess extends SvrProcess {
 	protected String notifyPosNotUsed(int pos) throws Exception {
 		
 		// Obtener la configuracion de FE segun la factura
-		MLYEIElectronicPOSConfig posConfig = MLYEIElectronicPOSConfig.get(pos, orgID, getCtx(), null);
+		MLYEIElectronicPOSConfig posConfig = MLYEIElectronicPOSConfig.get(pos, getCtx(), null);
 		
 		// Configuracion electronica general asociada al pto vta. De no existir luego se eleva excepcion
 		if (posConfig==null || posConfig.getC_LYEIElectronicPOSConfig_ID()==0) {
@@ -249,7 +259,7 @@ public class LYEICAEANotUsedProcess extends SvrProcess {
 		ResultSet rs = pstmt.executeQuery();
 		// Se pudo recuperar uno?
 		if (!rs.next()) {
-			String detail = !Util.isEmpty(caea) ? ("para el CAEA ingresado: " + caea) : " cuya fecha hasta sea mayor a la actual pero menor a la fecha tope de informe";
+			String detail = !Util.isEmpty(caea) ? ("para el CAEA ingresado: " + caea) : " donde la fecha actual se encuentre entre la fecha hasta y la fecha tope informe";
 			throw new Exception("No se ha podido recuperar un CAEA a informar del historico de solicitudes " + detail);
 		}
 		
@@ -319,9 +329,13 @@ public class LYEICAEANotUsedProcess extends SvrProcess {
 
 	public static void main(String[] args) {
 
+		/** Compañía */
 		int clientID = -1;
+		/** Organización */
 		int orgID = -1;
-		boolean prodEnv = false;
+		/** Ambiente (H o P) */
+		String env = LP_C_LYEIElectronicPOSConfig.CURRENTENVIRONMENT_Homo;
+		/** Indicar un CAEA en particular */
 		String caea = null;
 		
 		for (String arg : args) {
@@ -331,15 +345,18 @@ public class LYEICAEANotUsedProcess extends SvrProcess {
 				clientID = Integer.parseInt(arg.substring(PARAM_CLIENT.length()));
 			} else if (arg.toLowerCase().startsWith(PARAM_ORG)) {
 				orgID = Integer.parseInt(arg.substring(PARAM_ORG.length()));
-			} else if (arg.toLowerCase().equals(PARAM_ENV)) {
-				prodEnv = "P".equalsIgnoreCase(arg.substring(PARAM_ENV.length()));
-			} else if (arg.toLowerCase().equals(PARAM_CAEA)) {
+			} else if (arg.toLowerCase().startsWith(PARAM_ENV)) {
+				env = arg.substring(PARAM_ENV.length());
+			} else if (arg.toLowerCase().startsWith(PARAM_CAEA)) {
 				caea = arg.substring(PARAM_CAEA.length());				
 			} else {
 				showHelp("ERROR: Argumento " + arg + " no reconocido");
 				System.exit(1);
 			}
 		}
+		
+		// Argumentos de invocacion
+		System.out.println("[Client] Argumentos: " + Arrays.toString(args));
 		
 	  	// OXP_HOME seteada?
 	  	String oxpHomeDir = System.getenv("OXP_HOME"); 
@@ -350,12 +367,20 @@ public class LYEICAEANotUsedProcess extends SvrProcess {
 	  	System.setProperty("OXP_HOME", oxpHomeDir);
 	  	if (!OpenXpertya.startupEnvironment( false ))
 	  		showHelp("ERROR: Error al iniciar el ambiente cliente.  Revise la configuración");
+	  	System.out.println("[Client] Host: " + DB.getDatabaseInfo());
 	  	
 	  	// Configuracion
 	  	if (clientID == -1 || orgID == -1)
 	  		showHelp("ERROR: Debe especificar ID compañía y ID de organizacion (la cual puede ser 0)");
 	  	Env.setContext(Env.getCtx(), "#AD_Client_ID", clientID);
 	  	Env.setContext(Env.getCtx(), "#AD_Org_ID", orgID);
+	  	
+	  	// Moneda de la compañía
+	  	int currencyID = DB.getSQLValue(null, "select c_currency_id from c_acctschema where ad_client_id = " + clientID);
+	  	if (currencyID<=0) {
+	  		showHelp("No se pudo determinar la moneda de la compañia desde el esquema contable");
+	  	}
+	  	Env.setContext(Env.getCtx(), "$C_Currency_ID", currencyID);
 
 	  	// Invocacion
 	  	try {
@@ -371,7 +396,7 @@ public class LYEICAEANotUsedProcess extends SvrProcess {
 			// Parametros: org
 			addProcessParam(pi, "AD_Org_ID", orgID);
 			// Parametros: Environment
-			addProcessParam(pi, "Environment", prodEnv);
+			addProcessParam(pi, "Environment", env);
 			// Parametros: caea
 			addProcessParam(pi, "CAEA", caea!=null?caea:null);			
 			
@@ -404,7 +429,7 @@ public class LYEICAEANotUsedProcess extends SvrProcess {
 				"   " + PARAM_HELP 				+ " muestra esta ayuda \n" + 
 				"   " + PARAM_CLIENT 			+ " AD_Client_ID (obligatorio) \n" +
 				"   " + PARAM_ORG 				+ " AD_Org_ID (obligatorio, puede ser 0) \n" +				
-				"   " + PARAM_ENV 				+ " ambiente (H)omologacio o (P)roduccion (obligatorio) \n" +
+				"   " + PARAM_ENV 				+ " ambiente (H)omologacio o (P)roduccion. Si no se especifica, se supone homologacion \n" +
 				"   " + PARAM_CAEA		 		+ " informar un CAEA no utilizado en particular (opcional). De no informarse se toma el CAEA vencido más reciente. \n" +				
 				" \n" +
 				" El nombre de argumento y su correspondiente valor no deben tener espacios!";

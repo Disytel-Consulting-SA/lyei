@@ -47,5 +47,16 @@ public class MLYEIElectronicPOSConfig extends LP_C_LYEIElectronicPOSConfig {
 		return (MLYEIElectronicPOSConfig)PO.findFirst(ctx, LP_C_LYEIElectronicPOSConfig.Table_Name, "(AD_Org_ID = 0 OR AD_Org_ID = ?) AND POS = ?", new Object[]{orgID, pos}, null, trxName);
 	}
 	
-	
+	/**
+	 * Retorna una POSConfig a partir de un punto de venta
+	 * @param pos
+	 * @return
+	 */
+	public static MLYEIElectronicPOSConfig get(int pos, Properties ctx, String trxName) {
+		// Segun la configuracion realizada, pueden darse los siguientes casos:
+		//		1) Que en la configuracion se utilice la organizacion *, por lo tanto hay que buscar bajo AD_Org_ID = 0
+		//		2) Que en la configuracion se utilicen distintas organizaciones, por lo tanto hay que buscar con la org recibida como argumente
+		// En cualquier caso, no es factible tener una combinación de organizaciones y adicionalmente la organización * 
+		return (MLYEIElectronicPOSConfig)PO.findFirst(ctx, LP_C_LYEIElectronicPOSConfig.Table_Name, " POS = ? ", new Object[]{pos}, null, trxName);
+	}
 }
