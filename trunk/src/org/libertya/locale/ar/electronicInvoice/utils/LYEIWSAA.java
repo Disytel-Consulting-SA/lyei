@@ -84,6 +84,7 @@ public class LYEIWSAA {
 		int[] posConfigIDs = PO.getAllIDs(LP_C_LYEIElectronicPOSConfig.Table_Name, 
 											" C_LYEIElectronicInvoiceConfig_ID =  " + aConfig.getC_LYEIElectronicInvoiceConfig_ID() + 
 											" AND C_LYEIElectronicPOSConfig_ID <> " + aConfig.getC_LYEIElectronicPOSConfig_ID() +
+											" AND CAEMethod = '" + aConfig.getCAEMethod() + "'" +
 											" AND " + getCRTColumnName(targetEnv) + " IS NOT NULL " + 
 											" AND " + getCRTColumnName(targetEnv) + " = (select " + getCRTColumnName(targetEnv) + 
 											" 											 from C_LYEIElectronicPOSConfig " +

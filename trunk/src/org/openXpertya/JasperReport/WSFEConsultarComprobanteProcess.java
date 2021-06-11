@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Properties;
 
+import org.libertya.locale.ar.electronicInvoice.model.LP_C_LYEIElectronicPOSConfig;
 import org.libertya.locale.ar.electronicInvoice.model.MLYEIElectronicInvoiceConfig;
 import org.libertya.locale.ar.electronicInvoice.model.MLYEIElectronicPOSConfig;
 import org.libertya.locale.ar.electronicInvoice.utils.LYEIConstants;
@@ -26,6 +27,14 @@ import FEV1.dif.afip.gov.ar.FECompConsultaReq;
 import FEV1.dif.afip.gov.ar.FECompConsultaResponse;
 import FEV1.dif.afip.gov.ar.ServiceLocator;
 import FEV1.dif.afip.gov.ar.ServiceSoap;
+import ar.gov.afip.wsmtxca.service.impl.service.AuthRequestType;
+import ar.gov.afip.wsmtxca.service.impl.service.CodigoDescripcionType;
+import ar.gov.afip.wsmtxca.service.impl.service.ConsultaComprobanteRequestType;
+import ar.gov.afip.wsmtxca.service.impl.service.ConsultarComprobanteRequestType;
+import ar.gov.afip.wsmtxca.service.impl.service.ConsultarComprobanteResponseType;
+import ar.gov.afip.wsmtxca.service.impl.service.MTXCAServiceLocator;
+import ar.gov.afip.wsmtxca.service.impl.service.MTXCAServicePortType;
+import ar.gov.afip.wsmtxca.service.impl.service.MTXCAServiceSoap11BindingStub;
 import fexv1.dif.afip.gov.ar.ClsFEXAuthRequest;
 import fexv1.dif.afip.gov.ar.ClsFEXGetCMP;
 import fexv1.dif.afip.gov.ar.FEXGetCMPResponse;
@@ -325,11 +334,20 @@ public class WSFEConsultarComprobanteProcess extends SvrProcess {
 	/** Consultar cada una de los comprobantes */
 	public void queryInvoices() throws Exception {
 		// Consultar cada comprobante e incorporar a la nómina de resultados
-		for (long i = getCbteNroFrom(); i <= getCbteNroTo(); i++)
-			if (!isExportacion(getCbteTipo()))
+		for (long i = getCbteNroFrom(); i <= getCbteNroTo(); i++) {
+			// Comprobante CAEA (mtxca)?
+			if (LP_C_LYEIElectronicPOSConfig.CAEMETHOD_CAEA.equals(posConfig.getCAEMethod())) {
+				getRetrievedDocuments().add(consultarCAEA(i, getCbteTipo(), "", getPtoVta()));
+				continue;
+			}
+			// Comprobante CAE (wsfe/wsfex)?
+			if (!isExportacion(getCbteTipo())) {
 				getRetrievedDocuments().add(consultarCAE(i, getCbteTipo(), "", getPtoVta()));
-			else
+			}
+			else {
 				getRetrievedDocuments().add(consultarCAEX(i, getCbteTipo(), "", getPtoVta()));
+			}
+		}
 	}
 
 	
@@ -458,6 +476,100 @@ public class WSFEConsultarComprobanteProcess extends SvrProcess {
 		return retValues; 
 	}
 
+	
+	/** Genera la consulta al WS de AFIP mtxca por el comprobante dado */
+	public HashMap<String, String> consultarCAEA(long cbteNro, int cbteTipo, String cbeTipoDesc, int ptoVta) throws Exception {
+	
+		// Valores minimos a retornar, bien sea error o no (numero de documento, tipo de comprobante y punto de venta)
+		HashMap<String, String> retValues = new HashMap<String, String>(); 
+		retValues.put("DocNro", 	"" + cbteNro);
+		retValues.put("CbteTipo", 	"" + cbteTipo);
+		retValues.put("PtoVta", 	"" + ptoVta);
+		
+		// Auth
+		AuthRequestType auth = new AuthRequestType();
+		auth.setCuitRepresentada(Long.parseLong(genConfig.getCUIT().replace("-", "").replace(" ", "")));
+		auth.setSign(sign);
+		auth.setToken(token);
+				
+		// Config de conexion al WS
+		String endPoint = LYEITools.getEndPointAddress(LYEIConstants.EXTERNAL_SERVICE_MTXCA_PREFIX, posConfig.getCurrentEnvironment());		
+		MTXCAServiceLocator locator = new MTXCAServiceLocator();
+		locator.setMTXCAServiceHttpSoap11EndpointEndpointAddress(endPoint);
+		MTXCAServicePortType caeaService = locator.getMTXCAServiceHttpSoap11Endpoint();
+		((MTXCAServiceSoap11BindingStub)caeaService).setTimeout(LYEITools.getTimeout(LYEIConstants.EXTERNAL_SERVICE_MTXCA_PREFIX, posConfig.getCurrentEnvironment()));
+
+		// Info de tipo de comprobante y punto de venta
+		ConsultaComprobanteRequestType cc = new ConsultaComprobanteRequestType();
+		cc.setCodigoTipoComprobante((short)cbteTipo);
+		cc.setNumeroPuntoVenta(posConfig.getPOS());
+		cc.setNumeroComprobante(cbteNro);
+
+		// Invocar al servicio
+		ConsultarComprobanteRequestType parameters = new ConsultarComprobanteRequestType();
+		parameters.setAuthRequest(auth);
+		parameters.setConsultaComprobanteRequest(cc);
+		
+		// Invocacion a la operacion
+		ConsultarComprobanteResponseType response = null;
+		int tryNo = 0;
+		boolean endLoop = false;
+		while (!endLoop) {
+			try {
+				tryNo++;
+				response = caeaService.consultarComprobante(parameters);
+				response.toString();	// <-- NPE check
+				endLoop = true;
+			} catch (Exception e) {
+				// Al capturar una excepción al RETRY_MAX intento, no continuar intentando
+				if (tryNo == RETRY_MAX) {
+					// Error al interactuar con WSFE de AFIP
+					retValues.put("Resultado", "Error de conexión: " + e.toString());
+					log.saveError("[WSMTXCACC] Error de conexión: ", e.toString());
+					return retValues;
+				}
+			}
+		}
+		
+		// Error recibido desde WSMTXCA de AFIP
+		if (response.getArrayErrores() != null && response.getArrayErrores().length>0) {
+			StringBuffer completeErrorStr = new StringBuffer();
+			for (CodigoDescripcionType error : response.getArrayErrores()) {
+				completeErrorStr.append(error.getDescripcion()).append(". ");
+			}
+			retValues.put("Resultado", "Error: " + completeErrorStr.toString());
+			log.saveError("[WSMTXCACC] Error para cbteNro " + cbteNro + ", cbteTipo " + cbteTipo + ", ptoVta " + ptoVta + ": ", completeErrorStr.toString());
+			return retValues;
+		}
+				
+		// En este punto se supone valores recibidos conformes a un comprobante encontrado
+		retValues.put("CbteDesde", 			"" + response.getComprobante().getNumeroComprobante());
+		retValues.put("CbteFch", 			"" + response.getComprobante().getFechaEmision());
+		retValues.put("CbteHasta", 			"" + response.getComprobante().getNumeroComprobante());
+		retValues.put("CbteTipo", 			"" + response.getComprobante().getCodigoTipoDocumento());
+		retValues.put("CodAutorizacion", 	"" + response.getComprobante().getCodigoAutorizacion());
+		retValues.put("Concepto", 			"" + response.getComprobante().getCodigoConcepto());
+		retValues.put("DocNro", 			"" + response.getComprobante().getNumeroDocumento());
+		retValues.put("DocTipo", 			"" + response.getComprobante().getCodigoTipoDocumento());
+		//retValues.put("EmisionTipo", 		"" + response.getComprobante().get?);
+		//retValues.put("FchProceso", 		"" + response.getComprobante().get?);
+		retValues.put("FchServDesde", 		"" + response.getComprobante().getFechaServicioDesde());
+		retValues.put("FchServHasta", 		"" + response.getComprobante().getFechaServicioHasta());
+		retValues.put("FchVto", 			"" + response.getComprobante().getFechaVencimiento());
+		retValues.put("FchVtoPago", 		"" + response.getComprobante().getFechaVencimientoPago());
+		retValues.put("ImpIVA", 			"" + response.getComprobante().getImporteGravado());
+		retValues.put("ImpNeto", 			"" + response.getComprobante().getImporteSubtotal());
+		retValues.put("ImpOpEx", 			"" + response.getComprobante().getImporteExento());
+		retValues.put("ImpTotal", 			"" + response.getComprobante().getImporteTotal());
+		retValues.put("ImpTotConc", 		"" + response.getComprobante().getImporteNoGravado());
+		retValues.put("ImpTrib", 			"" + response.getComprobante().getImporteOtrosTributos());
+		retValues.put("MonCotiz", 			"" + response.getComprobante().getCotizacionMoneda());
+		retValues.put("MonId", 				"" + response.getComprobante().getCodigoMoneda());
+		retValues.put("PtoVta", 			"" + response.getComprobante().getNumeroPuntoVenta());
+		//retValues.put("Resultado", 			"" + response.getComprobante().get?);
+		
+		return retValues;
+	}
 
 	public MDocType getaDocType() {
 		return aDocType;
