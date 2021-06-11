@@ -256,3 +256,6 @@ CREATE TABLE T_caea_not_used (
 	status character,
 	detail varchar
 );
+
+--20210610-1031 CAEA: Nueva columna para tipo validacion de secuencias
+update ad_system set dummy = (SELECT addcolumnifnotexists('C_LYEIElectronicPOSConfig','CAEACheckSequences','character(1)'));
