@@ -60,7 +60,8 @@ public class LYEICAEARequestProcess extends SvrProcess {
 			System.out.println(err);
 			throw new Exception(err);
 		} else {
-			String val = "CAEA obtenido/recuperado: " + mtxca.currentCAEA().getCAEA();
+
+			String val = "CAEA " + (mtxca.isCachedCAEA()?"existente":"nuevo") + ": " + mtxca.currentCAEA().getCAEA();
 			System.out.println(val);
 			return val;
 		}
