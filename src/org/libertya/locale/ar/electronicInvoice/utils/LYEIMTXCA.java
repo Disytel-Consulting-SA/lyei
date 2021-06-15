@@ -42,6 +42,8 @@ public class LYEIMTXCA {
 	LP_C_LYEICAEARequest currentCAEA = null;
 	/** Contexto */
 	protected Properties ctx = null;
+	/** Recuperamos un CAEA ya solicitado? */
+	protected boolean cachedCAEA = false;
 	
 	/** Instanciar CAEA a partir de compañía/organizacion 
 	 *  Se utiliza cuando se desea obtener un CAEA sin estar completando una factura (proceso croneado por ejemplo).
@@ -139,8 +141,10 @@ public class LYEIMTXCA {
 			
 			// Ya existe el CAEA para el periodo y ambiente en cuestion? Dejarlo cargado para su uso 
 			currentCAEA = findCAEA();
-			if (currentCAEA!=null && currentCAEA.getC_LYEICAEARequest_ID()>0 && !Util.isEmpty(currentCAEA.getCAEA()))
+			if (currentCAEA!=null && currentCAEA.getC_LYEICAEARequest_ID()>0 && !Util.isEmpty(currentCAEA.getCAEA())) {
+				cachedCAEA = true;
 				return;
+			}
 			
 			// No existe localmente, pedir nuevo CAEA
 			MLYEIElectronicInvoiceLog.logActivity(LYEIMTXCA.class, Level.INFO, inv!=null?inv.getC_Invoice_ID():null, posConfig.getC_LYEIElectronicPOSConfig_ID(), genConfig.getC_LYEIElectronicInvoiceConfig_ID(), "Obteniendo nuevo CAEA. Periodo:" + periodo + ". Orden:" + orden);
@@ -271,6 +275,10 @@ public class LYEIMTXCA {
 	/** Retorna el potencial CAEA Request previamente recuperado */
 	public LP_C_LYEICAEARequest currentCAEA() {
 		return currentCAEA;
+	}
+
+	public boolean isCachedCAEA() {
+		return cachedCAEA;
 	}
 	
 }
