@@ -206,8 +206,12 @@ consulta = consulta ||
 end if;
 
 consulta = consulta ||
-'	and cr.environment = ''' || ambiente || '''' ||
+'	and cr.environment = ''' || ambiente || '''';
+
+if (periodo is not null and periodo>0) then
+consulta = consulta ||
 '	and cr.periodo = ' || periodo;
+end if;
 
 if (orden is not null and orden>0) then
 consulta = consulta ||
