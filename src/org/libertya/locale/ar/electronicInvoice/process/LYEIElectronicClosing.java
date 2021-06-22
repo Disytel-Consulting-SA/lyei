@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,6 +18,7 @@ import org.openXpertya.process.AbstractSvrProcess;
 import org.openXpertya.util.CLogger;
 import org.openXpertya.util.DB;
 import org.openXpertya.util.Env;
+import org.openXpertya.util.Util;
 
 public class LYEIElectronicClosing extends AbstractSvrProcess {
 
@@ -35,6 +37,15 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 	
 	/** Cierre Electrónico del Día para el punto de venta */
 	private FiscalClosingResponseDTO result = null;
+	
+	/** El provider que realiza la consulta de los comprobantes */
+	private WSFEConsultarComprobanteProcess wsfeProvider = null;
+
+	/** Formateo de fechas de yyyyMMdd */
+	protected DateFormat lyeiDateFormatter = new SimpleDateFormat("yyyyMMdd");
+	
+	/** Fecha parámetro en string */
+	private String dateParamStr;
 	
 	/**
 	 * @return Fecha parámetro
@@ -57,6 +68,9 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 	protected void initialize() throws Exception {
 		setPos(new MPOS(getCtx(), getPOSID(), get_TrxName()));
 		setResult(new FiscalClosingResponseDTO());
+		dateParamStr = lyeiDateFormatter.format(getDateParam());
+		// Inicializar los datos del proveedor de servicios
+		setLYEIProvider();
 	}
 	
 	@Override
@@ -68,35 +82,26 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 		requestData();
 		
 		// Guardar el cierre electrónico para el punto de venta y fecha parámetro
-		saveClosingInfo();
+		endProcess();
 		
-		return "@ProcessOK@";
+		return getMsg();
 	}
 
 	/**
 	 * Realizar la consulta a AFIP con la info de punto de venta y fecha
 	 */
 	protected void requestData() throws Exception {
-		// Inicializar sus datos
-		WSFEConsultarComprobanteProcess wccp = new WSFEConsultarComprobanteProcess(getCtx(), getPos().getAD_Client_ID(), getPos().getAD_Org_ID(), get_TrxName());
-		wccp.setPtoVta(getPos().getPOSNumber());
-		wccp.loadInitialValues();
 		// Iterar por todos los tipos de documento del punto de venta
-		PreparedStatement ps = DB.prepareStatement("select * " + 
-													"from c_doctype " + 
-													"where doctypekey ilike '%" + getPos().getPOSNumber() + "%' and isactive = 'Y' and ad_client_id = "
-													+ getPos().getAD_Client_ID(), get_TrxName()
-													+ " order by doctypekey ");
+		PreparedStatement ps = DB.prepareStatement(getDocumentsQuery(), get_TrxName());
 		ResultSet rs = ps.executeQuery();
 		MDocType dt;
 		int min, max;
-		BigDecimal sign = BigDecimal.ZERO;
 		while(rs.next()) {
 			// Setear el tipo de documento al wccp
-			dt = new MDocType(getCtx(), rs, get_TrxName());
-			wccp.setaDocType(dt);
-			wccp.setCbteTipoNombre(dt.getName());
-			wccp.setCbteTipo(wccp.getCbteTipo(dt));
+			dt = getDocType(rs);
+			getWsfeProvider().setaDocType(dt);
+			getWsfeProvider().setCbteTipoNombre(dt.getName());
+			getWsfeProvider().setCbteTipo(getWsfeProvider().getCbteTipo(dt));
 			// Consultar el mínimo anterior a la fecha actual, restando 10 por las dudas
 			min = getExtremeDocumentNos("min", dt.getID());
 			// Consultar el máximo de la fecha actual, agregando 10 por las dudas
@@ -106,35 +111,11 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 			min = (min - DELTA_DAYS) < 0?0:min - DELTA_DAYS;
 			max = max + DELTA_DAYS;
 			// Consultar los datos en la iteración de facturas del wccp
-			wccp.setCbteNroFrom(min);
-			wccp.setCbteNroTo(max);
-			wccp.setRetrievedDocuments(new ArrayList<HashMap<String,String>>());
-			wccp.queryInvoices();
-			sign = new BigDecimal(dt.getsigno_issotrx());
-			BigDecimal taxAmt, compAmt, tribAmt;
-			String dateParamStr = new SimpleDateFormat("yyyyMMdd").format(getDateParam());
-			for (HashMap<String, String> invoices : wccp.getRetrievedDocuments()) {
-				if(invoices.get("ImpTotal") == null) continue;
-				// Verificar que la fecha del comprobante sea la fecha parámetro, sino no es de
-				// la misma fecha
-				if(!dateParamStr.equals(invoices.get("CbteFch"))) continue;
-				// Traerme los datos y sumar al objeto DTO del Fiscal Close
-				// Si es crédito va para lo que es creditnote y lo que es debito va para fiscal
-				BigDecimal monCotiz = new BigDecimal(invoices.get("MonCotiz"));
-				compAmt = new BigDecimal(invoices.get("ImpTotal")).multiply(monCotiz);
-				taxAmt = (invoices.get("ImpIVA") == null?BigDecimal.ZERO:new BigDecimal(invoices.get("ImpIVA"))).multiply(monCotiz);
-				tribAmt = (invoices.get("ImpTrib") == null?BigDecimal.ZERO:new BigDecimal(invoices.get("ImpTrib"))).multiply(monCotiz);
-				if(sign.compareTo(BigDecimal.ZERO) < 0) {
-					getResult().creditnoteamt = getResult().creditnoteamt.add(compAmt);
-					getResult().creditnotetaxamt = getResult().creditnotetaxamt.add(taxAmt);
-					getResult().creditnoteperceptionamt = getResult().creditnoteperceptionamt.add(tribAmt);
-				}
-				else {
-					getResult().fiscaldocumentamt = getResult().fiscaldocumentamt.add(compAmt);
-					getResult().fiscaldocumenttaxamt = getResult().fiscaldocumenttaxamt.add(taxAmt);
-					getResult().fiscaldocumentperceptionamt = getResult().fiscaldocumentperceptionamt.add(tribAmt);
-				}
-			}
+			getWsfeProvider().setCbteNroFrom(min);
+			getWsfeProvider().setCbteNroTo(max);
+			getWsfeProvider().setRetrievedDocuments(new ArrayList<HashMap<String,String>>());
+			getWsfeProvider().queryInvoices();
+			processDocuments();
 		}
 		rs.close();
 		ps.close();
@@ -143,7 +124,7 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 	/**
 	 * Guardar el cierre electrónico del punto de venta
 	 */
-	protected void saveClosingInfo() throws Exception {
+	protected void endProcess() throws Exception {
 		// Crear el registro o busco el de la fecha
 		MControladorFiscalClosingInfo cinfo = getFiscalClosing();
 		
@@ -214,6 +195,80 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 		return DB.getSQLValue(get_TrxName(), sql, true);
 	}
 	
+	/**
+	 * @return proveedor de consulta de comprobantes
+	 */
+	protected void setLYEIProvider() throws Exception {
+		WSFEConsultarComprobanteProcess wccp = new WSFEConsultarComprobanteProcess(getCtx(), getClientID(), getOrgID(),
+				get_TrxName());
+		wccp.setPtoVta(getPOSNumber());
+		wccp.loadInitialValues();
+		setWsfeProvider(wccp);
+	}
+	
+	/**
+	 * @return consulta que determina los tipos de documento a consultar
+	 */
+	protected String getDocumentsQuery() {
+		return "select *, substring(doctypekey from (length(doctypekey)-3) for 4) as posnumber " + 
+				"from c_doctype " + 
+				"where isactive = 'Y' and ad_client_id = "+ getAD_Client_ID() +
+				(Util.isEmpty(getPOSNumber(), true)?"":" and doctypekey ilike '%" + getPOSNumber() + "%' ") +
+				" and iselectronic = 'Y' " +
+				" order by doctypekey ";
+	}
+	
+	/**
+	 * Procesamiento de documentos
+	 */
+	protected void processDocuments() throws Exception {
+		for (HashMap<String, String> document : getWsfeProvider().getRetrievedDocuments()) {
+			if(document.get("ImpTotal") == null) continue;
+			// Verificar que la fecha del comprobante sea la fecha parámetro, sino no es de
+			// la misma fecha
+			if(!validateDocument(document)) continue;
+			// Traerme los datos y sumar al objeto DTO del Fiscal Close
+			// Si es crédito va para lo que es creditnote y lo que es debito va para fiscal
+			processDocument(document);
+		}
+	}
+	
+	/**
+	 * Procesamiento de un documento de toda la nómina
+	 * 
+	 * @param document documento a procesar
+	 * @throws Exception
+	 */
+	protected void processDocument(HashMap<String, String> document) throws Exception {
+		BigDecimal sign = new BigDecimal(getWsfeProvider().getaDocType().getsigno_issotrx());
+		BigDecimal monCotiz = new BigDecimal(document.get("MonCotiz"));
+		BigDecimal compAmt = new BigDecimal(document.get("ImpTotal")).multiply(monCotiz);
+		BigDecimal taxAmt = (document.get("ImpIVA") == null ? BigDecimal.ZERO : new BigDecimal(document.get("ImpIVA")))
+				.multiply(monCotiz);
+		BigDecimal tribAmt = (document.get("ImpTrib") == null ? BigDecimal.ZERO : new BigDecimal(document.get("ImpTrib")))
+				.multiply(monCotiz);
+		if(sign.compareTo(BigDecimal.ZERO) < 0) {
+			getResult().creditnoteamt = getResult().creditnoteamt.add(compAmt);
+			getResult().creditnotetaxamt = getResult().creditnotetaxamt.add(taxAmt);
+			getResult().creditnoteperceptionamt = getResult().creditnoteperceptionamt.add(tribAmt);
+		}
+		else {
+			getResult().fiscaldocumentamt = getResult().fiscaldocumentamt.add(compAmt);
+			getResult().fiscaldocumenttaxamt = getResult().fiscaldocumenttaxamt.add(taxAmt);
+			getResult().fiscaldocumentperceptionamt = getResult().fiscaldocumentperceptionamt.add(tribAmt);
+		}
+	}
+	
+	/**
+	 * Obtiene el tipo de documento actual
+	 * 
+	 * @param rs resultado de la query
+	 * @return tipo de documento actual
+	 */
+	protected MDocType getDocType(ResultSet rs) throws Exception {
+		return new MDocType(getCtx(), rs.getInt("C_DocType_ID"), get_TrxName());
+	}
+	
 	protected MPOS getPos() {
 		return pos;
 	}
@@ -239,5 +294,52 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 			cinfo = new MControladorFiscalClosingInfo(getCtx(), 0, get_TrxName());
 		}
 		return cinfo;
+	}
+
+	protected WSFEConsultarComprobanteProcess getWsfeProvider() {
+		return wsfeProvider;
+	}
+
+	protected void setWsfeProvider(WSFEConsultarComprobanteProcess wsfeProvider) {
+		this.wsfeProvider = wsfeProvider;
+	}
+	
+	/**
+	 * Realizar las validaciones de cada documento
+	 * 
+	 * @param document documento
+	 * @return true si cumple con las especificaciones para que el documento sea
+	 *         candidato para procesamiento, false caso contrario
+	 */
+	protected boolean validateDocument(HashMap<String, String> document) {
+		return !dateParamStr.equals(document.get("CbteFch"));
+	}
+	
+	/**
+	 * @return Compañía actual
+	 */
+	protected int getClientID() {
+		return getPos().getAD_Client_ID();
+	}
+	
+	/**
+	 * @return Organización actual
+	 */
+	protected int getOrgID() {
+		return getPos().getAD_Org_ID();
+	}
+	
+	/**
+	 * @return Punto de venta actual
+	 */
+	protected int getPOSNumber() {
+		return getPos().getPOSNumber();
+	}
+	
+	/**
+	 * @return mensaje final
+	 */
+	protected String getMsg() {
+		return "@ProcessOK@";
 	}
 }
