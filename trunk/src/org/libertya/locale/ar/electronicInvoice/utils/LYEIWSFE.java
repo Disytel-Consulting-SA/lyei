@@ -28,11 +28,9 @@ import org.openXpertya.model.MInvoiceTax;
 import org.openXpertya.model.MLocation;
 import org.openXpertya.model.MOrgInfo;
 import org.openXpertya.model.MPreference;
-import org.openXpertya.model.MSequence;
 import org.openXpertya.model.MTax;
 import org.openXpertya.model.X_C_DocType;
 import org.openXpertya.util.CLogger;
-import org.openXpertya.util.Env;
 import org.openXpertya.util.Util;
 
 import FEV1.dif.afip.gov.ar.AlicIva;
@@ -357,8 +355,8 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			// Crear nueva entradda
 			AlicIva alicIva = new AlicIva();
 			alicIva.setId(tax.getWSFECode());
-			alicIva.setBaseImp(LYEICommons.getTaxBaseAmt(invoiceTax.getTaxBaseAmt(), inv.getGrandTotal(), inv.getTaxesAmt()).doubleValue());
-			alicIva.setImporte(invoiceTax.getTaxAmt().setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue());
+			alicIva.setBaseImp(invoiceTax.getTaxBaseAmt().doubleValue());
+			alicIva.setImporte(invoiceTax.getTaxAmt().doubleValue());
 			alicsIva.add(alicIva);
 		}
 		return alicsIva.toArray(new AlicIva[alicsIva.size()]);
@@ -376,8 +374,8 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			// Crear nueva entrada
 			Tributo tributo = new Tributo();
 			tributo.setId((short)tax.getWSFECode());
-			tributo.setBaseImp(LYEICommons.getTaxBaseAmt(invoiceTax.getTaxBaseAmt(), inv.getGrandTotal(), inv.getTaxesAmt()).doubleValue());
-			tributo.setImporte(invoiceTax.getTaxAmt().setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue());
+			tributo.setBaseImp(invoiceTax.getTaxBaseAmt().doubleValue());
+			tributo.setImporte(invoiceTax.getTaxAmt().doubleValue());
 			tributo.setAlic(invoiceTax.getRate().setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue());
 			tributo.setDesc(tax.getName());
 			tributos.add(tributo);
