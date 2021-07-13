@@ -393,10 +393,10 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 	
 	/** Total percepciones */
 	protected double getImpTrib(Tributo[] tributos) {
-		double total = 0.0;
+		BigDecimal total = BigDecimal.ZERO;
 		for (Tributo tributo : tributos)
-			total+=tributo.getImporte();
-		return total;		
+			total = total.add(new BigDecimal(tributo.getImporte()));
+		return total.setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
 	}
 	
 	/** Punto de venta */
