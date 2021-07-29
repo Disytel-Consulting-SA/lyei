@@ -496,21 +496,35 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 		// Se comenta por error 10197
 		// Solo informar si estoy registrando NC/ND MiPyME
 		//if (isNCNDMiPyME() && inv.getC_Invoice_Orig_ID()>0) {
-		if (inv.getC_Invoice_Orig_ID()>0) {
-			MInvoice origInv = new MInvoice(ctx, inv.getC_Invoice_Orig_ID(), trx);
-			MDocType origInvDT = new MDocType(ctx, origInv.getC_DocTypeTarget_ID(), trx);
-			int tipo = Integer.parseInt(origInvDT.getdocsubtypecae());
+		if (invioceHasOriginalDocument()) {
+			int tipoCbteOrig = -1;
+			int nroCbteOrig = -1 ;
+			int ptoVtaCbteOrig = -1;
+			String fechaCbteOrig = "";
 			
-	        DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
-	        Date date = new Date(origInv.getDateAcct().getTime());
-	        String cbteFch = dateFormat.format(date);
-			
+			// Se especificó referencia directa a un comprobante?
+			if (inv.getC_Invoice_Orig_ID()>0) {
+				MInvoice origInv = new MInvoice(ctx, inv.getC_Invoice_Orig_ID(), trx);
+				MDocType origInvDT = new MDocType(ctx, origInv.getC_DocTypeTarget_ID(), trx);
+				int tipo = Integer.parseInt(origInvDT.getdocsubtypecae());
+					        
+		        nroCbteOrig = origInv.getNumeroComprobante();
+		        ptoVtaCbteOrig = origInv.getPuntoDeVenta();
+		        fechaCbteOrig = new SimpleDateFormat("yyyyMMdd").format(new Date(origInv.getDateAcct().getTime()));
+		        tipoCbteOrig = tipo;
+			} else {
+				// Se especificó referencia manual mediante los 4 campos
+		        nroCbteOrig = inv.getOrigInvNro();
+		        ptoVtaCbteOrig = inv.getOrigInvPtoVta();
+		        fechaCbteOrig = new SimpleDateFormat("yyyyMMdd").format(new Date(inv.getOrigInvFecha().getTime()));
+		        tipoCbteOrig = Integer.parseInt(inv.getOrigInvTipo());
+			}
 			CbteAsoc asoc = new CbteAsoc();
 			asoc.setCuit(genConfig.getCUIT());
-			asoc.setNro(origInv.getNumeroComprobante());
-			asoc.setPtoVta(origInv.getPuntoDeVenta());
-			asoc.setCbteFch(cbteFch);
-			asoc.setTipo(tipo);
+			asoc.setNro(nroCbteOrig);
+			asoc.setPtoVta(ptoVtaCbteOrig);
+			asoc.setCbteFch(fechaCbteOrig);
+			asoc.setTipo(tipoCbteOrig);
 			cant++;
 			asociados.add(asoc);
 		}
@@ -522,6 +536,22 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 		
 		return retValue;
 	}
+	
+	/** La factura tiene una referencia al documento original? (ya sea mediante c_invoice_orig_id o bien mediante los 4 campos de referencia original */
+	protected boolean invioceHasOriginalDocument() {
+		return 
+			(
+				inv.getC_Invoice_Orig_ID()>0 || 
+				(
+					inv.getOrigInvFecha()!=null &&
+					inv.getOrigInvNro()>0 && 
+					inv.getOrigInvPtoVta()>0 &&
+					!Util.isEmpty(inv.getOrigInvTipo())
+				)
+			);
+	}
+	
+	
 	
 	/** Crea el nro comprobante para el nuevo tipo de documento */
 	protected String generateNroComprobanteCAEA() throws Exception {
