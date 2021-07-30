@@ -82,13 +82,13 @@ public class LYEICommons {
 	}
 
 	/** Neto de la factura */
-	public static double getImpNeto(BigDecimal impIva, MDocType docType, MInvoice inv) {
-		return getImpNetoBigDecimal(impIva, docType, inv).doubleValue();
+	public static BigDecimal getImpNeto(BigDecimal impIva, MDocType docType, MInvoice inv) {
+		return getImpNetoBigDecimal(impIva, docType, inv);
 	}
 	
 	/** Neto de la factura */
-	public static double getImpNeto(double impIva, MDocType docType, MInvoice inv) {
-		return getImpNetoBigDecimal(new BigDecimal(impIva), docType, inv).doubleValue();
+	public static BigDecimal getImpNeto(double impIva, MDocType docType, MInvoice inv) {
+		return getImpNetoBigDecimal(new BigDecimal(impIva), docType, inv);
 	}
 	
 	/** Neto de la factura */
@@ -108,8 +108,8 @@ public class LYEICommons {
 	}
 	
 	/** Cotizacion de la moneda */
-	public static double getMonCotiz(MInvoice inv, Properties ctx) {
-		return getMonCotizBigDecimal(inv, ctx).doubleValue();
+	public static BigDecimal getMonCotiz(MInvoice inv, Properties ctx) {
+		return getMonCotizBigDecimal(inv, ctx);
 	}
 	
 	/** Cotizacion de la moneda */
@@ -131,8 +131,8 @@ public class LYEICommons {
 	}
 	
 	/** Total de la factura */
-	public static double getImpTotal(MInvoice inv) {
-		return getImpTotalBigDecimal(inv).doubleValue();
+	public static BigDecimal getImpTotal(MInvoice inv) {
+		return getImpTotalBigDecimal(inv);
 	}
 	
 	/** Total de la factura */
@@ -140,17 +140,9 @@ public class LYEICommons {
 		return inv.getGrandTotal().setScale(2, BigDecimal.ROUND_HALF_UP);
 	}
 	
-	/** Obtine el taxBaseAmt (segun WsfeV1) */
-	public static BigDecimal getTaxBaseAmt(BigDecimal taxBaseAmt, BigDecimal grandTotal, BigDecimal taxesAmt) {
-		if ((Math.abs((grandTotal.subtract(taxesAmt).subtract(taxBaseAmt)).doubleValue()) >= 0.01) && (Math.abs((grandTotal.subtract(taxesAmt).subtract(taxBaseAmt)).doubleValue()) <= 0.03)){
-			return (grandTotal.subtract(taxesAmt));
-		}
-		return taxBaseAmt;
-	}
-	
 	/** Importe neto no gravado */
-	public static double getImpTotConc() {
-		return getImpTotConcBigDecimal().doubleValue();
+	public static BigDecimal getImpTotConc() {
+		return getImpTotConcBigDecimal();
 	}
 	
 	/** Importe neto no gravado */
@@ -160,8 +152,8 @@ public class LYEICommons {
 	}
 
 	/** Importe exento */ 
-	public static double getImpOpEx() {
-		return getImpOpExBigDecimal().doubleValue();
+	public static BigDecimal getImpOpEx() {
+		return getImpOpExBigDecimal();
 	}
 	
 	/** Importe exento */ 

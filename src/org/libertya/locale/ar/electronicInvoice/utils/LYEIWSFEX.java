@@ -98,9 +98,9 @@ public class LYEIWSFEX extends LYEIWSFE implements ElectronicInvoiceInterface {
 			// Codigo de moneda
 			cmp.setMoneda_Id(LYEICommons.getMonId(currency));
 			// Cotizacion de moneda
-			cmp.setMoneda_ctz(new BigDecimal(LYEICommons.getMonCotiz(inv, ctx)));
+			cmp.setMoneda_ctz(LYEICommons.getMonCotiz(inv, ctx));
 			// Importe total
-			cmp.setImp_total(new BigDecimal(LYEICommons.getImpTotal(inv)));
+			cmp.setImp_total(LYEICommons.getImpTotal(inv));
 			// Idioma comprobante. 1=español. 2=ingles. 3=portugues
 			cmp.setIdioma_cbte(getIdiomaCbte());
 			
