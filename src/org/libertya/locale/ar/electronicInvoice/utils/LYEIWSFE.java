@@ -503,7 +503,10 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			String fechaCbteOrig = "";
 			
 			// Se especificó referencia directa a un comprobante?
-			if (inv.getC_Invoice_Orig_ID()>0) {
+			if (inv.getOrigInvFecha()!=null &&
+					inv.getOrigInvNro()>0 && 
+					inv.getOrigInvPtoVta()>0 &&
+					!Util.isEmpty(inv.getOrigInvTipo())) {
 				MInvoice origInv = new MInvoice(ctx, inv.getC_Invoice_Orig_ID(), trx);
 				MDocType origInvDT = new MDocType(ctx, origInv.getC_DocTypeTarget_ID(), trx);
 				int tipo = Integer.parseInt(origInvDT.getdocsubtypecae());
