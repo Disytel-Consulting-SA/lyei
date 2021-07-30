@@ -2,7 +2,6 @@ package org.libertya.locale.ar.electronicInvoice.utils;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -217,7 +216,7 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			// Código de  moneda  del comprobante. Consultar método FEParamGetTiposMonedas para valores posibles
 			detReq.setMonId(LYEICommons.getMonId(currency));
 			// Cotizacion de  la  moneda  informada.  Para PES, pesos argentinos  la misma debe ser 1
-			detReq.setMonCotiz(LYEICommons.getMonCotiz(inv, ctx));
+			detReq.setMonCotiz(LYEICommons.getMonCotiz(inv, ctx).doubleValue());
 			// Impuestos.  No deben ser enviados para comprobantes de tipo C
 			AlicIva[] iva = getIva();
 			double impIva = getImpIVA(iva);
@@ -238,15 +237,15 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 				detReq.setImpTrib(getImpTrib(tributos));
 			}
 			// Importe  neto    gravado.  Debe  ser  menor  o igual a Importe total y no puede ser menor a cero.
-			detReq.setImpNeto(LYEICommons.getImpNeto(impIva, docType, inv)); 
+			detReq.setImpNeto(LYEICommons.getImpNeto(impIva, docType, inv).doubleValue()); 
 			// Importe total  del comprobante, Debe ser igual  a  Importe  neto  no  gravado  +  Importe 
 			// exento + Importe neto gravado + todos los campos  de  IVA    al  XX%  +  Importe  de	tributos
-			detReq.setImpTotal(LYEICommons.getImpTotal(inv));
+			detReq.setImpTotal(LYEICommons.getImpTotal(inv).doubleValue());
 			// Importe neto no gravado. Debe ser menor o igual a Importe total y no puede ser menor a cero. 
 			// No  puede  ser  mayor  al  Importe  total  de  la operación ni menor a cero (0)
-			detReq.setImpTotConc(LYEICommons.getImpTotConc());
+			detReq.setImpTotConc(LYEICommons.getImpTotConc().doubleValue());
 			// Importe  exento.  Debe  ser  menor  o  igual  a Importe total y no puede ser menor a cero
-			detReq.setImpOpEx(LYEICommons.getImpOpEx());
+			detReq.setImpOpEx(LYEICommons.getImpOpEx().doubleValue());
 			
 			// Opcionales
 			Opcional[] opcionales = getOpcionales();

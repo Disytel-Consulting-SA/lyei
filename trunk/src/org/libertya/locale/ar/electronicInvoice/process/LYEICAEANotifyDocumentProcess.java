@@ -216,7 +216,7 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 			comp.setCodigoMoneda(LYEICommons.getMonId(currency));
 			
 			/* Tipo de cambio Total de dígitos 10 (4 enteros y 6 decimales) Mayor a cero. Máximo permitido: 9999.999999 */
-			comp.setCotizacionMoneda(new BigDecimal(LYEICommons.getMonCotiz(inv, getCtx())));
+			comp.setCotizacionMoneda(LYEICommons.getMonCotiz(inv, getCtx()));
 			
 			/* Concepto incluido en el comprobante. Valores permitidos: 1: Productos 2: Servicios 3: Productos y Servicios */
 			comp.setCodigoConcepto((short)LYEICommons.getConcepto());
@@ -384,7 +384,7 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 			// Crear nueva entrada
 			OtroTributoType tributo = new OtroTributoType();
 			tributo.setCodigo((short)tax.getWSFECode());
-			tributo.setBaseImponible(LYEICommons.getTaxBaseAmt(invoiceTax.getTaxBaseAmt(), inv.getGrandTotal(), inv.getTaxesAmt()));
+			tributo.setBaseImponible(invoiceTax.getTaxBaseAmt());
 			tributo.setImporte(invoiceTax.getTaxAmt().setScale(2, BigDecimal.ROUND_HALF_UP));
 			tributo.setDescripcion(tax.getName());
 			tributos.add(tributo);
