@@ -748,7 +748,7 @@ public class ServiceSoapStub extends org.apache.axis.client.Stub implements fexv
     
     protected org.apache.axis.client.Call createCall() throws java.rmi.RemoteException {
         try {
-            org.apache.axis.client.Call _call = super._createCall();
+            _call = super._createCall();
             if (super.maintainSessionSet) {
                 _call.setMaintainSession(super.maintainSession);
             }
