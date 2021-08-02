@@ -14,7 +14,7 @@ public class ClsFEX_LastCMP  implements java.io.Serializable {
 
     private long cuit;
 
-    private short pto_venta;
+    private int pto_venta;
 
     private short cbte_Tipo;
 
@@ -25,7 +25,7 @@ public class ClsFEX_LastCMP  implements java.io.Serializable {
            java.lang.String token,
            java.lang.String sign,
            long cuit,
-           short pto_venta,
+           int pto_venta,
            short cbte_Tipo) {
            this.token = token;
            this.sign = sign;
@@ -100,7 +100,7 @@ public class ClsFEX_LastCMP  implements java.io.Serializable {
      * 
      * @return pto_venta
      */
-    public short getPto_venta() {
+    public int getPto_venta() {
         return pto_venta;
     }
 
@@ -110,7 +110,7 @@ public class ClsFEX_LastCMP  implements java.io.Serializable {
      * 
      * @param pto_venta
      */
-    public void setPto_venta(short pto_venta) {
+    public void setPto_venta(int pto_venta) {
         this.pto_venta = pto_venta;
     }
 
@@ -208,7 +208,7 @@ public class ClsFEX_LastCMP  implements java.io.Serializable {
         elemField = new org.apache.axis.description.ElementDesc();
         elemField.setFieldName("pto_venta");
         elemField.setXmlName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "Pto_venta"));
-        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "short"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "int"));
         elemField.setNillable(false);
         typeDesc.addFieldDesc(elemField);
         elemField = new org.apache.axis.description.ElementDesc();

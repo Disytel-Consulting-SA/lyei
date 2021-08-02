@@ -14,7 +14,7 @@ public class ClsFEXGetCMPR  implements java.io.Serializable {
 
     private short cbte_tipo;
 
-    private short punto_vta;
+    private int punto_vta;
 
     private long cbte_nro;
 
@@ -68,6 +68,8 @@ public class ClsFEXGetCMPR  implements java.io.Serializable {
 
     private fexv1.dif.afip.gov.ar.Opcional[] opcionales;
 
+    private java.lang.String fecha_pago;
+
     public ClsFEXGetCMPR() {
     }
 
@@ -75,7 +77,7 @@ public class ClsFEXGetCMPR  implements java.io.Serializable {
            long id,
            java.lang.String fecha_cbte,
            short cbte_tipo,
-           short punto_vta,
+           int punto_vta,
            long cbte_nro,
            short tipo_expo,
            java.lang.String permiso_existente,
@@ -101,7 +103,8 @@ public class ClsFEXGetCMPR  implements java.io.Serializable {
            java.lang.String cae,
            java.lang.String resultado,
            java.lang.String motivos_Obs,
-           fexv1.dif.afip.gov.ar.Opcional[] opcionales) {
+           fexv1.dif.afip.gov.ar.Opcional[] opcionales,
+           java.lang.String fecha_pago) {
            this.id = id;
            this.fecha_cbte = fecha_cbte;
            this.cbte_tipo = cbte_tipo;
@@ -132,6 +135,7 @@ public class ClsFEXGetCMPR  implements java.io.Serializable {
            this.resultado = resultado;
            this.motivos_Obs = motivos_Obs;
            this.opcionales = opcionales;
+           this.fecha_pago = fecha_pago;
     }
 
 
@@ -200,7 +204,7 @@ public class ClsFEXGetCMPR  implements java.io.Serializable {
      * 
      * @return punto_vta
      */
-    public short getPunto_vta() {
+    public int getPunto_vta() {
         return punto_vta;
     }
 
@@ -210,7 +214,7 @@ public class ClsFEXGetCMPR  implements java.io.Serializable {
      * 
      * @param punto_vta
      */
-    public void setPunto_vta(short punto_vta) {
+    public void setPunto_vta(int punto_vta) {
         this.punto_vta = punto_vta;
     }
 
@@ -734,6 +738,26 @@ public class ClsFEXGetCMPR  implements java.io.Serializable {
         this.opcionales = opcionales;
     }
 
+
+    /**
+     * Gets the fecha_pago value for this ClsFEXGetCMPR.
+     * 
+     * @return fecha_pago
+     */
+    public java.lang.String getFecha_pago() {
+        return fecha_pago;
+    }
+
+
+    /**
+     * Sets the fecha_pago value for this ClsFEXGetCMPR.
+     * 
+     * @param fecha_pago
+     */
+    public void setFecha_pago(java.lang.String fecha_pago) {
+        this.fecha_pago = fecha_pago;
+    }
+
     private java.lang.Object __equalsCalc = null;
     public synchronized boolean equals(java.lang.Object obj) {
         if (!(obj instanceof ClsFEXGetCMPR)) return false;
@@ -819,7 +843,10 @@ public class ClsFEXGetCMPR  implements java.io.Serializable {
               this.motivos_Obs.equals(other.getMotivos_Obs()))) &&
             ((this.opcionales==null && other.getOpcionales()==null) || 
              (this.opcionales!=null &&
-              java.util.Arrays.equals(this.opcionales, other.getOpcionales())));
+              java.util.Arrays.equals(this.opcionales, other.getOpcionales()))) &&
+            ((this.fecha_pago==null && other.getFecha_pago()==null) || 
+             (this.fecha_pago!=null &&
+              this.fecha_pago.equals(other.getFecha_pago())));
         __equalsCalc = null;
         return _equals;
     }
@@ -937,6 +964,9 @@ public class ClsFEXGetCMPR  implements java.io.Serializable {
                 }
             }
         }
+        if (getFecha_pago() != null) {
+            _hashCode += getFecha_pago().hashCode();
+        }
         __hashCodeCalc = false;
         return _hashCode;
     }
@@ -969,7 +999,7 @@ public class ClsFEXGetCMPR  implements java.io.Serializable {
         elemField = new org.apache.axis.description.ElementDesc();
         elemField.setFieldName("punto_vta");
         elemField.setXmlName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "Punto_vta"));
-        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "short"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "int"));
         elemField.setNillable(false);
         typeDesc.addFieldDesc(elemField);
         elemField = new org.apache.axis.description.ElementDesc();
@@ -1150,6 +1180,13 @@ public class ClsFEXGetCMPR  implements java.io.Serializable {
         elemField.setMinOccurs(0);
         elemField.setNillable(false);
         elemField.setItemQName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "Opcional"));
+        typeDesc.addFieldDesc(elemField);
+        elemField = new org.apache.axis.description.ElementDesc();
+        elemField.setFieldName("fecha_pago");
+        elemField.setXmlName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "Fecha_pago"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "string"));
+        elemField.setMinOccurs(0);
+        elemField.setNillable(false);
         typeDesc.addFieldDesc(elemField);
     }
 

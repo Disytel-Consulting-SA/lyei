@@ -10,7 +10,7 @@ package fexv1.dif.afip.gov.ar;
 public class ClsFEXGetCMP  implements java.io.Serializable {
     private short cbte_tipo;
 
-    private short punto_vta;
+    private int punto_vta;
 
     private long cbte_nro;
 
@@ -19,7 +19,7 @@ public class ClsFEXGetCMP  implements java.io.Serializable {
 
     public ClsFEXGetCMP(
            short cbte_tipo,
-           short punto_vta,
+           int punto_vta,
            long cbte_nro) {
            this.cbte_tipo = cbte_tipo;
            this.punto_vta = punto_vta;
@@ -52,7 +52,7 @@ public class ClsFEXGetCMP  implements java.io.Serializable {
      * 
      * @return punto_vta
      */
-    public short getPunto_vta() {
+    public int getPunto_vta() {
         return punto_vta;
     }
 
@@ -62,7 +62,7 @@ public class ClsFEXGetCMP  implements java.io.Serializable {
      * 
      * @param punto_vta
      */
-    public void setPunto_vta(short punto_vta) {
+    public void setPunto_vta(int punto_vta) {
         this.punto_vta = punto_vta;
     }
 
@@ -134,7 +134,7 @@ public class ClsFEXGetCMP  implements java.io.Serializable {
         elemField = new org.apache.axis.description.ElementDesc();
         elemField.setFieldName("punto_vta");
         elemField.setXmlName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "Punto_vta"));
-        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "short"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "int"));
         elemField.setNillable(false);
         typeDesc.addFieldDesc(elemField);
         elemField = new org.apache.axis.description.ElementDesc();

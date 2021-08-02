@@ -16,7 +16,7 @@ public class ServiceSoapStub extends org.apache.axis.client.Stub implements fexv
     static org.apache.axis.description.OperationDesc [] _operations;
 
     static {
-        _operations = new org.apache.axis.description.OperationDesc[17];
+        _operations = new org.apache.axis.description.OperationDesc[18];
         _initOperationDesc1();
         _initOperationDesc2();
     }
@@ -156,6 +156,21 @@ public class ServiceSoapStub extends org.apache.axis.client.Stub implements fexv
         org.apache.axis.description.OperationDesc oper;
         org.apache.axis.description.ParameterDesc param;
         oper = new org.apache.axis.description.OperationDesc();
+        oper.setName("FEXGetPARAM_MON_CON_COTIZACION");
+        param = new org.apache.axis.description.ParameterDesc(new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "Auth"), org.apache.axis.description.ParameterDesc.IN, new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "ClsFEXAuthRequest"), fexv1.dif.afip.gov.ar.ClsFEXAuthRequest.class, false, false);
+        param.setOmittable(true);
+        oper.addParameter(param);
+        param = new org.apache.axis.description.ParameterDesc(new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "Fecha_CTZ"), org.apache.axis.description.ParameterDesc.IN, new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "string"), java.lang.String.class, false, false);
+        param.setOmittable(true);
+        oper.addParameter(param);
+        oper.setReturnType(new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "FEXResponse_Mon_CON_COTIZACION"));
+        oper.setReturnClass(fexv1.dif.afip.gov.ar.FEXResponse_Mon_CON_COTIZACION.class);
+        oper.setReturnQName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "FEXGetPARAM_MON_CON_COTIZACIONResult"));
+        oper.setStyle(org.apache.axis.constants.Style.WRAPPED);
+        oper.setUse(org.apache.axis.constants.Use.LITERAL);
+        _operations[10] = oper;
+
+        oper = new org.apache.axis.description.OperationDesc();
         oper.setName("FEXGetLast_CMP");
         param = new org.apache.axis.description.ParameterDesc(new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "Auth"), org.apache.axis.description.ParameterDesc.IN, new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "ClsFEX_LastCMP"), fexv1.dif.afip.gov.ar.ClsFEX_LastCMP.class, false, false);
         param.setOmittable(true);
@@ -165,7 +180,7 @@ public class ServiceSoapStub extends org.apache.axis.client.Stub implements fexv
         oper.setReturnQName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "FEXGetLast_CMPResult"));
         oper.setStyle(org.apache.axis.constants.Style.WRAPPED);
         oper.setUse(org.apache.axis.constants.Use.LITERAL);
-        _operations[10] = oper;
+        _operations[11] = oper;
 
         oper = new org.apache.axis.description.OperationDesc();
         oper.setName("FEXDummy");
@@ -174,7 +189,7 @@ public class ServiceSoapStub extends org.apache.axis.client.Stub implements fexv
         oper.setReturnQName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "FEXDummyResult"));
         oper.setStyle(org.apache.axis.constants.Style.WRAPPED);
         oper.setUse(org.apache.axis.constants.Use.LITERAL);
-        _operations[11] = oper;
+        _operations[12] = oper;
 
         oper = new org.apache.axis.description.OperationDesc();
         oper.setName("FEXGetPARAM_Ctz");
@@ -189,7 +204,7 @@ public class ServiceSoapStub extends org.apache.axis.client.Stub implements fexv
         oper.setReturnQName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "FEXGetPARAM_CtzResult"));
         oper.setStyle(org.apache.axis.constants.Style.WRAPPED);
         oper.setUse(org.apache.axis.constants.Use.LITERAL);
-        _operations[12] = oper;
+        _operations[13] = oper;
 
         oper = new org.apache.axis.description.OperationDesc();
         oper.setName("FEXGetLast_ID");
@@ -201,7 +216,7 @@ public class ServiceSoapStub extends org.apache.axis.client.Stub implements fexv
         oper.setReturnQName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "FEXGetLast_IDResult"));
         oper.setStyle(org.apache.axis.constants.Style.WRAPPED);
         oper.setUse(org.apache.axis.constants.Use.LITERAL);
-        _operations[13] = oper;
+        _operations[14] = oper;
 
         oper = new org.apache.axis.description.OperationDesc();
         oper.setName("FEXGetPARAM_PtoVenta");
@@ -213,7 +228,7 @@ public class ServiceSoapStub extends org.apache.axis.client.Stub implements fexv
         oper.setReturnQName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "FEXGetPARAM_PtoVentaResult"));
         oper.setStyle(org.apache.axis.constants.Style.WRAPPED);
         oper.setUse(org.apache.axis.constants.Use.LITERAL);
-        _operations[14] = oper;
+        _operations[15] = oper;
 
         oper = new org.apache.axis.description.OperationDesc();
         oper.setName("FEXCheck_Permiso");
@@ -230,7 +245,7 @@ public class ServiceSoapStub extends org.apache.axis.client.Stub implements fexv
         oper.setReturnQName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "FEXCheck_PermisoResult"));
         oper.setStyle(org.apache.axis.constants.Style.WRAPPED);
         oper.setUse(org.apache.axis.constants.Use.LITERAL);
-        _operations[15] = oper;
+        _operations[16] = oper;
 
         oper = new org.apache.axis.description.OperationDesc();
         oper.setName("FEXGetPARAM_Opcionales");
@@ -242,7 +257,7 @@ public class ServiceSoapStub extends org.apache.axis.client.Stub implements fexv
         oper.setReturnQName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "FEXGetPARAM_OpcionalesResult"));
         oper.setStyle(org.apache.axis.constants.Style.WRAPPED);
         oper.setUse(org.apache.axis.constants.Use.LITERAL);
-        _operations[16] = oper;
+        _operations[17] = oper;
 
     }
 
@@ -326,6 +341,15 @@ public class ServiceSoapStub extends org.apache.axis.client.Stub implements fexv
             cachedSerClasses.add(cls);
             qName = new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "ClsFEXResponse_Mon");
             qName2 = new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "ClsFEXResponse_Mon");
+            cachedSerFactories.add(new org.apache.axis.encoding.ser.ArraySerializerFactory(qName, qName2));
+            cachedDeserFactories.add(new org.apache.axis.encoding.ser.ArrayDeserializerFactory());
+
+            qName = new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "ArrayOfClsFEXResponse_Mon_CON_Cotizacion");
+            cachedSerQNames.add(qName);
+            cls = fexv1.dif.afip.gov.ar.ClsFEXResponse_Mon_CON_Cotizacion[].class;
+            cachedSerClasses.add(cls);
+            qName = new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "ClsFEXResponse_Mon_CON_Cotizacion");
+            qName2 = new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "ClsFEXResponse_Mon_CON_Cotizacion");
             cachedSerFactories.add(new org.apache.axis.encoding.ser.ArraySerializerFactory(qName, qName2));
             cachedDeserFactories.add(new org.apache.axis.encoding.ser.ArrayDeserializerFactory());
 
@@ -527,6 +551,13 @@ public class ServiceSoapStub extends org.apache.axis.client.Stub implements fexv
             cachedSerFactories.add(beansf);
             cachedDeserFactories.add(beandf);
 
+            qName = new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "ClsFEXResponse_Mon_CON_Cotizacion");
+            cachedSerQNames.add(qName);
+            cls = fexv1.dif.afip.gov.ar.ClsFEXResponse_Mon_CON_Cotizacion.class;
+            cachedSerClasses.add(cls);
+            cachedSerFactories.add(beansf);
+            cachedDeserFactories.add(beandf);
+
             qName = new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "ClsFEXResponse_Opc");
             cachedSerQNames.add(qName);
             cls = fexv1.dif.afip.gov.ar.ClsFEXResponse_Opc.class;
@@ -639,6 +670,13 @@ public class ServiceSoapStub extends org.apache.axis.client.Stub implements fexv
             cachedSerFactories.add(beansf);
             cachedDeserFactories.add(beandf);
 
+            qName = new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "FEXResponse_Mon_CON_COTIZACION");
+            cachedSerQNames.add(qName);
+            cls = fexv1.dif.afip.gov.ar.FEXResponse_Mon_CON_COTIZACION.class;
+            cachedSerClasses.add(cls);
+            cachedSerFactories.add(beansf);
+            cachedDeserFactories.add(beandf);
+
             qName = new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "FEXResponse_Opc");
             cachedSerQNames.add(qName);
             cls = fexv1.dif.afip.gov.ar.FEXResponse_Opc.class;
@@ -703,14 +741,14 @@ public class ServiceSoapStub extends org.apache.axis.client.Stub implements fexv
             cachedDeserFactories.add(beandf);
 
     }
-    
+
     // Modificaciones ad-hoc para poder recuperar el XML request y response 
     public String getCallRequestXML() {	try { return _call.getMessageContext().getRequestMessage().getSOAPPartAsString(); } catch (Exception e) { e.printStackTrace(); return ""; } } 
     public String getCallResponseXML() { try { return _call.getMessageContext().getResponseMessage().getSOAPPartAsString(); } catch (Exception e) { e.printStackTrace(); return ""; } } 
     
     protected org.apache.axis.client.Call createCall() throws java.rmi.RemoteException {
         try {
-            _call = super._createCall();
+            org.apache.axis.client.Call _call = super._createCall();
             if (super.maintainSessionSet) {
                 _call.setMaintainSession(super.maintainSession);
             }
@@ -1112,12 +1150,46 @@ public class ServiceSoapStub extends org.apache.axis.client.Stub implements fexv
 }
     }
 
-    public fexv1.dif.afip.gov.ar.FEXResponseLast_CMP FEXGetLast_CMP(fexv1.dif.afip.gov.ar.ClsFEX_LastCMP auth) throws java.rmi.RemoteException {
+    public fexv1.dif.afip.gov.ar.FEXResponse_Mon_CON_COTIZACION FEXGetPARAM_MON_CON_COTIZACION(fexv1.dif.afip.gov.ar.ClsFEXAuthRequest auth, java.lang.String fecha_CTZ) throws java.rmi.RemoteException {
         if (super.cachedEndpoint == null) {
             throw new org.apache.axis.NoEndPointException();
         }
         org.apache.axis.client.Call _call = createCall();
         _call.setOperation(_operations[10]);
+        _call.setUseSOAPAction(true);
+        _call.setSOAPActionURI("http://ar.gov.afip.dif.fexv1/FEXGetPARAM_MON_CON_COTIZACION");
+        _call.setEncodingStyle(null);
+        _call.setProperty(org.apache.axis.client.Call.SEND_TYPE_ATTR, Boolean.FALSE);
+        _call.setProperty(org.apache.axis.AxisEngine.PROP_DOMULTIREFS, Boolean.FALSE);
+        _call.setSOAPVersion(org.apache.axis.soap.SOAPConstants.SOAP11_CONSTANTS);
+        _call.setOperationName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "FEXGetPARAM_MON_CON_COTIZACION"));
+
+        setRequestHeaders(_call);
+        setAttachments(_call);
+ try {        java.lang.Object _resp = _call.invoke(new java.lang.Object[] {auth, fecha_CTZ});
+
+        if (_resp instanceof java.rmi.RemoteException) {
+            throw (java.rmi.RemoteException)_resp;
+        }
+        else {
+            extractAttachments(_call);
+            try {
+                return (fexv1.dif.afip.gov.ar.FEXResponse_Mon_CON_COTIZACION) _resp;
+            } catch (java.lang.Exception _exception) {
+                return (fexv1.dif.afip.gov.ar.FEXResponse_Mon_CON_COTIZACION) org.apache.axis.utils.JavaUtils.convert(_resp, fexv1.dif.afip.gov.ar.FEXResponse_Mon_CON_COTIZACION.class);
+            }
+        }
+  } catch (org.apache.axis.AxisFault axisFaultException) {
+  throw axisFaultException;
+}
+    }
+
+    public fexv1.dif.afip.gov.ar.FEXResponseLast_CMP FEXGetLast_CMP(fexv1.dif.afip.gov.ar.ClsFEX_LastCMP auth) throws java.rmi.RemoteException {
+        if (super.cachedEndpoint == null) {
+            throw new org.apache.axis.NoEndPointException();
+        }
+        org.apache.axis.client.Call _call = createCall();
+        _call.setOperation(_operations[11]);
         _call.setUseSOAPAction(true);
         _call.setSOAPActionURI("http://ar.gov.afip.dif.fexv1/FEXGetLast_CMP");
         _call.setEncodingStyle(null);
@@ -1151,7 +1223,7 @@ public class ServiceSoapStub extends org.apache.axis.client.Stub implements fexv
             throw new org.apache.axis.NoEndPointException();
         }
         org.apache.axis.client.Call _call = createCall();
-        _call.setOperation(_operations[11]);
+        _call.setOperation(_operations[12]);
         _call.setUseSOAPAction(true);
         _call.setSOAPActionURI("http://ar.gov.afip.dif.fexv1/FEXDummy");
         _call.setEncodingStyle(null);
@@ -1185,7 +1257,7 @@ public class ServiceSoapStub extends org.apache.axis.client.Stub implements fexv
             throw new org.apache.axis.NoEndPointException();
         }
         org.apache.axis.client.Call _call = createCall();
-        _call.setOperation(_operations[12]);
+        _call.setOperation(_operations[13]);
         _call.setUseSOAPAction(true);
         _call.setSOAPActionURI("http://ar.gov.afip.dif.fexv1/FEXGetPARAM_Ctz");
         _call.setEncodingStyle(null);
@@ -1219,7 +1291,7 @@ public class ServiceSoapStub extends org.apache.axis.client.Stub implements fexv
             throw new org.apache.axis.NoEndPointException();
         }
         org.apache.axis.client.Call _call = createCall();
-        _call.setOperation(_operations[13]);
+        _call.setOperation(_operations[14]);
         _call.setUseSOAPAction(true);
         _call.setSOAPActionURI("http://ar.gov.afip.dif.fexv1/FEXGetLast_ID");
         _call.setEncodingStyle(null);
@@ -1253,7 +1325,7 @@ public class ServiceSoapStub extends org.apache.axis.client.Stub implements fexv
             throw new org.apache.axis.NoEndPointException();
         }
         org.apache.axis.client.Call _call = createCall();
-        _call.setOperation(_operations[14]);
+        _call.setOperation(_operations[15]);
         _call.setUseSOAPAction(true);
         _call.setSOAPActionURI("http://ar.gov.afip.dif.fexv1/FEXGetPARAM_PtoVenta");
         _call.setEncodingStyle(null);
@@ -1287,7 +1359,7 @@ public class ServiceSoapStub extends org.apache.axis.client.Stub implements fexv
             throw new org.apache.axis.NoEndPointException();
         }
         org.apache.axis.client.Call _call = createCall();
-        _call.setOperation(_operations[15]);
+        _call.setOperation(_operations[16]);
         _call.setUseSOAPAction(true);
         _call.setSOAPActionURI("http://ar.gov.afip.dif.fexv1/FEXCheck_Permiso");
         _call.setEncodingStyle(null);
@@ -1321,7 +1393,7 @@ public class ServiceSoapStub extends org.apache.axis.client.Stub implements fexv
             throw new org.apache.axis.NoEndPointException();
         }
         org.apache.axis.client.Call _call = createCall();
-        _call.setOperation(_operations[16]);
+        _call.setOperation(_operations[17]);
         _call.setUseSOAPAction(true);
         _call.setSOAPActionURI("http://ar.gov.afip.dif.fexv1/FEXGetPARAM_Opcionales");
         _call.setEncodingStyle(null);
