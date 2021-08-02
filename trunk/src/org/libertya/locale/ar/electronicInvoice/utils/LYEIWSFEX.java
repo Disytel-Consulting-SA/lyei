@@ -1,6 +1,5 @@
 package org.libertya.locale.ar.electronicInvoice.utils;
 
-import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -79,6 +78,10 @@ public class LYEIWSFEX extends LYEIWSFE implements ElectronicInvoiceInterface {
 			cmp.setCbte_Tipo((short)LYEICommons.getCbteTipo(docType)); // 19 20 o 21
 			// Fecha Comprobante
 			cmp.setFecha_cbte(LYEICommons.getCbteFchString(inv));
+			// Fecha de Pago
+			cmp.setFecha_pago(LYEICommons.getFechaVtoString(inv));
+			// Forma de Pago
+			cmp.setForma_pago(LYEICommons.getFormaPago(inv));
 			// Punto de venta
 			cmp.setPunto_vta(getPtoVta());
 			// Numero de comprobante que se solicta
