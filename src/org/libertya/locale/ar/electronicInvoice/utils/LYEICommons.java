@@ -10,6 +10,7 @@ import org.openXpertya.model.MBPartner;
 import org.openXpertya.model.MCurrency;
 import org.openXpertya.model.MDocType;
 import org.openXpertya.model.MInvoice;
+import org.openXpertya.model.MPaymentTerm;
 import org.openXpertya.model.X_C_DocType;
 import org.openXpertya.util.Env;
 
@@ -176,4 +177,12 @@ public class LYEICommons {
 		return result.toString();
 	}
 	
+	/**
+	 * @return si la forma de pago es Efectivo, el valor de retorno es Contado. Caso
+	 *         contrario, el nombre del esquema de vencimientos
+	 */
+	public static String getFormaPago(MInvoice inv) {
+		return inv.getPaymentRule().equals(MInvoice.PAYMENTRULE_Cash) ? "Contado"
+				: (new MPaymentTerm(inv.getCtx(), inv.getC_PaymentTerm_ID(), inv.get_TrxName()).getName());
+	}
 }
