@@ -65,6 +65,13 @@ public interface ServiceSoap extends java.rmi.Remote {
     public fexv1.dif.afip.gov.ar.FEXResponse_Mon FEXGetPARAM_MON(fexv1.dif.afip.gov.ar.ClsFEXAuthRequest auth) throws java.rmi.RemoteException;
 
     /**
+     * Recupera el listado  de monedas que tengan cotizacion de ADUANA
+     * a una fecha determinada, utilizables en el proceso de autorizacion
+     * de comprobantes de servicios
+     */
+    public fexv1.dif.afip.gov.ar.FEXResponse_Mon_CON_COTIZACION FEXGetPARAM_MON_CON_COTIZACION(fexv1.dif.afip.gov.ar.ClsFEXAuthRequest auth, java.lang.String fecha_CTZ) throws java.rmi.RemoteException;
+
+    /**
      * Recupera el ultimos comprobante autorizado
      */
     public fexv1.dif.afip.gov.ar.FEXResponseLast_CMP FEXGetLast_CMP(fexv1.dif.afip.gov.ar.ClsFEX_LastCMP auth) throws java.rmi.RemoteException;

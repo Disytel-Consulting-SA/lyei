@@ -8,7 +8,7 @@
 package fexv1.dif.afip.gov.ar;
 
 public class ClsFEXResponse_PtoVenta  implements java.io.Serializable {
-    private short pve_Nro;
+    private int pve_Nro;
 
     private java.lang.String pve_Bloqueado;
 
@@ -18,7 +18,7 @@ public class ClsFEXResponse_PtoVenta  implements java.io.Serializable {
     }
 
     public ClsFEXResponse_PtoVenta(
-           short pve_Nro,
+           int pve_Nro,
            java.lang.String pve_Bloqueado,
            java.lang.String pve_FchBaja) {
            this.pve_Nro = pve_Nro;
@@ -32,7 +32,7 @@ public class ClsFEXResponse_PtoVenta  implements java.io.Serializable {
      * 
      * @return pve_Nro
      */
-    public short getPve_Nro() {
+    public int getPve_Nro() {
         return pve_Nro;
     }
 
@@ -42,7 +42,7 @@ public class ClsFEXResponse_PtoVenta  implements java.io.Serializable {
      * 
      * @param pve_Nro
      */
-    public void setPve_Nro(short pve_Nro) {
+    public void setPve_Nro(int pve_Nro) {
         this.pve_Nro = pve_Nro;
     }
 
@@ -136,7 +136,7 @@ public class ClsFEXResponse_PtoVenta  implements java.io.Serializable {
         org.apache.axis.description.ElementDesc elemField = new org.apache.axis.description.ElementDesc();
         elemField.setFieldName("pve_Nro");
         elemField.setXmlName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "Pve_Nro"));
-        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "short"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "int"));
         elemField.setNillable(false);
         typeDesc.addFieldDesc(elemField);
         elemField = new org.apache.axis.description.ElementDesc();

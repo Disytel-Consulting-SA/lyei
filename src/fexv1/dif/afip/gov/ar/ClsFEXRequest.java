@@ -14,7 +14,7 @@ public class ClsFEXRequest  implements java.io.Serializable {
 
     private short cbte_Tipo;
 
-    private short punto_vta;
+    private int punto_vta;
 
     private long cbte_nro;
 
@@ -58,6 +58,8 @@ public class ClsFEXRequest  implements java.io.Serializable {
 
     private fexv1.dif.afip.gov.ar.Opcional[] opcionales;
 
+    private java.lang.String fecha_pago;
+
     public ClsFEXRequest() {
     }
 
@@ -65,7 +67,7 @@ public class ClsFEXRequest  implements java.io.Serializable {
            long id,
            java.lang.String fecha_cbte,
            short cbte_Tipo,
-           short punto_vta,
+           int punto_vta,
            long cbte_nro,
            short tipo_expo,
            java.lang.String permiso_existente,
@@ -86,7 +88,8 @@ public class ClsFEXRequest  implements java.io.Serializable {
            java.lang.String incoterms_Ds,
            short idioma_cbte,
            fexv1.dif.afip.gov.ar.Item[] items,
-           fexv1.dif.afip.gov.ar.Opcional[] opcionales) {
+           fexv1.dif.afip.gov.ar.Opcional[] opcionales,
+           java.lang.String fecha_pago) {
            this.id = id;
            this.fecha_cbte = fecha_cbte;
            this.cbte_Tipo = cbte_Tipo;
@@ -112,6 +115,7 @@ public class ClsFEXRequest  implements java.io.Serializable {
            this.idioma_cbte = idioma_cbte;
            this.items = items;
            this.opcionales = opcionales;
+           this.fecha_pago = fecha_pago;
     }
 
 
@@ -180,7 +184,7 @@ public class ClsFEXRequest  implements java.io.Serializable {
      * 
      * @return punto_vta
      */
-    public short getPunto_vta() {
+    public int getPunto_vta() {
         return punto_vta;
     }
 
@@ -190,7 +194,7 @@ public class ClsFEXRequest  implements java.io.Serializable {
      * 
      * @param punto_vta
      */
-    public void setPunto_vta(short punto_vta) {
+    public void setPunto_vta(int punto_vta) {
         this.punto_vta = punto_vta;
     }
 
@@ -614,6 +618,26 @@ public class ClsFEXRequest  implements java.io.Serializable {
         this.opcionales = opcionales;
     }
 
+
+    /**
+     * Gets the fecha_pago value for this ClsFEXRequest.
+     * 
+     * @return fecha_pago
+     */
+    public java.lang.String getFecha_pago() {
+        return fecha_pago;
+    }
+
+
+    /**
+     * Sets the fecha_pago value for this ClsFEXRequest.
+     * 
+     * @param fecha_pago
+     */
+    public void setFecha_pago(java.lang.String fecha_pago) {
+        this.fecha_pago = fecha_pago;
+    }
+
     private java.lang.Object __equalsCalc = null;
     public synchronized boolean equals(java.lang.Object obj) {
         if (!(obj instanceof ClsFEXRequest)) return false;
@@ -684,7 +708,10 @@ public class ClsFEXRequest  implements java.io.Serializable {
               java.util.Arrays.equals(this.items, other.getItems()))) &&
             ((this.opcionales==null && other.getOpcionales()==null) || 
              (this.opcionales!=null &&
-              java.util.Arrays.equals(this.opcionales, other.getOpcionales())));
+              java.util.Arrays.equals(this.opcionales, other.getOpcionales()))) &&
+            ((this.fecha_pago==null && other.getFecha_pago()==null) || 
+             (this.fecha_pago!=null &&
+              this.fecha_pago.equals(other.getFecha_pago())));
         __equalsCalc = null;
         return _equals;
     }
@@ -787,6 +814,9 @@ public class ClsFEXRequest  implements java.io.Serializable {
                 }
             }
         }
+        if (getFecha_pago() != null) {
+            _hashCode += getFecha_pago().hashCode();
+        }
         __hashCodeCalc = false;
         return _hashCode;
     }
@@ -819,7 +849,7 @@ public class ClsFEXRequest  implements java.io.Serializable {
         elemField = new org.apache.axis.description.ElementDesc();
         elemField.setFieldName("punto_vta");
         elemField.setXmlName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "Punto_vta"));
-        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "short"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "int"));
         elemField.setNillable(false);
         typeDesc.addFieldDesc(elemField);
         elemField = new org.apache.axis.description.ElementDesc();
@@ -965,6 +995,13 @@ public class ClsFEXRequest  implements java.io.Serializable {
         elemField.setMinOccurs(0);
         elemField.setNillable(false);
         elemField.setItemQName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "Opcional"));
+        typeDesc.addFieldDesc(elemField);
+        elemField = new org.apache.axis.description.ElementDesc();
+        elemField.setFieldName("fecha_pago");
+        elemField.setXmlName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "Fecha_pago"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "string"));
+        elemField.setMinOccurs(0);
+        elemField.setNillable(false);
         typeDesc.addFieldDesc(elemField);
     }
 
