@@ -312,7 +312,7 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 	 *         candidato para procesamiento, false caso contrario
 	 */
 	protected boolean validateDocument(HashMap<String, String> document) {
-		return !dateParamStr.equals(document.get("CbteFch"));
+		return dateParamStr.equals(document.get("CbteFch"));
 	}
 	
 	/**
