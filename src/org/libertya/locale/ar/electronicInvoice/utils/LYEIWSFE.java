@@ -506,6 +506,12 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 					inv.getOrigInvNro()>0 && 
 					inv.getOrigInvPtoVta()>0 &&
 					!Util.isEmpty(inv.getOrigInvTipo())) {
+				// Se especificó referencia manual mediante los 4 campos
+		        nroCbteOrig = inv.getOrigInvNro();
+		        ptoVtaCbteOrig = inv.getOrigInvPtoVta();
+		        fechaCbteOrig = new SimpleDateFormat("yyyyMMdd").format(new Date(inv.getOrigInvFecha().getTime()));
+		        tipoCbteOrig = Integer.parseInt(inv.getOrigInvTipo());
+			} else {
 				MInvoice origInv = new MInvoice(ctx, inv.getC_Invoice_Orig_ID(), trx);
 				MDocType origInvDT = new MDocType(ctx, origInv.getC_DocTypeTarget_ID(), trx);
 				int tipo = Integer.parseInt(origInvDT.getdocsubtypecae());
@@ -514,12 +520,6 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 		        ptoVtaCbteOrig = origInv.getPuntoDeVenta();
 		        fechaCbteOrig = new SimpleDateFormat("yyyyMMdd").format(new Date(origInv.getDateAcct().getTime()));
 		        tipoCbteOrig = tipo;
-			} else {
-				// Se especificó referencia manual mediante los 4 campos
-		        nroCbteOrig = inv.getOrigInvNro();
-		        ptoVtaCbteOrig = inv.getOrigInvPtoVta();
-		        fechaCbteOrig = new SimpleDateFormat("yyyyMMdd").format(new Date(inv.getOrigInvFecha().getTime()));
-		        tipoCbteOrig = Integer.parseInt(inv.getOrigInvTipo());
 			}
 			CbteAsoc asoc = new CbteAsoc();
 			asoc.setCuit(genConfig.getCUIT());
