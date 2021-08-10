@@ -98,7 +98,12 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 		int min, max;
 		while(rs.next()) {
 			// Setear el tipo de documento al wccp
-			dt = getDocType(rs);
+			try {
+				dt = getDocType(rs);
+			} catch(Exception e) {
+				log.warning(e.getMessage());
+				continue;
+			}
 			getWsfeProvider().setaDocType(dt);
 			getWsfeProvider().setCbteTipoNombre(dt.getName());
 			getWsfeProvider().setCbteTipo(getWsfeProvider().getCbteTipo(dt));
