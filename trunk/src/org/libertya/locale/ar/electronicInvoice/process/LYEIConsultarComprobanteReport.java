@@ -178,7 +178,7 @@ public class LYEIConsultarComprobanteReport extends LYEIElectronicClosing {
 	@Override
 	protected MDocType getDocType(ResultSet rs) throws Exception {
 		if(getPOSNumber() == 0 || getPOSNumber() != rs.getInt("posnumber")) {
-			int posNumber = Util.isEmpty(getPOSNumber(), true) ? Integer.parseInt(rs.getString("posnumber"))
+			int posNumber = Util.isEmpty(getPOSNumber(), true) || getPOSNumber() != rs.getInt("posnumber") ? Integer.parseInt(rs.getString("posnumber"))
 					: getPOSNumber();
 			setPOSNumber(posNumber);
 			setClientID(rs.getInt("ad_client_id"));
