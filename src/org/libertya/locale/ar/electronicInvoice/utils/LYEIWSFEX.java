@@ -75,11 +75,15 @@ public class LYEIWSFEX extends LYEIWSFE implements ElectronicInvoiceInterface {
 			// Identificador del requerimiento. TODO: La política de uso de un identificador podría definirse según configuración (usar c_invoice_id? currentTimeMillis? Una secuencia ad_hoc?, etc)
 			cmp.setId(System.currentTimeMillis());  
 			// Tipo de comprobante
-			cmp.setCbte_Tipo((short)LYEICommons.getCbteTipo(docType)); // 19 20 o 21
+			cmp.setCbte_Tipo((short)LYEICommons.getCbteTipo(docType)); // 19 (facturas de exportacion), 20 (ND Exportacion) o 21 (NC Exportacion)
 			// Fecha Comprobante
 			cmp.setFecha_cbte(LYEICommons.getCbteFchString(inv));
 			// Fecha de Pago
-			cmp.setFecha_pago(LYEICommons.getFechaVtoString(inv));
+			// Para comprobantes tipo “19 - Facturas de Exportación” es obligatoria y debe ser igual o posterior a la del comprobante.
+			// Para los que no son de tipo “19 - Facturas de Exportación” omitir la fecha de pago
+			if (Integer.parseInt(MDocType.DOCSUBTYPECAE_FacturaDeExportaciónE) == LYEICommons.getCbteTipo(docType)) {
+				cmp.setFecha_pago(LYEICommons.getFechaVtoString(inv));
+			}
 			// Forma de Pago
 			cmp.setForma_pago(LYEICommons.getFormaPago(inv));
 			// Punto de venta
