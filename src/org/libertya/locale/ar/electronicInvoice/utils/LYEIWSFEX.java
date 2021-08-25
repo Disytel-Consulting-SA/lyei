@@ -223,10 +223,13 @@ public class LYEIWSFEX extends LYEIWSFE implements ElectronicInvoiceInterface {
 	}
 	
 	/** Retorna los items de detalle */
-	protected Item[] getItems() {
+	protected Item[] getItems() throws Exception {
 		ArrayList<Item> items = new ArrayList<Item>();
 		for (MInvoiceLine aLine : inv.getLines()) {
 			MUOM uom = MUOM.get(ctx, aLine.getC_UOM_ID());
+			if(Util.isEmpty(uom.getUOMCodeFE(), true)) {
+				throw new Exception("La unidad de medida " + uom.getName() + " no posee configurado el codigo FE.");
+			}
 			Item item = new Item();
 			item.setPro_ds(aLine.getProductName());
 			item.setPro_qty(aLine.getQtyEntered());
