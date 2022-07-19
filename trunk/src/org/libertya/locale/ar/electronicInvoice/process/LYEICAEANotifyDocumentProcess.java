@@ -219,7 +219,7 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 			comp.setCotizacionMoneda(LYEICommons.getMonCotiz(inv, getCtx()));
 			
 			/* Concepto incluido en el comprobante. Valores permitidos: 1: Productos 2: Servicios 3: Productos y Servicios */
-			comp.setCodigoConcepto((short)LYEICommons.getConcepto());
+			comp.setCodigoConcepto((short)LYEICommons.getConcepto(inv.getC_Invoice_ID()));
 			
 			/* Array. Detalle de los ítems que componen el comprobante. */
 			comp.setArrayItems(getArrayItems(inv, docType));

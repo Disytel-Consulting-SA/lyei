@@ -202,7 +202,13 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			// Nro. de comprobante hasta
 			detReq.setCbteHasta(cbteNro);
 			// Concepto de la factura. Valores permitidos: 01 Productos. 02 Servicios. 03 Productos y Servicios.
-			detReq.setConcepto(LYEICommons.getConcepto());
+			int concepto = LYEICommons.getConcepto(inv.getC_Invoice_ID());
+			detReq.setConcepto(concepto);
+			// En caso de que se informe servicio, debe informarse el periodo desde y hasta
+			if (concepto > LYEIConstants.WSFE_CONCEPTO_PRODUCTOS) {
+				detReq.setFchServDesde(LYEICommons.setFchServDesde(inv));
+				detReq.setFchServHasta(LYEICommons.setFchServHasta(inv));
+			}
 			// Código   de   documento   identificatorio   del	comprador
 			detReq.setDocTipo(LYEICommons.getDocTipo(partner));
 			// Nro.  de identificación del comprador

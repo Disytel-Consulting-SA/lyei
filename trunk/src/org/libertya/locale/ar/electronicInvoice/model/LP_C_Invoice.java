@@ -8,7 +8,7 @@ import java.math.*;
 import org.openXpertya.util.*;
 /** Modelo Generado por C_Invoice
  *  @author Comunidad de Desarrollo Libertya*         *Basado en Codigo Original Modificado, Revisado y Optimizado de:*         * Jorg Janke 
- *  @version  - 2021-04-05 13:13:06.168 */
+ *  @version  - 2022-07-19 10:56:55.99 */
 public class LP_C_Invoice extends org.openXpertya.model.MInvoice
 {
 /** Constructor estándar */
@@ -88,14 +88,34 @@ public String getLYEIManageElectronicInvoiceProcess()
 {
 return (String)get_Value("LYEIManageElectronicInvoiceProcess");
 }
+/** Set LYEIPeriodFrom */
+public void setLYEIPeriodFrom (Timestamp LYEIPeriodFrom)
+{
+set_Value ("LYEIPeriodFrom", LYEIPeriodFrom);
+}
+/** Get LYEIPeriodFrom */
+public Timestamp getLYEIPeriodFrom() 
+{
+return (Timestamp)get_Value("LYEIPeriodFrom");
+}
+/** Set LYEIPeriodTo */
+public void setLYEIPeriodTo (Timestamp LYEIPeriodTo)
+{
+set_Value ("LYEIPeriodTo", LYEIPeriodTo);
+}
+/** Get LYEIPeriodTo */
+public Timestamp getLYEIPeriodTo() 
+{
+return (Timestamp)get_Value("LYEIPeriodTo");
+}
 protected String getAdditionalParamNames() 
 {
- return ",LYEIManageElectronicInvoiceProcess,LYEICAEAInformed,LYEICAEAInformedDetail,";
+ return ",LYEIManageElectronicInvoiceProcess,LYEICAEAInformed,LYEICAEAInformedDetail,LYEIPeriodFrom,LYEIPeriodTo,";
  }
  
 protected String getAdditionalParamMarks() 
 {
- return ",?,?,?,";
+ return ",?,?,?,?,?,";
  }
  
 protected void skipAdditionalNullValues(String sql) 
@@ -103,6 +123,8 @@ protected void skipAdditionalNullValues(String sql)
  		 if (getLYEIManageElectronicInvoiceProcess() == null) sql = sql.replaceFirst("LYEIManageElectronicInvoiceProcess,","").replaceFirst("\\?,", "");
  		 if (getLYEICAEAInformed() == null) sql = sql.replaceFirst("LYEICAEAInformed,","").replaceFirst("\\?,", "");
  		 if (getLYEICAEAInformedDetail() == null) sql = sql.replaceFirst("LYEICAEAInformedDetail,","").replaceFirst("\\?,", "");
+ 		 if (getLYEIPeriodFrom() == null) sql = sql.replaceFirst("LYEIPeriodFrom,","").replaceFirst("\\?,", "");
+ 		 if (getLYEIPeriodTo() == null) sql = sql.replaceFirst("LYEIPeriodTo,","").replaceFirst("\\?,", "");
   }
  
 protected int setAdditionalInsertValues(int col, PreparedStatement pstmt) throws Exception 
@@ -110,6 +132,8 @@ protected int setAdditionalInsertValues(int col, PreparedStatement pstmt) throws
  		 if (getLYEIManageElectronicInvoiceProcess() != null) pstmt.setString(col++, getLYEIManageElectronicInvoiceProcess());
 		 if (getLYEICAEAInformed() != null) pstmt.setString(col++, getLYEICAEAInformed());
 		 if (getLYEICAEAInformedDetail() != null) pstmt.setString(col++, getLYEICAEAInformedDetail());
+		 if (getLYEIPeriodFrom() != null) pstmt.setTimestamp(col++, getLYEIPeriodFrom());
+		 if (getLYEIPeriodTo() != null) pstmt.setTimestamp(col++, getLYEIPeriodTo());
  
  return col;
  }
