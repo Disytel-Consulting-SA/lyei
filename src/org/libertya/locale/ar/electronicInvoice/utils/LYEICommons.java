@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Properties;
 
+import org.libertya.locale.ar.electronicInvoice.model.LP_C_Invoice;
 import org.openXpertya.model.MBPartner;
 import org.openXpertya.model.MCurrency;
 import org.openXpertya.model.MDocType;
@@ -126,11 +127,23 @@ public class LYEICommons {
 	}
 	
 	/** Concepto de la FE segun existan productos y/o servicios en la misma */
-	public static int getConcepto() {
-		// TODO: VERIFICAR CORRECTITUD DE USO DE PRODUCTOS
-		return LYEIConstants.WSFE_CONCEPTO_PRODUCTOS;
+	public static int getConcepto(int invoiceID) {
+		// Devuelve 1 si solo existen Items, 2 si solo existen servicios, 3 si existen ambos; o 1 por defecto en cualquier otro caso
+		return org.libertya.locale.ar.electronicInvoice.model.MInvoice.getInvoiceConcept(invoiceID);
 	}
 	
+	/** Periodo facturado del servicio: desde */
+	public static String setFchServDesde(MInvoice inv) {
+		// El campo es fecha/hora por posibles ampliaciones a futuro. por el momento solo se envía la fecha
+		return inv.get_Value("LYEIPeriodFrom")==null ? "" : (""+inv.get_Value("LYEIPeriodFrom")).substring(0, 10).replace("-", "");
+	}
+	
+	/** Periodo facturado del servicio: hasta */
+	public static String setFchServHasta(MInvoice inv) {
+		// El campo es fecha/hora por posibles ampliaciones a futuro. por el momento solo se envía la fecha
+		return inv.get_Value("LYEIPeriodTo")==null ? "" : (""+inv.get_Value("LYEIPeriodTo")).substring(0, 10).replace("-", "");
+	}
+
 	/** Total de la factura */
 	public static BigDecimal getImpTotal(MInvoice inv) {
 		return getImpTotalBigDecimal(inv);
