@@ -249,9 +249,9 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			detReq.setImpTotal(LYEICommons.getImpTotal(inv).doubleValue());
 			// Importe neto no gravado. Debe ser menor o igual a Importe total y no puede ser menor a cero. 
 			// No  puede  ser  mayor  al  Importe  total  de  la operación ni menor a cero (0)
-			detReq.setImpTotConc(LYEICommons.getImpTotConc().doubleValue());
+			detReq.setImpTotConc(LYEICommons.getImpTotConc(inv.getC_Invoice_ID()).doubleValue());
 			// Importe  exento.  Debe  ser  menor  o  igual  a Importe total y no puede ser menor a cero
-			detReq.setImpOpEx(LYEICommons.getImpOpEx().doubleValue());
+			detReq.setImpOpEx(LYEICommons.getImpOpEx(inv.getC_Invoice_ID()).doubleValue());
 			
 			// Opcionales
 			Opcional[] opcionales = getOpcionales();

@@ -13,6 +13,7 @@ import org.openXpertya.model.MDocType;
 import org.openXpertya.model.MInvoice;
 import org.openXpertya.model.MPaymentTerm;
 import org.openXpertya.model.X_C_DocType;
+import org.openXpertya.util.DB;
 import org.openXpertya.util.Env;
 
 import ar.gov.afip.wsmtxca.service.impl.service.CodigoDescripcionType;
@@ -80,6 +81,9 @@ public class LYEICommons {
 	public static Long getDocNro(MBPartner partner, MInvoice inv) {
 		if (partner.isConsumidorFinal()) 
 			return 1L;
+		if (inv.getCUIT()==null) {
+			throw new RuntimeException("La factura requiere el CUIT del cliente");
+		}
 		return Long.parseLong(inv.getCUIT().replace("-", "").replace(" ", ""));
 	}
 
@@ -155,25 +159,33 @@ public class LYEICommons {
 	}
 	
 	/** Importe neto no gravado */
-	public static BigDecimal getImpTotConc() {
-		return getImpTotConcBigDecimal();
+	public static BigDecimal getImpTotConc(int invoiceID) {
+		return getImpTotConcBigDecimal(invoiceID);
 	}
 	
 	/** Importe neto no gravado */
-	public static BigDecimal getImpTotConcBigDecimal() {
-		// TODO: Pending
-		return BigDecimal.ZERO;
+	public static BigDecimal getImpTotConcBigDecimal(int invoiceID) {
+		return 
+				DB.getSQLValueBD(null, 	" select coalesce(sum(taxbaseamt),0) " +
+										" from c_invoicetax it " +
+										" inner join c_tax t on it.c_tax_id = t.c_tax_id " +
+										" where t.isNoGravado = 'Y' " +
+										" and it.c_invoice_id = ?", invoiceID);  
 	}
 
 	/** Importe exento */ 
-	public static BigDecimal getImpOpEx() {
-		return getImpOpExBigDecimal();
+	public static BigDecimal getImpOpEx(int invoiceID) {
+		return getImpOpExBigDecimal(invoiceID);
 	}
 	
 	/** Importe exento */ 
-	public static BigDecimal getImpOpExBigDecimal() {
-		// TODO: Pending
-		return BigDecimal.ZERO;
+	public static BigDecimal getImpOpExBigDecimal(int invoiceID) {
+		return 
+				DB.getSQLValueBD(null, 	" select coalesce(sum(taxbaseamt),0) " +
+										" from c_invoicetax it " +
+										" inner join c_tax t on it.c_tax_id = t.c_tax_id " +
+										" where t.istaxexempt = 'Y' " +
+										" and it.c_invoice_id = ?", invoiceID);  
 	}
 	
 	/** Retorna el array como un String */
