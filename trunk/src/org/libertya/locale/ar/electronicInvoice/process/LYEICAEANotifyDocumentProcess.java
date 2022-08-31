@@ -244,10 +244,10 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 			comp.setImporteGravado(LYEICommons.getImpNetoBigDecimal(impIva, docType, inv));
 			
 			/* Importe total de conceptos no gravados. */
-			comp.setImporteNoGravado(LYEICommons.getImpTotConcBigDecimal());
+			comp.setImporteNoGravado(LYEICommons.getImpTotConcBigDecimal(inv.getC_Invoice_ID()));
 			
 			/* Importe total de conceptos exentos */
-			comp.setImporteExento(LYEICommons.getImpOpExBigDecimal());
+			comp.setImporteExento(LYEICommons.getImpOpExBigDecimal(inv.getC_Invoice_ID()));
 			
 			/* Importe subtotal del comprobante */
 			comp.setImporteSubtotal(getImporteSubtotal(impIva, docType, inv));
@@ -411,7 +411,7 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 
 	/** Importe gravado + no gravado + exento */
 	protected BigDecimal getImporteSubtotal(BigDecimal impIva, MDocType docType, MInvoice inv) {
-		return LYEICommons.getImpNetoBigDecimal(impIva, docType, inv).add(LYEICommons.getImpTotConcBigDecimal()).add(LYEICommons.getImpOpExBigDecimal());
+		return LYEICommons.getImpNetoBigDecimal(impIva, docType, inv).add(LYEICommons.getImpTotConcBigDecimal(inv.getC_Invoice_ID())).add(LYEICommons.getImpOpExBigDecimal(inv.getC_Invoice_ID()));
 	}
 	
 	/** Items de la factura */
