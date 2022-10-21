@@ -1,14 +1,7 @@
 package org.libertya.locale.ar.electronicInvoice.ddjjafip.electronic_report;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import org.openXpertya.util.DB;
 
 public class ERDownloaderGetaudarLinuxStrategy extends ERDownloaderGetaudarStrategy {
 
@@ -35,18 +28,30 @@ public class ERDownloaderGetaudarLinuxStrategy extends ERDownloaderGetaudarStrat
 			newDirectory.mkdirs();
 			
 			//mover afip.zip al nuevo directorio especifico
-			String[] mvCommand = {"/bin/sh", "-c", "mv " + baseDir + "afip.zip " + newDirAbsolute}; 
+//			String[] mvCommand = {"/bin/sh", "-c", "mv " + baseDir + "afip.zip " + newDirAbsolute}; 
+			String[] mvCommand = {"/bin/sh", "-c", "mv " + addSurroundingQuotes(baseDir + "afip.zip") + " " + 
+					addSurroundingQuotes(newDirAbsolute)}; 
 			Process mv = runtime.exec(mvCommand);
 			mv.waitFor();
 			
+			//mover afip.85 al nuevo directorio especifico
+//			String[] mvCommand2 = {"/bin/sh", "-c", "mv " + baseDir + "afip.85 " + newDirAbsolute}; 
+			String[] mvCommand2 = {"/bin/sh", "-c", "mv " + addSurroundingQuotes(baseDir + "afip.85") + " " + 
+					addSurroundingQuotes(newDirAbsolute)};
+			Process mv2 = runtime.exec(mvCommand2);
+			mv2.waitFor();			
+			
 			//descomprimir zip y obtener archivos de interes
 			String[] unzipCommand = {"/bin/unzip","-qq", getFormattedPath(newDirAbsolute)+"afip.zip", "-d", getFormattedPath(newDirAbsolute)};
+//			String[] unzipCommand = {"/bin/unzip", "-qq", addSurroundingQuotes(getFormattedPath(newDirAbsolute) + "afip.zip"), 
+//					"-d", addSurroundingQuotes(getFormattedPath(newDirAbsolute))};
 			Process unzip = runtime.exec(unzipCommand);
 			//se debe esperar a que finalice el proceso, de lo contrario puede haber fallos
 			unzip.waitFor();
 			
 			//obtener a partir del nuevo directorio los archivos necesarios para presentacion y los seteamos
 			this.setArchivosPresentacion(getArchivosPresentacionFromDir(newDirAbsolute));
+			
 //			for(int i=0; i < this.archivosPresentacion.size() ; i++) {
 //				System.out.println("[ARCHIVO " + i +"] " + this.archivosPresentacion.get(i));
 //			}
@@ -83,22 +88,7 @@ public class ERDownloaderGetaudarLinuxStrategy extends ERDownloaderGetaudarStrat
 		return true;
 	}
 	
-	private ArrayList<String> getArchivosPresentacionFromDir(String dir) {
-		ArrayList<String> archivosPresentacionString = new ArrayList<String>();
-		String[] pathnames;
-        File f = new File(dir);
-        pathnames = f.list();
-        for (String pathname : pathnames) {
-        	String substring = pathname.substring(0, 5);
-        	if(substring.equalsIgnoreCase("F8011") || substring.equalsIgnoreCase("F8012")) {
-        		//establece el archivo con su ruta absoluta
-        		archivosPresentacionString.add(getFormattedPath(dir) + pathname);
-        	}
-        }
-		return archivosPresentacionString;
-	}
-	
-	private String getFormattedPath(String path) {
+	protected String getFormattedPath(String path) {
 		String res = path;
 		//si el path no termina con / se le agrega
 		if(!path.substring(path.length() - 1).equals("/") ) {
@@ -107,44 +97,12 @@ public class ERDownloaderGetaudarLinuxStrategy extends ERDownloaderGetaudarStrat
 		return res;
 	}
 	
-	private int getRandomInt(int min, int max) {
-		int range = max - min;
-		return (int)(Math.random() * range) + min;
-	}
-	
-	private String getProcessOutput(Process proc) throws IOException {
-		String res = "";
-		BufferedReader stdInput = new BufferedReader(new InputStreamReader(proc.getInputStream()));
-		BufferedReader stdError = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
-		String output = null;
-		
-		//Leer output del comando
-		while ((output = stdInput.readLine()) != null) {
-			res += output;
+	//agrega comillas a una ruta para evitar problemas con paths que contengan espacios
+	private String addSurroundingQuotes(String path) {
+		if(!path.substring(0, 1).equalsIgnoreCase("\"")) {			
+			return "\"" + path + "\"";
 		}
-		res += "\n\n";
-		//Leer errores del comando
-		while ((output = stdError.readLine()) != null) {
-			res += output;
-		}
-		return res;
-	}
-	
-	private String getAD_PreferenceGetaudar() {
-		PreparedStatement pstmtMLA = 
-				DB.prepareStatement(	"SELECT value " +
-										"FROM ad_preference " +
-										"WHERE attribute = 'Getaudar'");
-		ResultSet rs = null;
-		String res = null;
-		try {
-		rs = pstmtMLA.executeQuery();
-		rs.next();
-		res = rs.getString(1);
-		} catch (SQLException e) {
-		e.printStackTrace();
-		}
-		return res;
+		return path;
 	}
 
 }
