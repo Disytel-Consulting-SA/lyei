@@ -27,7 +27,7 @@ public abstract class ERDownloaderGetaudarStrategy implements IElectronicReportD
 
 	protected abstract boolean isSpoolerStopped();
 
-	protected abstract boolean executeGetaudar(String baseDir, String fechaInicio, String fechaFin);
+	protected abstract boolean executeGetaudar(String baseDir, String fechaInicio, String fechaFin, int lyeicom);
 	
 	protected int getRandomInt(int min, int max) {
 		int range = max - min;

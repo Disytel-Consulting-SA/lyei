@@ -9,7 +9,7 @@ public class ERDownloaderGetaudarWindowsStrategy extends ERDownloaderGetaudarStr
 	}
 
 	@Override
-	public boolean downloadER(String fechaInicio, String fechaFin) {
+	public boolean downloadER(String fechaInicio, String fechaFin, int lyeicom) {
 		//directorio base donde se encuentra la herramienta
 		String baseDir = getFormattedPath(getAD_PreferenceGetaudar());
 		Runtime runtime = Runtime.getRuntime();
@@ -67,10 +67,10 @@ public class ERDownloaderGetaudarWindowsStrategy extends ERDownloaderGetaudarStr
 	}
 
 	@Override
-	protected boolean executeGetaudar(String baseDir, String fechaInicio, String fechaFin) {
+	protected boolean executeGetaudar(String baseDir, String fechaInicio, String fechaFin, int lyeicom) {
 		//obtener parametros para ejecucion del script/herramienta externa
 		String tool = addSurroundingQuotes(getFormattedPath(baseDir) + "getaudar.exe");
-		String params = " -p 3 -i serial -a";
+		String params = " -p " + lyeicom + " -i serial -a";
 		//ej: ubicacion/de/herramienta/getaudar -p 3 -i serial -a 200101 200331
 		String command = tool + params + " " + fechaInicio + " " + fechaFin;
 		//ejecutamos comando para obtener afip.zip
