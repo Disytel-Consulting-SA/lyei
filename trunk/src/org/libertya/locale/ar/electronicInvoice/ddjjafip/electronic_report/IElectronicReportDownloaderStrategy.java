@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 public interface IElectronicReportDownloaderStrategy {
 	
-	public boolean downloadER(String fechaInicio, String fechaFin);
+	public boolean downloadER(String fechaInicio, String fechaFin, int lyeicom);
 	
 	ArrayList<String> getArchivosPresentacion();
 	

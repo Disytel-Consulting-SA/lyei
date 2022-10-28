@@ -11,6 +11,7 @@ public class LYEIPresentarDDJJAFIPProcess extends SvrProcess {
 	//rango de fechas para pedir los reportes electrónicos
 	String fechaInicio;
 	String fechaFin;
+	String pos;
 	
 	public LYEIPresentarDDJJAFIPProcess() {
 	}
@@ -26,6 +27,9 @@ public class LYEIPresentarDDJJAFIPProcess extends SvrProcess {
 			}else
 			if ( param.equalsIgnoreCase( "fechaFin" )) {
 				this.fechaFin = params[ i ].getParameter().toString();
+			}else
+			if( param.equalsIgnoreCase( "pos" )) {
+				this.pos = params[ i ].getParameter().toString();
 			}
 		}
 	}
@@ -34,7 +38,7 @@ public class LYEIPresentarDDJJAFIPProcess extends SvrProcess {
 	protected String doIt() throws Exception {
 		validarFechas();
 		
-		return new ElectronicReportHandler(fechaInicio, fechaFin).execute();
+		return new ElectronicReportHandler(fechaInicio, fechaFin, pos).execute();
 	}
 	
 	public void validarFechas() throws Exception {

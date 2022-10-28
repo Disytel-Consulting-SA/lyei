@@ -14,6 +14,9 @@ public class LYEIConstants {
 	/** Nombre de la preferencia para especificar el directorio base de OpenSSL */
 	public static final String PREF_WSFE_OPENSSL_BASE_DIR = "WSFE_OPENSSL_BASE_DIR";
 		
+	/** Prefijo servicio externo WSDDJJ*/
+	public static final String EXTERNAL_SERVICE_WSDDJJ_PREFIX = "WSDDJJ";
+	
 	/** Prefijo servicio externo WSAA */
 	public static final String EXTERNAL_SERVICE_WSAA_PREFIX = "WSAA";
 	
