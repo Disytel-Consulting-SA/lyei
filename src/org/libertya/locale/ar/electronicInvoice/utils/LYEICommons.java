@@ -50,24 +50,25 @@ public class LYEICommons {
 
 	/** Fecha de vencimiento de la factura */
 	public static Date getFechaVtoDate(MInvoice inv) throws Exception {
-        Date date = null;
-        // El campo FchVtoPago debe ser posterior o igual a la fecha de emision (CbteFch) o fecha de presentacion (fecha actual), la que sea posterior.
-        if (inv.isVoidProcess()) { 
-        	date = inv.getFechaVto();
-        	Date currDate = new Date();
-        	if (date == null || currDate.compareTo(date) > 0) { 
-        		date = currDate;
-        	}
-        // Si no es una anulacion...
-        } else {  
-        	date = new Date(inv.getFechaVto().getTime());
-        } 
+		// Si el concepto es 1, no lleva fecha de vencimiento.
+		if(getConcepto(inv.getC_Invoice_ID()) == 1) {
+			return null;
+		}
+		
+		Date date = inv.getFechaVto();
+		Date currDate = new Date();
+		
+		// La fecha de vencimiento no puede ser menor a la fecha actual
+		if (date == null || currDate.compareTo(date) > 0) { 
+			date = currDate;
+		}			
+		
         return date;
 	}
 	
 	/** Fecha de vencimiento de la factura */
 	public static String getFechaVtoString(MInvoice inv) throws Exception {
-        return dateToString(getFechaVtoDate(inv));
+        return getFechaVtoDate(inv) != null ? dateToString(getFechaVtoDate(inv)) : null;
 	}
 
 	/** Tipo de documento segun el cliente es CF o no */
@@ -99,11 +100,21 @@ public class LYEICommons {
 	
 	/** Neto de la factura */
 	public static BigDecimal getImpNetoBigDecimal(BigDecimal impIva, MDocType docType, MInvoice inv) {
-		// Para facturas C no se discrimina IVA. Se considera neto+iva-tributos como neto
+		BigDecimal neto = DB.getSQLValueBD(null, 	" SELECT COALESCE(SUM(taxbaseamt), 0) " + 
+													" FROM c_invoicetax it " + 
+													" INNER JOIN c_tax t ON it.c_tax_id = t.c_tax_id " + 
+													" INNER JOIN c_taxcategory tc ON tc.c_taxcategory_id = t.c_taxcategory_id " +
+													" WHERE it.c_invoice_id = ? " +
+														" AND t.istaxexempt = 'N' " + 
+														" AND t.isnogravado = 'N' " +
+														" AND t.ispercepcion = 'N' " +
+														" AND tc.ismanual = 'N'", inv.getC_Invoice_ID());
+		
+		// Para facturas C no se discrimina IVA. Se considera neto + iva - tributos como neto
 		if (X_C_DocType.DOCSUBTYPECAE_FacturasC.equals(docType.getdocsubtypecae())) {
-			return inv.getNetAmount().add(impIva).setScale(2, BigDecimal.ROUND_HALF_UP);
+			return neto.add(impIva).setScale(2, BigDecimal.ROUND_HALF_UP);
 		}
-		return inv.getNetAmount().setScale(2, BigDecimal.ROUND_HALF_UP);
+		return neto;
 	}
 
 	/** Moneda de la factura */
@@ -166,11 +177,11 @@ public class LYEICommons {
 	/** Importe neto no gravado */
 	public static BigDecimal getImpTotConcBigDecimal(int invoiceID) {
 		return 
-				DB.getSQLValueBD(null, 	" select coalesce(sum(taxbaseamt),0) " +
-										" from c_invoicetax it " +
-										" inner join c_tax t on it.c_tax_id = t.c_tax_id " +
-										" where t.isNoGravado = 'Y' " +
-										" and it.c_invoice_id = ?", invoiceID);  
+				DB.getSQLValueBD(null, 	" SELECT COALESCE(SUM(taxbaseamt),0) " +
+										" FROM c_invoicetax it " +
+										" INNER JOIN c_tax t on it.c_tax_id = t.c_tax_id " +
+										" WHERE t.isNoGravado = 'Y' " +
+											" AND it.c_invoice_id = ?", invoiceID);  
 	}
 
 	/** Importe exento */ 
@@ -181,11 +192,11 @@ public class LYEICommons {
 	/** Importe exento */ 
 	public static BigDecimal getImpOpExBigDecimal(int invoiceID) {
 		return 
-				DB.getSQLValueBD(null, 	" select coalesce(sum(taxbaseamt),0) " +
-										" from c_invoicetax it " +
-										" inner join c_tax t on it.c_tax_id = t.c_tax_id " +
-										" where t.istaxexempt = 'Y' " +
-										" and it.c_invoice_id = ?", invoiceID);  
+				DB.getSQLValueBD(null, 	" SELECT COALESCE(SUM(taxbaseamt),0) " +
+										" FROM c_invoicetax it " +
+										" INNER JOIN c_tax t on it.c_tax_id = t.c_tax_id " +
+										" WHERE t.istaxexempt = 'Y' " +
+											" AND it.c_invoice_id = ?", invoiceID);  
 	}
 	
 	/** Retorna el array como un String */
