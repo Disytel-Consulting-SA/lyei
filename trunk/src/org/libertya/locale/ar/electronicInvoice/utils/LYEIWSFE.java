@@ -28,6 +28,7 @@ import org.openXpertya.model.MLocation;
 import org.openXpertya.model.MOrgInfo;
 import org.openXpertya.model.MPreference;
 import org.openXpertya.model.MTax;
+import org.openXpertya.model.MTaxCategory;
 import org.openXpertya.model.X_C_DocType;
 import org.openXpertya.util.CLogger;
 import org.openXpertya.util.Util;
@@ -217,8 +218,7 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			// asignará la fecha de proceso
 			detReq.setCbteFch(LYEICommons.getCbteFchString(inv));
 			// Fecha vencimiento pago. Si el tipo de comprobante que está autorizando es MiPyMEs (FCE) tipos 201/206/211 (Factura A/B/C), es obligatorio informar FchVtoPago.
-			if (isFacturaMiPyME())
-				detReq.setFchVtoPago(LYEICommons.getFechaVtoString(inv));
+			detReq.setFchVtoPago(LYEICommons.getFechaVtoString(inv));
 			// Código de  moneda  del comprobante. Consultar método FEParamGetTiposMonedas para valores posibles
 			detReq.setMonId(LYEICommons.getMonId(currency));
 			// Cotizacion de  la  moneda  informada.  Para PES, pesos argentinos  la misma debe ser 1
@@ -354,8 +354,10 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 		// Recorrer todos los impuestos de la factura
 		for (MInvoiceTax invoiceTax : inv.getTaxes(false)){
 			MTax tax = MTax.get(ctx, invoiceTax.getC_Tax_ID(), trx);
-			// Las percepciones van aparte 
-			if (tax.isPercepcion())
+			MTaxCategory taxCategory = new MTaxCategory(ctx, tax.getC_TaxCategory_ID(), trx);
+			// Se debe generar únicamente en el caso de ser una alícuota de IVA (0, 10.5, 21 o 27)
+			// TODO: Ejecutar el Generate Model para utilizar el método tax.isNoGravado()
+			if (taxCategory.isManual() || tax.isPercepcion() || tax.isTaxExempt() || (Boolean) tax.get_Value("IsNoGravado"))
 				continue;
 			// Crear nueva entradda
 			AlicIva alicIva = new AlicIva();
