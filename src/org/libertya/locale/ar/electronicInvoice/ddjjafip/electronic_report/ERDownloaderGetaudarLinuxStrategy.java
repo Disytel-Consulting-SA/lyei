@@ -15,7 +15,7 @@ public class ERDownloaderGetaudarLinuxStrategy extends ERDownloaderGetaudarStrat
 		Runtime runtime = Runtime.getRuntime();
 		try {
 			//se invoca la herramienta externa para descargar afip.zip de impresora fiscal
-//			executeGetaudar(baseDir, fechaInicio, fechaFin);
+			executeGetaudar(baseDir, fechaInicio, fechaFin, lyeicom);
 			
 			//Una vez obtenido el .zip desde la impresora fiscal es necesario
 			//guardar su contenido en un directorio particular, descomprimir y

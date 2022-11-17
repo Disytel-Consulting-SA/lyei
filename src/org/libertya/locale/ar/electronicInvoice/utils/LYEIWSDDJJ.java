@@ -68,12 +68,12 @@ public class LYEIWSDDJJ {
 			
 			//invocacion afip
 			long _upload__return = port.upload(token, sign, representado_cuit, _upload_presentacion);
-			uploadResponse = "upload.result[" + _upload__return + "]";
+			uploadResponse = String.valueOf(_upload__return);;
+			System.out.println("upload.result[" + _upload__return + "]");
 			
-		} catch (ServiceException e) {
-			e.printStackTrace();
 		} catch (Exception e) {
 			e.printStackTrace();
+			uploadResponse = "[Error] " + e.getMessage();
 		}
 		
 		return uploadResponse;
