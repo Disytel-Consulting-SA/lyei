@@ -2,6 +2,7 @@ package org.libertya.locale.ar.electronicInvoice.ddjjafip.electronic_report;
 
 import org.libertya.locale.ar.electronicInvoice.model.LP_C_LYEIElectronicPOSConfig;
 import org.libertya.locale.ar.electronicInvoice.utils.LYEIWSDDJJ;
+import org.openXpertya.util.Env;
 
 
 public class ERUploader implements IElectronicReportUploaderStrategy {
@@ -27,7 +28,7 @@ public class ERUploader implements IElectronicReportUploaderStrategy {
 
 	@Override
 	public void setPosConfig(int c_lyeielectronicPosConfig_id) {
-		this.posConfig = new LP_C_LYEIElectronicPOSConfig(null, c_lyeielectronicPosConfig_id, null);
+		this.posConfig = new LP_C_LYEIElectronicPOSConfig(Env.getCtx(), c_lyeielectronicPosConfig_id, null);
 	}
 
 	

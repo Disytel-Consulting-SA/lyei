@@ -8,7 +8,7 @@ import java.math.*;
 import org.openXpertya.util.*;
 /** Modelo Generado por C_LYEIElectronicPOSConfig
  *  @author Comunidad de Desarrollo Libertya*         *Basado en Codigo Original Modificado, Revisado y Optimizado de:*         * Jorg Janke 
- *  @version  - 2021-04-05 13:13:06.518 */
+ *  @version  - 2022-11-10 18:20:31.365 */
 public class LP_C_LYEIElectronicPOSConfig extends org.openXpertya.model.PO
 {
 /** Constructor estándar */
@@ -50,6 +50,21 @@ public String toString()
 {
 StringBuffer sb = new StringBuffer ("LP_C_LYEIElectronicPOSConfig[").append(getID()).append("]");
 return sb.toString();
+}
+/** Set CAEACheckSequences */
+public void setCAEACheckSequences (String CAEACheckSequences)
+{
+if (CAEACheckSequences != null && CAEACheckSequences.length() > 1)
+{
+log.warning("Length > 1 - truncated");
+CAEACheckSequences = CAEACheckSequences.substring(0,1);
+}
+set_Value ("CAEACheckSequences", CAEACheckSequences);
+}
+/** Get CAEACheckSequences */
+public String getCAEACheckSequences() 
+{
+return (String)get_Value("CAEACheckSequences");
 }
 public static final int CAEMETHOD_AD_Reference_ID = MReference.getReferenceID("LYEICAEMethod");
 /** CAE = C */
@@ -154,10 +169,12 @@ public static final int POSSERVICE_AD_Reference_ID = MReference.getReferenceID("
 public static final String POSSERVICE_FacturacionNacional = "N";
 /** Facturacion Exportacion = X */
 public static final String POSSERVICE_FacturacionExportacion = "X";
+/** DDJJ = D */
+public static final String POSSERVICE_DDJJ = "D";
 /** Set POSService */
 public void setPOSService (String POSService)
 {
-if (POSService.equals("N") || POSService.equals("X") || ( refContainsValue("LYEI-AD_Reference-1010330", POSService) ) );
+if (POSService.equals("N") || POSService.equals("X") || POSService.equals("D") || ( refContainsValue("LYEI-AD_Reference-1010330", POSService) ) );
  else throw new IllegalArgumentException ("POSService Invalid value: " + POSService + ".  Valid: " +  refValidOptions("LYEI-AD_Reference-1010330") );
 if (POSService == null) throw new IllegalArgumentException ("POSService is mandatory");
 if (POSService.length() > 1)

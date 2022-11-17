@@ -95,12 +95,15 @@ public class LYEIConstants {
 	/** Map posservice en configuracion de POS => nombre del servicio */
 	public static HashMap<String, String> serviceMapper = new HashMap<String, String>();
 	
-	
+	/** Servicio de facturacion mediante CAE */
+	public static final String AFIP_SERVICE_DDJJ = "djprocessorcontribuyente_cf";
+//	
 	static {
 		// Mapeo de servicios entre la configuracion y su nombre
 		serviceMapper.put(LP_C_LYEIElectronicPOSConfig.POSSERVICE_FacturacionNacional, AFIP_SERVICE_WSFE);
 		serviceMapper.put(LP_C_LYEIElectronicPOSConfig.POSSERVICE_FacturacionExportacion, AFIP_SERVICE_WSFEX);
 		serviceMapper.put(LP_C_LYEIElectronicPOSConfig.CAEMETHOD_CAEA, AFIP_SERVICE_MTXCA);
+		serviceMapper.put(LP_C_LYEIElectronicPOSConfig.POSSERVICE_DDJJ, AFIP_SERVICE_DDJJ);
 	}
 	
 

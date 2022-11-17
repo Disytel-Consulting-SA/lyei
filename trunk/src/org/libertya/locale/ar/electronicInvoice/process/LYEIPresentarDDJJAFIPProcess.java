@@ -28,7 +28,7 @@ public class LYEIPresentarDDJJAFIPProcess extends SvrProcess {
 			if ( param.equalsIgnoreCase( "fechaFin" )) {
 				this.fechaFin = params[ i ].getParameter().toString();
 			}else
-			if( param.equalsIgnoreCase( "pos" )) {
+			if( param.equalsIgnoreCase( "C_POS_ID" )) {
 				this.pos = params[ i ].getParameter().toString();
 			}
 		}
@@ -38,7 +38,7 @@ public class LYEIPresentarDDJJAFIPProcess extends SvrProcess {
 	protected String doIt() throws Exception {
 		validarFechas();
 		
-		return new ElectronicReportHandler(fechaInicio, fechaFin, pos).execute();
+		return new ElectronicReportHandler(fechaInicio, fechaFin, this.pos).execute();
 	}
 	
 	public void validarFechas() throws Exception {
