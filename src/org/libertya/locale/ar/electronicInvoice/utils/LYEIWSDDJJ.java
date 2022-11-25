@@ -7,11 +7,13 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.logging.Level;
 
 import javax.xml.namespace.QName;
 import javax.xml.rpc.ServiceException;
 
 import org.libertya.locale.ar.electronicInvoice.model.LP_C_LYEIElectronicPOSConfig;
+import org.libertya.locale.ar.electronicInvoice.model.MLYEIElectronicInvoiceLog;
 import org.openXpertya.util.DB;
 import org.openXpertya.util.Env;
 
@@ -66,6 +68,9 @@ public class LYEIWSDDJJ {
 			// cuit
 			String representado_cuit = getCUITfromPOSConfig(posConfig);
 			
+			//Log de actividad
+			MLYEIElectronicInvoiceLog.logActivity(LYEIWSDDJJ.class, Level.INFO, null, posConfig.getC_LYEIElectronicPOSConfig_ID(), null, "Presentando DDJJ: " + nombreArchivoPresentacion);
+			
 			//invocacion afip
 			long _upload__return = port.upload(token, sign, representado_cuit, _upload_presentacion);
 			uploadResponse = String.valueOf(_upload__return);;
@@ -73,6 +78,7 @@ public class LYEIWSDDJJ {
 			
 		} catch (Exception e) {
 			e.printStackTrace();
+			MLYEIElectronicInvoiceLog.logActivity(LYEIWSDDJJ.class, Level.SEVERE, null, posConfig!=null?posConfig.getC_LYEIElectronicPOSConfig_ID():null, null, "Error en Presentacion DDJJ: " + e.getMessage());
 			uploadResponse = "[Error] " + e.getMessage();
 		}
 		

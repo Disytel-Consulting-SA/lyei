@@ -32,7 +32,7 @@ fyh_presentacion timestamp,
 -- Nombre del archivo (85 caracteres aprox)
 filename varchar(256),
 -- Número de transacción (si se presentó OK)
-trx_number integer,
+trx_number varchar(20),
 -- rango de fechas para las cuales se realiza la presentacion
 datefrom date,
 dateto date,

@@ -6,12 +6,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.logging.Level;
 
 //import org.libertya.locale.ar.electronicInvoice.ddjjafip.electronic_report.IElectronicReportDownloaderStrategy;
 //import org.libertya.locale.ar.electronicInvoice.ddjjafip.electronic_report.IElectronicReportUploaderStrategy;
 import org.libertya.locale.ar.electronicInvoice.ddjjafip.factory.ElectronicReportDownloaderFactory;
 import org.libertya.locale.ar.electronicInvoice.ddjjafip.factory.ElectronicReportUploaderFactory;
 import org.libertya.locale.ar.electronicInvoice.model.LP_C_LYEIDDJJPresentada;
+import org.libertya.locale.ar.electronicInvoice.model.MLYEIElectronicInvoiceLog;
+import org.libertya.locale.ar.electronicInvoice.utils.LYEIWSFE;
 import org.openXpertya.util.DB;
 import org.openXpertya.util.Env;
 
@@ -52,8 +55,8 @@ public class ElectronicReportHandler {
 		
 		//invocacion al proceso de descarga desde impresora fiscal
 		boolean downloaded = downloader.downloadER(fechaInicio, fechaFin, lyeicom);
-//		
-//		//si lograron descargarse los archivos, se debe invocar la subida de los mismos
+		
+		//si lograron descargarse los archivos, se debe invocar la subida de los mismos
 		if(!downloaded) {
 			return "No se pudieron obtener los archivos de presentacion";
 		}
@@ -63,7 +66,7 @@ public class ElectronicReportHandler {
 		uploader.setPosConfig(this.getPosConfigID(posnumber));
 		
 		ArrayList<String> archivosPresentacion = downloader.getArchivosPresentacion();
-
+		
 		
 //		Se invoca el proceso de presentacion (upload) por cada archivo (F8011 y F8012)
 //		Luego se determina si la presentacion fue exitosa o no y se almacena un registro
@@ -74,7 +77,7 @@ public class ElectronicReportHandler {
 			String errorMsg = null;
 			String uploadoutput = "";
 			String nombreArchivoPresentacion = new File(archivoPresentacion).getName();
-			
+						
 			System.out.println("[INFO] Invocando presentacion ddjj de archivo: " + archivoPresentacion);
 			String wsResponse = uploader.uploadER(archivoPresentacion);
 			if(wsResponse == null || wsResponse.substring(0, 7).equalsIgnoreCase("[Error]")) {
@@ -245,8 +248,8 @@ public class ElectronicReportHandler {
 //		-- Nombre del archivo filename varchar(256)
 		ddjjPresentada.setFileName(fileName);
 //		-- Número de transacción (si se presentó OK) trx_number integer
-		if(trxNumber != null && Integer.valueOf(trxNumber) != null) {			
-			ddjjPresentada.settrx_number(Integer.valueOf(trxNumber));
+		if(trxNumber != null) {			
+			ddjjPresentada.settrx_number(trxNumber);
 		}
 //		-- rango de fechas para las cuales se realiza la presentacion (datefrom date dateto date)
 		ddjjPresentada.setDateFrom(getTimestampDateFormat(fechaInicio));
