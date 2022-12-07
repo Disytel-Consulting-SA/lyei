@@ -197,8 +197,16 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			
 			// Comprobante - Detalle
 			FECAEDetRequest detReq = new FECAEDetRequest();
+			
+			
 			// Nro. de comprobante desde y hasta
-			long cbteNro = getSigCbteNro(wsfe, auth);
+			// long cbteNro = getSigCbteNro(wsfe, auth);
+			
+			// dREHER se modifica obtencion del siguiente numero basandose en la secuencia Libertya 
+			// correspondiente al tipo de comprobante y su punto de venta
+			long cbteNro = getSigCbteNro();
+			
+			
 			detReq.setCbteDesde(cbteNro);
 			// Nro. de comprobante hasta
 			detReq.setCbteHasta(cbteNro);
@@ -316,6 +324,17 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 		// Retornar eventuales mensajes de error (similar a version original Wsfe)
 		MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.INFO, inv.getC_Invoice_ID(), posConfig!=null?posConfig.getC_LYEIElectronicPOSConfig_ID():null, genConfig!=null?genConfig.getC_LYEIElectronicInvoiceConfig_ID():null, getFinSolicitarCAEActivityLog());
 		return electronicInvoiceCaeError.toString();
+	}
+	
+	/** Retorna el siguiente registrado en la secuencia correspondiente al tipo de documento */
+	protected long getSigCbteNro() throws Exception {
+		MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.INFO, inv.getC_Invoice_ID(), posConfig.getC_LYEIElectronicPOSConfig_ID(), genConfig.getC_LYEIElectronicInvoiceConfig_ID(), "Lee numero de comprobante segun secuencia");
+
+		LP_AD_Sequence seq = new LP_AD_Sequence(ctx, docType.getDocNoSequence_ID(), trx);
+		long siguiente = seq.getCurrentNext().longValue();
+		
+		MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.INFO, inv.getC_Invoice_ID(), posConfig.getC_LYEIElectronicPOSConfig_ID(), genConfig.getC_LYEIElectronicInvoiceConfig_ID(), "Numero obtenido " + siguiente);
+		return siguiente;
 	}
 	
 	/** Retorna el siguiente valor al ultimo comprobante registrado */
