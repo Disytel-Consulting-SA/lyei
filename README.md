@@ -4,4 +4,4 @@
 
 Componente de facturación electrónica nativo para Libertya ERP.
 
-Permite obtener registrar en AFIP las facturas emitidas, obteniendo el CAE correspondiente ante dicho organismo.
+Permite registrar en AFIP las facturas emitidas al momento de crearlas, obteniendo el CAE correspondiente ante dicho organismo.
