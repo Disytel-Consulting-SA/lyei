@@ -268,6 +268,7 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			FECAERequest caeReq = new FECAERequest(cabReq, new FECAEDetRequest[] {detReq});
 			serviceInvoked = true;
 			MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.INFO, inv.getC_Invoice_ID(), posConfig.getC_LYEIElectronicPOSConfig_ID(), genConfig.getC_LYEIElectronicInvoiceConfig_ID(), getSolicitarCAEActivityLog());
+			// System.out.println(getSolicitarCAEActivityLog());
 			MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.INFO, inv.getC_Invoice_ID(), posConfig.getC_LYEIElectronicPOSConfig_ID(), genConfig.getC_LYEIElectronicInvoiceConfig_ID(), getDataToBeSent(caeReq));
 			FECAEResponse resp = wsfe.FECAESolicitar(auth, caeReq);
 	
