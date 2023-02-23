@@ -5,6 +5,7 @@ import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.logging.Level;
 
 import org.openXpertya.JasperReport.WSFEConsultarComprobanteProcess;
 import org.openXpertya.model.MDocType;
@@ -13,6 +14,7 @@ import org.openXpertya.model.MUser;
 import org.openXpertya.model.X_C_Currency;
 import org.openXpertya.model.X_C_DocType;
 import org.openXpertya.model.X_C_Invoice;
+import org.openXpertya.reflection.CallResult;
 import org.openXpertya.util.CLogger;
 import org.openXpertya.util.DB;
 import org.openXpertya.util.Env;
@@ -34,6 +36,19 @@ public class LYEIManageElectronicInvoiceProcess extends WSFEConsultarComprobante
 		if (!invoiceDocType.iselectronic()) {
 			throw new Exception("La factura seleccionada no es de tipo electronica");
 		}
+		
+		/**
+		 * Verificar que el comprobante inmediatamente anterior a este
+		 * NO necesite gestionar CAE, caso contrario devuelvo excepcion al usuario
+		 * 
+		 * 
+		 * dREHER
+		 */
+		MInvoice before = anInvoice.getBeforeInvoice();
+		if(before!=null)
+			if( (before.getcae()==null || before.getcae().isEmpty()) ||
+					(before.getvtocae()==null))
+				return "Debe gestionar el comprobante anterior! - Comprobante nro:" + before.getDocumentNo();
 		
 		// Tenemos una factura en LY completada y con cae con igual tipo y nro de documento? 
 		String exists = checkIfAlreadyExistsInLY(anInvoice, invoiceDocType);
@@ -62,7 +77,7 @@ public class LYEIManageElectronicInvoiceProcess extends WSFEConsultarComprobante
 				throw new Exception("Error al gestionar factura: " + CLogger.retrieveErrorAsString());
 			}
 			return  "Ya existe una factura en Libertya con los mismos datos (numero de comprobante, tipo de documento, etc.) y con CAE registrado: " + alreadyExists + ". " + 
-					"Elimine la factura o vuelva a completarla para obtener un nuevo nro. de comprobante y CAE";
+					"Elimine la factura " + (!anInvoice.getDocStatus().equals("CO")?"o vuelva a completarla":"") + " para obtener un nuevo nro. de comprobante y CAE";
 		}
 		return null;
 	}
@@ -143,18 +158,39 @@ public class LYEIManageElectronicInvoiceProcess extends WSFEConsultarComprobante
 				anInvoice.setcae(cae);
 				anInvoice.setvtocae(parseVtoCae(vtoCae));
 				anInvoice.setcaeerror("Factura electronica editada manualmente por " + (MUser.get(getCtx(), Env.getAD_User_ID(getCtx()))).getName() );
-				retMsg = "Validacion de factura satisfactoria. CAE: " + cae + "  asignado. Proceda a completar la factura.";
+				//dREHER
+				retMsg = "Validacion de factura satisfactoria. CAE: " + cae + "  asignado. " + (!anInvoice.getDocStatus().equals("CO")?"Proceda a completar la factura.":"");
 			} else {
 				// Los datos de LY no coinciden con los de AFIP
 				anInvoice.setSkipIPNoCaeValidation(true);
-				retMsg = "Los datos verificados en AFIP no coinciden con los datos registrados en la factura. Elimine la factura o vuelva a completarla para obtener un nuevo nro. de comprobante y CAE";
+				//dREHER
+				retMsg = "Los datos verificados en AFIP no coinciden con los datos registrados en la factura. Elimine la factura " + (!anInvoice.getDocStatus().equals("CO")?"o vuelva a completarla":"") + " para obtener un nuevo nro. de comprobante y CAE";
 			}
 		} else {
-			// No se encuentra registrada en AFIP
-			anInvoice.setcae(null);
-			anInvoice.setvtocae(null);
-			anInvoice.setSkipIPNoCaeValidation(true);
-			retMsg = "Documento no encontrado. Intente completar nuevamente el documento a fin de obtener el CAE. (Respuesta de AFIP: " + resultado + ")";			
+			
+			// dREHER, se completo y no se genero CAE porque el comprobante anterior tampoco se habia gestionado CAE
+			if(anInvoice.getDocStatus().equals("CO")) {
+
+				MInvoice mInvoice = (MInvoice)anInvoice;
+				CallResult callResult = mInvoice.doCAEGeneration(mInvoice.getNumeroComprobante());
+				if (callResult.isError()) {
+					mInvoice.setcaeerror(callResult.getMsg());
+					log.log(Level.SEVERE, callResult.getMsg());
+					retMsg = callResult.getMsg();
+				}else {
+					mInvoice.setSkipIPNoCaeValidation(true);
+					mInvoice.save();
+					retMsg = "Se genero el CAE correspondiente: CAE= " + mInvoice.getcae();
+				}
+				
+				
+			}else {
+				// No se encuentra registrada en AFIP
+				anInvoice.setcae(null);
+				anInvoice.setvtocae(null);
+				anInvoice.setSkipIPNoCaeValidation(true);
+				retMsg = "Documento no encontrado. Intente completar/Gestionar CAE nuevamente el documento a fin de obtener el CAE. (Respuesta de AFIP: " + resultado + ")";
+			}
 		}
 		
 		// Intentar persistir

@@ -27,6 +27,7 @@ import org.openXpertya.model.MInvoiceTax;
 import org.openXpertya.model.MLocation;
 import org.openXpertya.model.MOrgInfo;
 import org.openXpertya.model.MPreference;
+import org.openXpertya.model.MSequence;
 import org.openXpertya.model.MTax;
 import org.openXpertya.model.MTaxCategory;
 import org.openXpertya.model.X_C_DocType;
@@ -121,11 +122,17 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			location = new MLocation(ctx, bpLocation.getC_Location_ID(), null);
 	}
 	
-	
 	/**
 	 * Registra una factura electronica en el site de AFIP mediante WSFEV1
 	 */
 	public synchronized String generateCAE() {
+		return generateCAE(0);
+	}
+	
+	/**
+	 * Registra una factura electronica en el site de AFIP mediante WSFEV1
+	 */
+	public synchronized String generateCAE(long nroComprobante) {
 		
 		// El punto de venta electronico usa CAEA?
 		if (LP_C_LYEIElectronicPOSConfig.CAEMETHOD_CAEA.equals(posConfig.getCAEMethod())) {
@@ -146,6 +153,12 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 				electronicInvoiceCaeError = null;
 				// Numero de comprobante... 
 				electronicInvoiceNroCbte = generateNroComprobanteCAEA(); 
+				
+				// dREHER si llega con un numero de comprobante, respetarlo
+				if(nroComprobante > 0)
+					electronicInvoiceNroCbte = String.valueOf(nroComprobante);
+				
+				
 				// La factura debe marcarse como pendiente a informar
 				inv.set_Value("LYEICAEAInformed", LP_C_Invoice.LYEICAEAINFORMED_Pendiente);
 				return "";
@@ -195,10 +208,37 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			// Comprobante - Cabecera
 			FECAECabRequest cabReq = new FECAECabRequest(1, inv.getPuntoDeVenta(), LYEICommons.getCbteTipo(docType));
 			
+			
+			/**
+			 * Se modifica obtencion del siguiente numero basandose en la secuencia Libertya
+			 * correspondiente al tipo de comprobante y su punto de venta
+			 *   
+			 * dREHER  
+			 */
+						
 			// Comprobante - Detalle
 			FECAEDetRequest detReq = new FECAEDetRequest();
-			// Nro. de comprobante desde y hasta
-			long cbteNro = getSigCbteNro(wsfe, auth);
+			
+			// Nro. de comprobante desde y hasta desde AFIP
+			long cbteNroAFIP = getSigCbteNro(wsfe, auth);
+			
+			// dREHER trae el numero segun secuencia Libertya			
+			long cbteNro = 0L; 
+				
+			// Si viene de gestionar CAE desde ventana, debe venir con el numero de comprobante a gestionar, sino siguiente secuencia...
+			if(nroComprobante > 0)
+				cbteNro = nroComprobante;
+			else {
+				cbteNro = getSigCbteNro(cbteNroAFIP); // chequear la secuencia en este punto
+				if(cbteNro > cbteNroAFIP && cbteNro > MInvoice.getLastFEIssued(inv.getCtx(), inv.getDocTypeID(), 0, inv.get_TrxName())) {
+					
+					inv.doSequenceControls();
+					MSequence seq = new MSequence(inv.getCtx(), inv.getAD_Sequence_ID(), inv.get_TrxName());
+					cbteNro = seq.getCurrentNext().intValue();
+				}
+					
+			}
+			
 			detReq.setCbteDesde(cbteNro);
 			// Nro. de comprobante hasta
 			detReq.setCbteHasta(cbteNro);
@@ -242,16 +282,42 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 				// Suma de los importes del array de tributos
 				detReq.setImpTrib(getImpTrib(tributos));
 			}
+			
+			Double valor = 0.00;
+			BigDecimal bigValor = LYEICommons.getImpNeto(impIva, docType, inv);
+			if(bigValor == null)
+				throw new Exception("Error al leer NETO del comprobante!");
+			else
+				valor = bigValor.doubleValue();
 			// Importe  neto    gravado.  Debe  ser  menor  o igual a Importe total y no puede ser menor a cero.
-			detReq.setImpNeto(LYEICommons.getImpNeto(impIva, docType, inv).doubleValue()); 
+			detReq.setImpNeto(valor);
+			
+
+			bigValor = LYEICommons.getImpTotal(inv);
+			if(bigValor == null)
+				throw new Exception("Error al leer NETO del comprobante!");
+			else
+				valor = bigValor.doubleValue();
 			// Importe total  del comprobante, Debe ser igual  a  Importe  neto  no  gravado  +  Importe 
 			// exento + Importe neto gravado + todos los campos  de  IVA    al  XX%  +  Importe  de	tributos
-			detReq.setImpTotal(LYEICommons.getImpTotal(inv).doubleValue());
+			detReq.setImpTotal(valor);
+			
+			bigValor = LYEICommons.getImpTotConc(inv.getC_Invoice_ID());
+			if(bigValor == null)
+				throw new Exception("Error al leer NETO del comprobante!");
+			else
+				valor = bigValor.doubleValue();			
 			// Importe neto no gravado. Debe ser menor o igual a Importe total y no puede ser menor a cero. 
 			// No  puede  ser  mayor  al  Importe  total  de  la operación ni menor a cero (0)
-			detReq.setImpTotConc(LYEICommons.getImpTotConc(inv.getC_Invoice_ID()).doubleValue());
+			detReq.setImpTotConc(valor);
+			
+			bigValor = LYEICommons.getImpOpEx(inv.getC_Invoice_ID());
+			if(bigValor == null)
+				throw new Exception("Error al leer NETO del comprobante!");
+			else
+				valor = bigValor.doubleValue();
 			// Importe  exento.  Debe  ser  menor  o  igual  a Importe total y no puede ser menor a cero
-			detReq.setImpOpEx(LYEICommons.getImpOpEx(inv.getC_Invoice_ID()).doubleValue());
+			detReq.setImpOpEx(valor);
 			
 			// Opcionales
 			Opcional[] opcionales = getOpcionales();
@@ -271,11 +337,12 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			// System.out.println(getSolicitarCAEActivityLog());
 			MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.INFO, inv.getC_Invoice_ID(), posConfig.getC_LYEIElectronicPOSConfig_ID(), genConfig.getC_LYEIElectronicInvoiceConfig_ID(), getDataToBeSent(caeReq));
 			FECAEResponse resp = wsfe.FECAESolicitar(auth, caeReq);
-	
+			
 			// No obtuvimos respuesta alguna?
 			if (resp==null) {
 				throw new Exception ("No se ha obtenido una respuesta por parte del WS de AFIP.");
 			}
+			
 			requestXML = ((ServiceSoapStub)wsfe).getCallRequestXML();
 			responseXML = ((ServiceSoapStub)wsfe).getCallResponseXML();
 			
@@ -286,6 +353,9 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 				for (Err error : resp.getErrors()) {
 					retErrors.append(error.getCode()).append(" ").append(error.getMsg()).append("; ");
 				}
+				if(cbteNroAFIP > 0)
+					retErrors.append("Prox # AFIP:" + cbteNroAFIP).append("; ");
+					retErrors.append("Prox # Libertya:" + cbteNro).append("; ");
 			}
 			
 			// Obtuvimos observaciones?
@@ -298,6 +368,10 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			}
 			
 			// Procesar resultado
+			
+			if(electronicInvoiceCaeError==null)
+				electronicInvoiceCaeError = new StringBuffer();
+			
 			electronicInvoiceCaeError.append(retErrors!=null?retErrors:"").append(retObs!=null?retObs:"");
 			if (resp.getFeDetResp()!=null && resp.getFeDetResp().length>0 && !Util.isEmpty(resp.getFeDetResp()[0].getCAE())) {
 				// CAE RECIBIDO
@@ -311,6 +385,7 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			}
 			
 		} catch (Exception e) {
+			System.out.println("Error generando CAE: " + e.toString());
 			setErrorByException(serviceInvoked, e);
 			MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.SEVERE, inv.getC_Invoice_ID(), posConfig!=null?posConfig.getC_LYEIElectronicPOSConfig_ID():null, genConfig!=null?genConfig.getC_LYEIElectronicInvoiceConfig_ID():null, getErrSolicitarCAEActivityLog());
 		}
@@ -318,6 +393,33 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 		MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.INFO, inv.getC_Invoice_ID(), posConfig!=null?posConfig.getC_LYEIElectronicPOSConfig_ID():null, genConfig!=null?genConfig.getC_LYEIElectronicInvoiceConfig_ID():null, getFinSolicitarCAEActivityLog());
 		return electronicInvoiceCaeError.toString();
 	}
+	
+	/** 
+	 * Retorna el siguiente numero registrado en la secuencia 
+	 * correspondiente al tipo de documento 
+	 * 
+	 *  dREHER
+	 * */
+	protected long getSigCbteNro(long sigNroAFIP) throws Exception {
+		MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.INFO, inv.getC_Invoice_ID(), posConfig.getC_LYEIElectronicPOSConfig_ID(), genConfig.getC_LYEIElectronicInvoiceConfig_ID(), "Lee numero de comprobante segun secuencia, correspondiente al tipo de comprobante C_DocType: " + docType.getName());
+		LP_AD_Sequence seq = new LP_AD_Sequence(ctx, docType.getDocNoSequence_ID(), trx);
+		long siguiente = 2L;
+		
+		String sigNumber = seq.getCurrentNext().toString();
+		if(sigNumber.length() > 8) 
+			sigNumber = sigNumber.substring(sigNumber.length() - 8);
+		try {
+			if(sigNumber!=null && !sigNumber.isEmpty()) {
+				siguiente = Long.parseLong(sigNumber);
+			}
+		}catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.INFO, inv.getC_Invoice_ID(), posConfig.getC_LYEIElectronicPOSConfig_ID(), genConfig.getC_LYEIElectronicInvoiceConfig_ID(), "Numero Libertya: " + siguiente + " - nro AFIP: " + sigNroAFIP);
+		return siguiente;
+	}
+
 	
 	/** Retorna el siguiente valor al ultimo comprobante registrado */
 	protected long getSigCbteNro(ServiceSoap wsfe, FEAuthRequest auth) throws Exception {
@@ -358,9 +460,16 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			MTaxCategory taxCategory = new MTaxCategory(ctx, tax.getC_TaxCategory_ID(), trx);
 			// Se debe generar únicamente en el caso de ser una alícuota de IVA (0, 10.5, 21 o 27)
 			// TODO: Ejecutar el Generate Model para utilizar el método tax.isNoGravado()
-			if (taxCategory.isManual() || tax.isPercepcion() || tax.isTaxExempt() || (Boolean) tax.get_Value("IsNoGravado"))
+
+			// dREHER - validar contenido nulo de isNoGravado...
+			boolean isNoGravado = false;
+			Object obj = tax.get_Value("IsNoGravado");
+			if(obj!=null)
+				isNoGravado = (Boolean)obj;
+
+			if (taxCategory.isManual() || tax.isPercepcion() || tax.isTaxExempt() || isNoGravado)
 				continue;
-			// Crear nueva entradda
+			// Crear nueva entrada
 			AlicIva alicIva = new AlicIva();
 			alicIva.setId(tax.getWSFECode());
 			alicIva.setBaseImp(invoiceTax.getTaxBaseAmt().doubleValue());
@@ -658,8 +767,8 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 	protected String getErrSolicitarCAEActivityLog() {
 		StringBuffer retValue = new StringBuffer();
 		retValue.append("Error en FECAESolicitar para factura ")
-				.append(inv.getDocumentNo()).append(" ")
-				.append(electronicInvoiceCaeError)
+				.append((inv.getDocumentNo()!=null?inv.getDocumentNo():" Sin Nro de Comprobante aun!")).append(" ")
+				.append((electronicInvoiceCaeError!=null?electronicInvoiceCaeError : " - "))
 				.append(getXMLRequestResponse());
 		return retValue.toString();
 	}

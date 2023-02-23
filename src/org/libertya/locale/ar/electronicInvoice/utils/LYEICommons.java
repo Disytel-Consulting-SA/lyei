@@ -89,17 +89,17 @@ public class LYEICommons {
 	}
 
 	/** Neto de la factura */
-	public static BigDecimal getImpNeto(BigDecimal impIva, MDocType docType, MInvoice inv) {
+	public static BigDecimal getImpNeto(BigDecimal impIva, MDocType docType, MInvoice inv) throws Exception{
 		return getImpNetoBigDecimal(impIva, docType, inv);
 	}
 	
 	/** Neto de la factura */
-	public static BigDecimal getImpNeto(double impIva, MDocType docType, MInvoice inv) {
+	public static BigDecimal getImpNeto(double impIva, MDocType docType, MInvoice inv) throws Exception{
 		return getImpNetoBigDecimal(new BigDecimal(impIva), docType, inv);
 	}
 	
 	/** Neto de la factura */
-	public static BigDecimal getImpNetoBigDecimal(BigDecimal impIva, MDocType docType, MInvoice inv) {
+	public static BigDecimal getImpNetoBigDecimal(BigDecimal impIva, MDocType docType, MInvoice inv) throws Exception{
 		BigDecimal neto = DB.getSQLValueBD(null, 	" SELECT COALESCE(SUM(taxbaseamt), 0) " + 
 													" FROM c_invoicetax it " + 
 													" INNER JOIN c_tax t ON it.c_tax_id = t.c_tax_id " + 
@@ -170,12 +170,12 @@ public class LYEICommons {
 	}
 	
 	/** Importe neto no gravado */
-	public static BigDecimal getImpTotConc(int invoiceID) {
+	public static BigDecimal getImpTotConc(int invoiceID) throws Exception{
 		return getImpTotConcBigDecimal(invoiceID);
 	}
 	
 	/** Importe neto no gravado */
-	public static BigDecimal getImpTotConcBigDecimal(int invoiceID) {
+	public static BigDecimal getImpTotConcBigDecimal(int invoiceID) throws Exception{
 		return 
 				DB.getSQLValueBD(null, 	" SELECT COALESCE(SUM(taxbaseamt),0) " +
 										" FROM c_invoicetax it " +

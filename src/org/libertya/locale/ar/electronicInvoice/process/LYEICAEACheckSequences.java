@@ -45,18 +45,26 @@ public class LYEICAEACheckSequences extends SvrProcess {
 		MLYEIElectronicInvoiceConfig genConfig = new MLYEIElectronicInvoiceConfig(posConfig.getCtx(), posConfig.getC_LYEIElectronicInvoiceConfig_ID(), null);
 		
 		StringBuffer retValue = new StringBuffer("Recuperando secuencias de tipos de documento electronicos para punto de venta ").append(posConfig.getPOS()).append("\n");
-		PreparedStatement pstmt = DB.prepareStatement(
-							" select * " +
-							" from c_doctype " +
-							" where ad_client_id = " + getAD_Client_ID() +
-							" and substring(doctypekey from length(doctypekey)-3 for 4) = LPAD('" + posConfig.getPOS() + "',4,'0') " +
-							" and iselectronic = 'Y' " +
-							" and docsubtypeinv = 'EL' " +
-							" and isfiscaldocument = 'Y' " + 
-							" order by name ");
+		String sql = " select * " +
+				" from c_doctype " +
+				" where ad_client_id = " + getAD_Client_ID() +
+				" and substring(doctypekey from length(doctypekey)-3 for 4) = LPAD('" + posConfig.getPOS() + "',4,'0') " +
+				" and iselectronic = 'Y' " +
+				" and docsubtypeinv = 'EL' " +
+				" and isfiscaldocument = 'Y' " + 
+				" order by name ";
+		
+		PreparedStatement pstmt = DB.prepareStatement(sql);
 
+		log.warning("Buscando secuencias para comprobantes CAEA, query: " + sql);
+		
 		ResultSet rs = pstmt.executeQuery();
+		
+		int posCAEA = 0;
 		while (rs.next()) {
+			
+			posCAEA++;
+			
 			MDocType docType = new MDocType(getCtx(), rs, null);
 			LP_AD_Sequence sequence = new LP_AD_Sequence(getCtx(), docType.getDocNoSequence_ID(), null);
 			retValue.append("=== Documento: ").append(docType.getName()).append(" === \n");
@@ -67,6 +75,9 @@ public class LYEICAEACheckSequences extends SvrProcess {
 			checkCAEASequences(genConfig, posConfig, docType, sequence, LP_C_LYEIElectronicPOSConfig.CURRENTENVIRONMENT_Prod, retValue);
 			retValue.append("\n");
 		}			
+		if(posCAEA==0)
+			retValue.append(". No se encontraron tipos de documento utilizando CAEA");
+		
 		return retValue.toString();
 	}
 

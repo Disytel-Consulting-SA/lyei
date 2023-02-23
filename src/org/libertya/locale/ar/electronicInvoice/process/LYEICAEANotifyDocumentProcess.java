@@ -78,6 +78,9 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 	/** Preferencia con el codigo predeterminado para el campo CodigoMtx */
 	public static final String LYEI_CODIGO_MTX_PREDETERMINADO_PREFERENCE = "LYEI_CODIGO_MTX_PREDETERMINADO";
 	
+	/** Preferencia con el codigo predeterminado para el campo CodigoUOMFE */
+	public static final String LYEI_CODIGO_UOM_PREDETERMINADO_PREFERENCE = "LYEI_CODIGO_UOM_PREDETERMINADO";
+	
 	/** El documento fue aprobado */
 	public static final String DOC_STATUS_APROBADO = "APROBADO";
 	/** El documento fue observado */
@@ -334,6 +337,8 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 			// Fue Aprobado
 			if (LP_C_Invoice.LYEICAEAINFORMED_Aprobado.equals(response.getResultado().getValue())) {
 				inv.setLYEICAEAInformed(LP_C_Invoice.LYEICAEAINFORMED_Aprobado);
+				inv.setLYEICAEAInformedDetail("APROBADO");
+				// Si antes fue rechazado u observador, elimina el mensaje de error anterior
 				inv.save();
 				return DOC_STATUS_APROBADO;
 			}
@@ -410,7 +415,7 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 	}
 
 	/** Importe gravado + no gravado + exento */
-	protected BigDecimal getImporteSubtotal(BigDecimal impIva, MDocType docType, MInvoice inv) {
+	protected BigDecimal getImporteSubtotal(BigDecimal impIva, MDocType docType, MInvoice inv) throws Exception{
 		return LYEICommons.getImpNetoBigDecimal(impIva, docType, inv).add(LYEICommons.getImpTotConcBigDecimal(inv.getC_Invoice_ID())).add(LYEICommons.getImpOpExBigDecimal(inv.getC_Invoice_ID()));
 	}
 	
@@ -441,7 +446,19 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 			
 			/* Unidad de medida. Consultar método consultarUnidadesMedida 
 			   0: " ", 1: Kilogramos, 2: metros, etc... */
-			item.setCodigoUnidadMedida(Short.parseShort(aUOM.getUOMCodeFE()));
+			
+			// dREHER, informar si no se configuro codigo de unidad de medida
+			String defaultCodigoUOM = null;
+			if (!Util.isEmpty(MPreference.GetCustomPreferenceValue(LYEI_CODIGO_UOM_PREDETERMINADO_PREFERENCE))) {
+				defaultCodigoUOM = MPreference.GetCustomPreferenceValue(LYEI_CODIGO_UOM_PREDETERMINADO_PREFERENCE);
+			}
+			if (Util.isEmpty(aUOM.getUOMCodeFE())) {
+				if(Util.isEmpty(defaultCodigoUOM))
+						throw new Exception("Es obligatorio informar Codigo de Unidad de Medida. Especificarlo en la tabla de unidades de Medida, campo 'Codigo UOM FE'");
+			}else
+				defaultCodigoUOM = aUOM.getUOMCodeFE();
+			
+			item.setCodigoUnidadMedida(Short.parseShort(defaultCodigoUOM));
 			
 			/* Descripción del Producto (Importante: NO es necesario completar con espacios) */
 			item.setDescripcion(getItemDescription(line, aProduct));
@@ -460,11 +477,19 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 			}
 			
 			/* Importe total del ítem */
-			item.setImporteItem((line.getLineNetAmt().add(line.getTaxAmt())).setScale(2, BigDecimal.ROUND_HALF_UP));
+			item.setImporteItem((line.getLineNetAmount().add(line.getTaxAmt())).setScale(2, BigDecimal.ROUND_HALF_UP));
 		
 			/* Precio Unitario. Para comprobantes clase A no debe incluir el IVA, en cambio para los clase B si debe incluir IVA. */
 			if ("B".equals(inv.getLetra())) {
-				item.setPrecioUnitario(line.getPriceEnteredNet().add(line.getUnityAmt(line.getTaxAmt()))); 
+				
+				
+				// Esta linea suma precion ingresado+precio unitario+impuestos
+				// item.setPrecioUnitario(line.getPriceEnteredNet().add(line.getUnityAmt(line.getTaxAmt()))); 
+				
+				// dREHER
+				// NETO / Cantidad
+				item.setPrecioUnitario((line.getLineNetAmt().divide(line.getQtyEntered(), 2)).setScale(2, BigDecimal.ROUND_HALF_UP));
+				
 			} else {
 				item.setPrecioUnitario(line.getPriceEnteredNet());
 			}
