@@ -31,9 +31,11 @@ import org.openXpertya.model.MSequence;
 import org.openXpertya.model.MTax;
 import org.openXpertya.model.MTaxCategory;
 import org.openXpertya.model.X_C_DocType;
+import org.openXpertya.model.X_C_Invoice;
 import org.openXpertya.util.CLogger;
 import org.openXpertya.util.Util;
 
+import FEV1.dif.afip.gov.ar.Actividad;
 import FEV1.dif.afip.gov.ar.AlicIva;
 import FEV1.dif.afip.gov.ar.CbteAsoc;
 import FEV1.dif.afip.gov.ar.Comprador;
@@ -328,6 +330,11 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			CbteAsoc[] asociados = getAsociados();
 			if (asociados!=null && asociados.length>0) { 
 				detReq.setCbtesAsoc(asociados);
+			}
+			
+			Actividad[] actividades = getActividades();
+			if (actividades!=null && actividades.length>0) { 
+				detReq.setActividades(actividades);
 			}
 			
 			// Invocar CAESolicitar
@@ -891,5 +898,30 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			data.append(" [Info incompleta por error inesperado en getDataToBeSent] ").append(e);
 		}
 		return data.toString();
+	}
+	
+	/** Nomina de actividades a enviar, si es que corresponde */ 
+	protected Actividad[] getActividades() throws Exception {
+		Actividad[] retValue = null;
+		int cant=0;
+		ArrayList<Actividad> options = new ArrayList<Actividad>();
+		
+		// Solo se informa actividad por propiedad si 
+		if (invioceHasOriginalDocument() && inv.getOrigInvTipo().compareTo(X_C_Invoice.ORIGINVTIPO_RemitoElectronicoCarnico) == 0) {
+			String actividadCarnicaStr = MPreference.GetCustomPreferenceValue(LYEIConstants.WSFE_ACTIVIDADES_ACTIVIDAD_CARNICA, inv.getAD_Client_ID());
+			if (actividadCarnicaStr == null || actividadCarnicaStr.length() == 0) {	
+				throw new Exception ("Para comprobantes con Remito Cárnico Asociado debe configuar la actividad cárnica utilizando la preferencia LYEI_WSFE_ACTIVIDADES_ACTIVIDAD_CARNICA");
+			}
+			cant++;
+			Actividad actividadCarnica = new Actividad();
+			actividadCarnica.setId(Long.valueOf(actividadCarnicaStr).longValue());
+			options.add(actividadCarnica);
+		}
+		
+		if (cant>0) {
+			retValue = new Actividad[cant];
+			options.toArray(retValue);
+		}
+		return retValue;
 	}
 }

@@ -38,6 +38,8 @@ public class FECAEADetRequest  extends FEV1.dif.afip.gov.ar.FEDetRequest  implem
            FEV1.dif.afip.gov.ar.AlicIva[] iva,
            FEV1.dif.afip.gov.ar.Opcional[] opcionales,
            FEV1.dif.afip.gov.ar.Comprador[] compradores,
+           FEV1.dif.afip.gov.ar.Periodo periodoAsoc,
+           FEV1.dif.afip.gov.ar.Actividad[] actividades,
            java.lang.String CAEA,
            java.lang.String cbteFchHsGen) {
         super(
@@ -62,7 +64,9 @@ public class FECAEADetRequest  extends FEV1.dif.afip.gov.ar.FEDetRequest  implem
             tributos,
             iva,
             opcionales,
-            compradores);
+            compradores,
+            periodoAsoc,
+            actividades);
         this.CAEA = CAEA;
         this.cbteFchHsGen = cbteFchHsGen;
     }

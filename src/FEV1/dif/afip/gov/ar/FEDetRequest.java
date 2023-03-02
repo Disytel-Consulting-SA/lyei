@@ -51,6 +51,10 @@ public class FEDetRequest  implements java.io.Serializable {
     private FEV1.dif.afip.gov.ar.Opcional[] opcionales;
 
     private FEV1.dif.afip.gov.ar.Comprador[] compradores;
+    
+    private FEV1.dif.afip.gov.ar.Periodo periodoAsoc;
+
+    private FEV1.dif.afip.gov.ar.Actividad[] actividades;
 
     public FEDetRequest() {
     }
@@ -77,7 +81,9 @@ public class FEDetRequest  implements java.io.Serializable {
            FEV1.dif.afip.gov.ar.Tributo[] tributos,
            FEV1.dif.afip.gov.ar.AlicIva[] iva,
            FEV1.dif.afip.gov.ar.Opcional[] opcionales,
-           FEV1.dif.afip.gov.ar.Comprador[] compradores) {
+           FEV1.dif.afip.gov.ar.Comprador[] compradores,
+           FEV1.dif.afip.gov.ar.Periodo periodoAsoc,
+           FEV1.dif.afip.gov.ar.Actividad[] actividades) {
            this.concepto = concepto;
            this.docTipo = docTipo;
            this.docNro = docNro;
@@ -100,6 +106,8 @@ public class FEDetRequest  implements java.io.Serializable {
            this.iva = iva;
            this.opcionales = opcionales;
            this.compradores = compradores;
+           this.periodoAsoc = periodoAsoc;
+           this.actividades = actividades;
     }
 
 
@@ -540,6 +548,45 @@ public class FEDetRequest  implements java.io.Serializable {
      */
     public void setCompradores(FEV1.dif.afip.gov.ar.Comprador[] compradores) {
         this.compradores = compradores;
+    }
+    
+    /**
+     * Gets the periodoAsoc value for this FEDetRequest.
+     * 
+     * @return periodoAsoc
+     */
+    public FEV1.dif.afip.gov.ar.Periodo getPeriodoAsoc() {
+        return periodoAsoc;
+    }
+
+
+    /**
+     * Sets the periodoAsoc value for this FEDetRequest.
+     * 
+     * @param periodoAsoc
+     */
+    public void setPeriodoAsoc(FEV1.dif.afip.gov.ar.Periodo periodoAsoc) {
+        this.periodoAsoc = periodoAsoc;
+    }
+
+
+    /**
+     * Gets the actividades value for this FEDetRequest.
+     * 
+     * @return actividades
+     */
+    public FEV1.dif.afip.gov.ar.Actividad[] getActividades() {
+        return actividades;
+    }
+
+
+    /**
+     * Sets the actividades value for this FEDetRequest.
+     * 
+     * @param actividades
+     */
+    public void setActividades(FEV1.dif.afip.gov.ar.Actividad[] actividades) {
+        this.actividades = actividades;
     }
 
     private java.lang.Object __equalsCalc = null;

@@ -33,7 +33,9 @@ public class FECAEDetRequest  extends FEV1.dif.afip.gov.ar.FEDetRequest  impleme
            FEV1.dif.afip.gov.ar.Tributo[] tributos,
            FEV1.dif.afip.gov.ar.AlicIva[] iva,
            FEV1.dif.afip.gov.ar.Opcional[] opcionales,
-           FEV1.dif.afip.gov.ar.Comprador[] compradores) {
+           FEV1.dif.afip.gov.ar.Comprador[] compradores,
+           FEV1.dif.afip.gov.ar.Periodo periodoAsoc,
+           FEV1.dif.afip.gov.ar.Actividad[] actividades) {
         super(
             concepto,
             docTipo,
@@ -56,7 +58,9 @@ public class FECAEDetRequest  extends FEV1.dif.afip.gov.ar.FEDetRequest  impleme
             tributos,
             iva,
             opcionales,
-            compradores);
+            compradores,
+            periodoAsoc,
+            actividades);
     }
 
     private java.lang.Object __equalsCalc = null;

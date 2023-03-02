@@ -92,6 +92,9 @@ public class LYEIConstants {
 	/** Servicio de facturacion mediante CAEA */
 	public static final String AFIP_SERVICE_MTXCA = "wsmtxca";
 	
+	/** Para adjuntar remito carnico en FE debe configurar actividad carnica */
+	public static final String WSFE_ACTIVIDADES_ACTIVIDAD_CARNICA = "LYEI_WSFE_ACTIVIDADES_ACTIVIDAD_CARNICA";
+	
 	/** Map posservice en configuracion de POS => nombre del servicio */
 	public static HashMap<String, String> serviceMapper = new HashMap<String, String>();
 	

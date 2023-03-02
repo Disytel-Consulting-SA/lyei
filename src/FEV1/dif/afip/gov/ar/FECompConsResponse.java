@@ -50,6 +50,8 @@ public class FECompConsResponse  extends FEV1.dif.afip.gov.ar.FECAEDetRequest  i
            FEV1.dif.afip.gov.ar.AlicIva[] iva,
            FEV1.dif.afip.gov.ar.Opcional[] opcionales,
            FEV1.dif.afip.gov.ar.Comprador[] compradores,
+           FEV1.dif.afip.gov.ar.Periodo periodoAsoc,
+           FEV1.dif.afip.gov.ar.Actividad[] actividades,
            java.lang.String resultado,
            java.lang.String codAutorizacion,
            java.lang.String emisionTipo,
@@ -80,7 +82,9 @@ public class FECompConsResponse  extends FEV1.dif.afip.gov.ar.FECAEDetRequest  i
             tributos,
             iva,
             opcionales,
-            compradores);
+            compradores,
+            periodoAsoc,
+            actividades);
         this.resultado = resultado;
         this.codAutorizacion = codAutorizacion;
         this.emisionTipo = emisionTipo;
