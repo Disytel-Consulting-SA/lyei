@@ -106,8 +106,8 @@ public class LYEICommons {
 													" INNER JOIN c_taxcategory tc ON tc.c_taxcategory_id = t.c_taxcategory_id " +
 													" WHERE it.c_invoice_id = ? " +
 														" AND t.istaxexempt = 'N' " + 
-														" AND t.isnogravado = 'N' " +
-														" AND t.ispercepcion = 'N' " +
+														" AND COALESCE(t.isnogravado,'N') = 'N' " +
+														" AND COALESCE(t.ispercepcion, 'N') = 'N' " +
 														" AND tc.ismanual = 'N'", inv.getC_Invoice_ID());
 		
 		// Para facturas C no se discrimina IVA. Se considera neto + iva - tributos como neto
