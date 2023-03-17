@@ -91,6 +91,8 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 	protected String requestXML = null;
 	/** Response XML */
 	protected String responseXML = null;
+	/** Punto de Venta */
+	protected int puntoDeVenta = 0;
 	
 	/**
 	 * Constructor para servicio WSFEV1 de AFIP
@@ -102,11 +104,15 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 		this.inv = inv;
 		this.ctx = inv.getCtx();
 		this.trx = inv.get_TrxName();
+		
+		puntoDeVenta = inv.getPuntoDeVenta();
+		
 		// Configuracion electronica adecuada segun el punto de venta de la factura
 		posConfig = MLYEIElectronicPOSConfig.get(inv.getPuntoDeVenta(), inv.getAD_Org_ID(), ctx, null);
 		// Configuracion electronica general asociada al pto vta. De no existir luego se eleva excepcion
 		if (posConfig!=null)
 			genConfig = new MLYEIElectronicInvoiceConfig(ctx, posConfig.getC_LYEIElectronicInvoiceConfig_ID(), null);
+		
 		// Tipo de documento
 		docType = new MDocType(ctx, inv.getC_DocTypeTarget_ID(), null);
 		// Entidad Comercial de la factura
@@ -135,6 +141,13 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 	 * Registra una factura electronica en el site de AFIP mediante WSFEV1
 	 */
 	public synchronized String generateCAE(long nroComprobante) {
+		
+		/**
+		 * Cuando se llama el metodo sin haber configurado el punto de venta, genera excepcion y el TPV queda colgado...
+		 * dREHER
+		 */
+		if(posConfig==null)
+			return "NO existe una configuracion de factura electronica para el punto de venta " + puntoDeVenta;
 		
 		// El punto de venta electronico usa CAEA?
 		if (LP_C_LYEIElectronicPOSConfig.CAEMETHOD_CAEA.equals(posConfig.getCAEMethod())) {
