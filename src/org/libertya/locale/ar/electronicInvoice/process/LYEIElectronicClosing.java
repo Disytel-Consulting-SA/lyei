@@ -5,13 +5,16 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.sql.Date;
 import java.util.HashMap;
 
 import org.openXpertya.JasperReport.WSFEConsultarComprobanteProcess;
 import org.openXpertya.model.MControladorFiscalClosingInfo;
 import org.openXpertya.model.MDocType;
+import org.openXpertya.model.MInvoice;
 import org.openXpertya.model.MPOS;
 import org.openXpertya.print.fiscal.FiscalClosingResponseDTO;
 import org.openXpertya.process.AbstractSvrProcess;
@@ -55,6 +58,13 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 	}
 	
 	/**
+	 * @return Fecha parámetro
+	 */
+	protected Date getDateParamAsDATE() {
+		return new Date( ((Timestamp) getParametersValues().get("DATE")).getTime() );
+	}
+	
+	/**
 	 * @return config de TPV parámetro
 	 */
 	protected Integer getPOSID() {
@@ -69,30 +79,146 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 		setPos(new MPOS(getCtx(), getPOSID(), get_TrxName()));
 		setResult(new FiscalClosingResponseDTO());
 		dateParamStr = lyeiDateFormatter.format(getDateParam());
-		// Inicializar los datos del proveedor de servicios
-		setLYEIProvider();
 	}
 	
 	@Override
 	protected String doIt() throws Exception {
 		// Inicialización de datos
 		initialize();
+
+		// Inicializar los datos del proveedor de servicios
+		setLYEIProvider(0);
 		
 		// Realizar la consulta de los datos
-		requestData();
+		requestData(0);
 		
 		// Guardar el cierre electrónico para el punto de venta y fecha parámetro
-		endProcess();
+		endProcess(0);
 		
-		return getMsg();
+		/**
+		 * Si este punto de venta tiene configurado un punto de venta de contingencia, realizar el cierre del mismo
+		 *  
+		 * dREHER
+		 */
+		int ptoVtaCont = getContingencyPOSNumber(); 
+		if( ptoVtaCont > 0) {
+			
+			// Inicializo totales
+			getResult().creditnoteamt = Env.ZERO;
+			getResult().creditnotetaxamt = Env.ZERO;
+			getResult().creditnoteperceptionamt = Env.ZERO;
+			getResult().fiscaldocumentamt = Env.ZERO;
+			getResult().fiscaldocumenttaxamt = Env.ZERO;
+			getResult().fiscaldocumentperceptionamt = Env.ZERO;
+			
+			/**
+			 * Esta opcion hace lo mismo que CAE, pero trayendo la info de los comprobantes desde los CAEAs informados a AFIP
+			 * 
+			 * dREHER
+			 */
+			
+			// Inicializar los datos del proveedor de servicios
+			setLYEIProvider(ptoVtaCont);
+		
+			// Realizar la consulta de los datos
+			requestData(ptoVtaCont);
+		
+			// Guardar el cierre electrónico para el punto de venta y fecha parámetro
+			endProcess(ptoVtaCont);
+			 
+			
+			/**
+				Este metodo lee los comprobantes CAEA desde C_Invoice validando que sean de un punto de venta de contingencia y
+				que ademas el CAE del Invoice se corresponda con alguna CAEA solicitado el ultimo mes.
+				Util si se presenta CAEA una sola vez por quincena y se requiere que los cierres electronicos cotejen CAEA Local vs Ventas
+			
+				// Realizar la consulta de los datos
+				requestDataCont(ptoVtaCont);
+			
+				dREHER
+			
+			*/
+				
+			// Guardar el cierre electrónico para el punto de venta y fecha parámetro
+			endProcess(ptoVtaCont);
+			
+		}
+		
+		return getMsg(ptoVtaCont);
 	}
+	
+	
 
+	/**
+	 * Realizar la consulta de facturas de contingencia CAEA de punto de venta y fecha
+	 * @param ptoVta default
+	 * dREHER
+	 */
+	protected void requestDataCont(int ptoVta) throws Exception {
+		
+		String sql = "select i.C_Invoice_ID, i.dateacct::date as fiscalclosingdate, puntodeventa, p.name as posname, amount as ventas, c_doctypetarget_id AS C_DocType_ID\n"
+				+ "	from v_dailysales_invoices_filtered(\n"
+				+ "	    ?::integer,\n"
+				+ "	    -1::integer,\n"
+				+ "	    -1::integer,\n"
+				+ "	    ?::date,\n"
+				+ "	    ?::date,\n"
+				+ "	    null::date,\n"
+				+ "	    null::date,\n"
+				+ "	    false::boolean) as ds\n"
+				+ "	join c_invoice i on i.c_invoice_id = ds.c_invoice_id\n"
+				+ "	join c_pos p on p.c_pos_id = ds.c_pos_id\n"
+				+ "	where puntodeventa=? AND i.cae IN (SELECT cr.caea FROM C_LYEICAEARequest cr WHERE cr.fechaDesde >= ?::date-interval '2 month')";
+
+	
+		// Iterar por todos los tipos de documento del punto de venta
+		PreparedStatement ps = DB.prepareStatement(sql, get_TrxName());
+		ps.setInt(1, getOrgID());
+		ps.setDate(2, getDateParamAsDATE());
+		ps.setDate(3, getDateParamAsDATE());
+		ps.setInt(4, ptoVta);
+		ps.setTimestamp(5, getDateParam());
+		
+		ResultSet rs = ps.executeQuery();
+		MDocType dt;
+
+		while(rs.next()) {
+			// Setear el tipo de documento 
+			try {
+				dt = getDocType(rs);
+			} catch(Exception e) {
+				log.warning(e.getMessage());
+				continue;
+			}
+			
+			int C_Invoice_ID = rs.getInt("C_Invoice_ID");
+			MInvoice inv = MInvoice.get(getCtx(), C_Invoice_ID, get_TrxName());
+			if(inv!=null) {
+				
+				BigDecimal sign = new BigDecimal(dt.getsigno_issotrx());
+				if(sign.compareTo(BigDecimal.ZERO) < 0) {
+					getResult().creditnoteamt = getResult().creditnoteamt.add(inv.getGrandTotal());
+					getResult().creditnotetaxamt = getResult().creditnotetaxamt.add(inv.getTaxesAmt());
+					getResult().creditnoteperceptionamt = getResult().creditnoteperceptionamt.add(inv.getPercepcionesTotalAmt());
+				}else {
+					getResult().fiscaldocumentamt = getResult().fiscaldocumentamt.add(inv.getGrandTotal());
+					getResult().fiscaldocumenttaxamt = getResult().fiscaldocumenttaxamt.add(inv.getTaxesAmt());
+					getResult().fiscaldocumentperceptionamt = getResult().fiscaldocumentperceptionamt.add(inv.getPercepcionesTotalAmt());
+				}
+			}
+			
+		}
+		rs.close();
+		ps.close();
+	}
+	
+	
 	/**
 	 * Realizar la consulta a AFIP con la info de punto de venta y fecha
 	 */
-	protected void requestData() throws Exception {
+	protected void requestData(int ptoVta) throws Exception {
 		// Iterar por todos los tipos de documento del punto de venta
-		PreparedStatement ps = DB.prepareStatement(getDocumentsQuery(), get_TrxName());
+		PreparedStatement ps = DB.prepareStatement(getDocumentsQuery(ptoVta), get_TrxName());
 		ResultSet rs = ps.executeQuery();
 		MDocType dt;
 		int min, max;
@@ -128,17 +254,19 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 	
 	/**
 	 * Guardar el cierre electrónico del punto de venta
+	 * @param ptoVta default
+	 * dREHER
 	 */
-	protected void endProcess() throws Exception {
+	protected void endProcess(int ptoVta) throws Exception {
 		// Crear el registro o busco el de la fecha
-		MControladorFiscalClosingInfo cinfo = getFiscalClosing();
+		MControladorFiscalClosingInfo cinfo = getFiscalClosing(ptoVta);
 		
 		cinfo.setAD_Org_ID(getPos().getAD_Org_ID());
 		cinfo.setPOSName(getPos().getName());
-		cinfo.setPuntoDeVenta(getPos().getPOSNumber());
+		cinfo.setPuntoDeVenta((ptoVta>0?ptoVta:getPos().getPOSNumber()));
 		cinfo.setFiscalClosingType("Z");
 		cinfo.setFiscalClosingDate(getDateParam());
-		int cid = getControladorFiscalID();
+		int cid = getControladorFiscalID(ptoVta);
 		cid = cid < 0?0:cid;
 		cinfo.setC_Controlador_Fiscal_ID(cid);
 		
@@ -157,14 +285,16 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 	}
 	
 	/**
+	 * @param ptoVta default
 	 * @return el cierre electrónico para ese punto de venta y fecha, null caso que
 	 *         no exista
+	 * dREHER
 	 */
-	private MControladorFiscalClosingInfo getControladorFiscalClosingInfo() {
+	private MControladorFiscalClosingInfo getControladorFiscalClosingInfo(int ptoVta) {
 		MControladorFiscalClosingInfo cinfo = null;
 		int cInfoID = DB.getSQLValue(get_TrxName(),
 				"select c_controlador_fiscal_closing_info_id from c_controlador_fiscal_closing_info where ad_client_id = "
-						+ getPos().getAD_Client_ID() + " AND puntodeventa = " + getPos().getPOSNumber()
+						+ getPos().getAD_Client_ID() + " AND puntodeventa = " + (ptoVta>0?ptoVta:getPos().getPOSNumber())
 						+ " AND fiscalclosingdate = '" + Env.getDateFormatted(getDateParam()) + "'::date ", true);
 		if(cInfoID > 0) {
 			cinfo = new MControladorFiscalClosingInfo(getCtx(), cInfoID, get_TrxName());
@@ -173,13 +303,15 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 	}
 
 	/**
+	 * ptoVta default
 	 * @return ID de la impresora fiscal asociada a los tipos de documento del punto
 	 *         de venta
+	 * dREHER
 	 */
-	protected Integer getControladorFiscalID() {
+	protected Integer getControladorFiscalID(int ptoVta) {
 		return DB.getSQLValue(get_TrxName(), "select c_controlador_fiscal_id " + 
 											"from c_doctype " + 
-											"where doctypekey ilike '%"+getPos().getPOSNumber()+"%' and c_controlador_fiscal_id is not null and isactive = 'Y' " + 
+											"where doctypekey ilike '%"+(ptoVta>0?ptoVta:getPos().getPOSNumber())+"%' and c_controlador_fiscal_id is not null and isactive = 'Y' " + 
 											"order by updated desc " +
 											"limit 1 ");
 	}
@@ -200,25 +332,44 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 		return DB.getSQLValue(get_TrxName(), sql, true);
 	}
 	
+	
 	/**
-	 * @return proveedor de consulta de comprobantes
+	 * Sobrecargo por compatibilidad
+	 * 
+	 * @throws Exception
+	 * dREHER
 	 */
 	protected void setLYEIProvider() throws Exception {
+		setLYEIProvider(0);
+	}
+	
+	/**
+	 * @param ptoVtaDefault - trabaja con el punto de venta parametrizado
+	 * @return proveedor de consulta de comprobantes
+	 * 
+	 * Agrego parametro para poder trabajar con un punto de venta especifico
+	 * dREHER
+	 */
+	protected void setLYEIProvider(int ptoVtaDefault) throws Exception {
 		WSFEConsultarComprobanteProcess wccp = new WSFEConsultarComprobanteProcess(getCtx(), getClientID(), getOrgID(),
 				get_TrxName());
-		wccp.setPtoVta(getPOSNumber());
-		wccp.loadInitialValues();
+		if(ptoVtaDefault > 0)
+			wccp.setPtoVta(ptoVtaDefault);
+		else
+			wccp.setPtoVta(getPOSNumber());
+		
+		wccp.loadInitialValues(ptoVtaDefault);
 		setWsfeProvider(wccp);
 	}
 	
 	/**
 	 * @return consulta que determina los tipos de documento a consultar
 	 */
-	protected String getDocumentsQuery() {
+	protected String getDocumentsQuery(int ptoVta) {
 		return "select *, substring(doctypekey from (length(doctypekey)-3) for 4) as posnumber " + 
 				"from c_doctype " + 
 				"where isactive = 'Y' and ad_client_id = "+ getAD_Client_ID() +
-				(Util.isEmpty(getPOSNumber(), true)?"":" and doctypekey ilike '%" + getPOSNumber() + "%' ") +
+				(Util.isEmpty(getPOSNumber(), true) && ptoVta == 0?"":" and doctypekey ilike '%" + (ptoVta>0?ptoVta:getPOSNumber()) + "%' ") +
 				" and iselectronic = 'Y' " +
 				" order by doctypekey ";
 	}
@@ -250,8 +401,13 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 		BigDecimal compAmt = new BigDecimal(document.get("ImpTotal")).multiply(monCotiz);
 		BigDecimal taxAmt = (document.get("ImpIVA") == null ? BigDecimal.ZERO : new BigDecimal(document.get("ImpIVA")))
 				.multiply(monCotiz);
-		BigDecimal tribAmt = (document.get("ImpTrib") == null ? BigDecimal.ZERO : new BigDecimal(document.get("ImpTrib")))
+		
+		// dREHER - en CAEA comprobantes B pueden venir con el campo ImpTrib="null"
+		String tmp = document.get("ImpTrib");
+		BigDecimal tribAmt = (tmp == null || tmp.equals("null") || tmp.isEmpty() ? BigDecimal.ZERO : new BigDecimal(tmp))
 				.multiply(monCotiz);
+		
+		
 		if(sign.compareTo(BigDecimal.ZERO) < 0) {
 			getResult().creditnoteamt = getResult().creditnoteamt.add(compAmt);
 			getResult().creditnotetaxamt = getResult().creditnotetaxamt.add(taxAmt);
@@ -292,9 +448,11 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 	
 	/**
 	 * Buscar el dto para este punto de venta y fecha
+	 * @param ptoVta default
+	 * dREHER
 	 */
-	protected MControladorFiscalClosingInfo getFiscalClosing() {
-		MControladorFiscalClosingInfo cinfo = getControladorFiscalClosingInfo();
+	protected MControladorFiscalClosingInfo getFiscalClosing(int ptoVta) {
+		MControladorFiscalClosingInfo cinfo = getControladorFiscalClosingInfo(ptoVta);
 		if(cinfo == null) {
 			cinfo = new MControladorFiscalClosingInfo(getCtx(), 0, get_TrxName());
 		}
@@ -315,10 +473,37 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 	 * @param document documento
 	 * @return true si cumple con las especificaciones para que el documento sea
 	 *         candidato para procesamiento, false caso contrario
+	 * @throws ParseException 
 	 */
 	protected boolean validateDocument(HashMap<String, String> document) {
-		return dateParamStr.equals(document.get("CbteFch"));
+		String cbteFech = document.get("CbteFch");
+		if(cbteFech==null)
+			return false;
+		
+		try {
+			if(cbteFech.length() > 8)
+				cbteFech = lyeiDateFormatter.format(document.get("CbteFch"));
+		}catch(Exception ex) {
+			cbteFech = DB.getSQLValueString(get_TrxName(), "SELECT TO_CHAR(?::date, 'yyyymmdd');", document.get("CbteFch"));
+		}
+		return dateParamStr.equals(cbteFech);
 	}
+	
+	 /**
+     * Convert an Object to a Timestamp.
+     */
+    public java.sql.Timestamp toTimestamp( Object value ) throws ParseException
+    {
+        if( value == null ) return null;        
+        if( value instanceof java.sql.Timestamp ) return (java.sql.Timestamp)value;
+        if( value instanceof String )
+        {
+            if( "".equals( (String)value ) ) return null;
+            return new java.sql.Timestamp( lyeiDateFormatter.parse( (String)value ).getTime() );
+        }
+                
+        return new java.sql.Timestamp( lyeiDateFormatter.parse( value.toString() ).getTime() );
+    }
 	
 	/**
 	 * @return Compañía actual
@@ -342,9 +527,28 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 	}
 	
 	/**
-	 * @return mensaje final
+	 * @return Punto de venta de contingencia
+	 * Utilizado para trabajar con CAEA
+	 * dREHER
 	 */
-	protected String getMsg() {
-		return "@ProcessOK@";
+	protected int getContingencyPOSNumber() {
+		Object ptoVtaCont = getPos().get_Value("PtoVtaContingencia");
+		if(ptoVtaCont==null)
+			ptoVtaCont = 0;
+		
+		return (Integer)ptoVtaCont;
+	}
+	
+	/**
+	 * @return mensaje final
+	 * @param ptoVta default
+	 * dREHER
+	 */
+	protected String getMsg(int ptoVta) {
+		String ret = "@ProcessOK@ <br>" +
+		"Se realizo cierre del Pto.Vta.: " + getPOSNumber() + "<br>" +
+		(ptoVta>0?"Se realizo cierre del Pto.Vta. de Contingencia: " + ptoVta:"");
+		
+		return ret;
 	}
 }

@@ -129,7 +129,7 @@ public class LYEIConsultarComprobanteReport extends LYEIElectronicClosing {
 	}
 	
 	@Override
-	protected void endProcess() throws Exception {
+	protected void endProcess(int ptoVta) throws Exception {
 		WSFEConsultarComprobanteDataSource ds = new WSFEConsultarComprobanteDataSource(getDocuments());
 		
 		try {

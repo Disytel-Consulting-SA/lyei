@@ -312,12 +312,21 @@ public class WSFEConsultarComprobanteProcess extends SvrProcess {
 	}
 	
 	
-	/** Carga inicial */
+	/** 
+	 * Carga inicial 
+	 * Sobrecarga para poder enviar el punto de venta correspondiente
+	 * dREHER
+	 * */
 	public void loadInitialValues() throws Exception {
+		loadInitialValues(0);
+	}
+	
+	/** Carga inicial */
+	public void loadInitialValues(int ptoVta) throws Exception {
 		// Token & Sign
-		posConfig = MLYEIElectronicPOSConfig.get(getPtoVta(), getOrgID(), getCtx(), null);
+		posConfig = MLYEIElectronicPOSConfig.get((ptoVta>0?ptoVta:getPtoVta()), getOrgID(), getCtx(), null);
 		if (posConfig==null) 
-			throw new Exception("No se ha encontrado configuracion electronica para el punto de venta " + getPtoVta()
+			throw new Exception("No se ha encontrado configuracion electronica para el punto de venta " + (ptoVta>0?ptoVta:getPtoVta())
 					+ " y la organizacion del tipo de documento (" + getOrgID() + ")");
 		HashMap<String, String> tokenAndSign = LYEIWSAA.getTokenAndSign(posConfig, getCtx(), posConfig.getCurrentEnvironment());
 		token = tokenAndSign.get(LYEIWSAA.TA_TOKEN);
