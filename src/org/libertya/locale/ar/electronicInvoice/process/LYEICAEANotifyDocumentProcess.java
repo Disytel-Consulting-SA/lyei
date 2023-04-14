@@ -3,6 +3,7 @@ package org.libertya.locale.ar.electronicInvoice.process;
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -554,6 +555,33 @@ public class LYEICAEANotifyDocumentProcess extends SvrProcess {
 	        asoc.setNumeroPuntoVenta(origInv.getPuntoDeVenta());
 			cant++;
 			asociados.add(asoc);
+		}else {
+			
+			/**
+			 * Si no llega el comprobante original ID tomar la info desde los campos desglozados del original
+			 * dREHER
+			 */
+			if (inv.getOrigInvFecha()!=null &&
+					inv.getOrigInvNro()>0 && 
+					inv.getOrigInvPtoVta()>0 &&
+					!Util.isEmpty(inv.getOrigInvTipo())) {
+				// Se especificó referencia manual mediante los 4 campos
+		        int nroCbteOrig = inv.getOrigInvNro();
+		        int ptoVtaCbteOrig = inv.getOrigInvPtoVta();
+		        Date date = new Date(inv.getOrigInvFecha().getTime());
+		        int tipo = Integer.parseInt(inv.getOrigInvTipo());
+		        ComprobanteAsociadoType asoc = new ComprobanteAsociadoType();
+				asoc.setCodigoTipoComprobante((short)tipo);
+				// El campo cuit es opcional.  Se comenta para evitar error 804: no corresponde enviar el campo cuit para el tipo de comprobante asociado indicado
+		        //asoc.setCuit(Long.parseLong(genConfig.getCUIT().replace("-", "").replace(" ", "")));
+		        asoc.setFechaEmision(date);
+		        asoc.setNumeroComprobante(nroCbteOrig);
+		        asoc.setNumeroPuntoVenta(ptoVtaCbteOrig);
+				cant++;
+				asociados.add(asoc);
+			}
+			
+			
 		}
 		
 		if (cant>0) {

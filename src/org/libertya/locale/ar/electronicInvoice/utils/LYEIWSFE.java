@@ -304,6 +304,12 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 				throw new Exception("Error al leer NETO del comprobante!");
 			else
 				valor = bigValor.doubleValue();
+			
+			if(valor==0.00) {
+				bigValor = inv.getNetAmount();
+				valor = bigValor.doubleValue();
+			}
+			
 			// Importe  neto    gravado.  Debe  ser  menor  o igual a Importe total y no puede ser menor a cero.
 			detReq.setImpNeto(valor);
 			
