@@ -10,6 +10,7 @@ import java.util.Properties;
 import java.util.logging.Level;
 
 import org.apache.axis.AxisProperties;
+import org.jfree.util.Log;
 import org.libertya.locale.ar.electronicInvoice.model.LP_AD_Sequence;
 import org.libertya.locale.ar.electronicInvoice.model.LP_C_Invoice;
 import org.libertya.locale.ar.electronicInvoice.model.LP_C_LYEIElectronicPOSConfig;
@@ -141,6 +142,8 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 	 * Registra una factura electronica en el site de AFIP mediante WSFEV1
 	 */
 	public synchronized String generateCAE(long nroComprobante) {
+		
+		String totales = "";
 		
 		/**
 		 * Cuando se llama el metodo sin haber configurado el punto de venta, genera excepcion y el TPV queda colgado...
@@ -284,10 +287,13 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			if (!X_C_DocType.DOCSUBTYPECAE_FacturasC.equals(docType.getdocsubtypecae())
 					&& !X_C_DocType.DOCSUBTYPECAE_NotasDeCreditoC.equals(docType.getdocsubtypecae())
 					&& !X_C_DocType.DOCSUBTYPECAE_NotasDeDebitoC.equals(docType.getdocsubtypecae())) {
+				
 				// Array  para  informar  las  alícuotas  y  sus importes   asociados   a   un   comprobante <AlicIva>
-				detReq.setIva(iva);
-				// Suma de los importes del array de IVA
-				detReq.setImpIVA(impIva);
+				if(iva.length>0) {
+					detReq.setIva(iva);
+					// Suma de los importes del array de IVA
+					detReq.setImpIVA(impIva);
+				}
 			}
 			// Otros tributos
 			Tributo[] tributos = getTributos();
@@ -305,40 +311,58 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			else
 				valor = bigValor.doubleValue();
 			
+			/** 
+			 * 20230506
+			 * En las anulaciones de NC desde la ventana de facturas de clientes
+			 * la ND generada como reversion, el metodo getImpNeto devuelve cero
+			 * en ese caso tomarlo desde el neto de la reversion ND
+			 * 
+			 * TODO: Si se obtiene IVA o Tributos y el Neto obtenido es CERO
+			 * leer el Neto desde el propio comprobante
+			 * 
+			 * dREHER
+			 */ 
+			
 			if(valor==0.00) {
-				bigValor = inv.getNetAmount();
-				valor = bigValor.doubleValue();
+				if(impIva > 0 || detReq.getImpTrib() > 0) {
+					bigValor = inv.getNetAmount();
+					valor = bigValor.doubleValue();
+				}
 			}
+			
 			
 			// Importe  neto    gravado.  Debe  ser  menor  o igual a Importe total y no puede ser menor a cero.
 			detReq.setImpNeto(valor);
-			
+			totales += " Neto=" + valor;
 
 			bigValor = LYEICommons.getImpTotal(inv);
 			if(bigValor == null)
-				throw new Exception("Error al leer NETO del comprobante!");
+				throw new Exception("Error al leer TOTAL del comprobante!");
 			else
 				valor = bigValor.doubleValue();
 			// Importe total  del comprobante, Debe ser igual  a  Importe  neto  no  gravado  +  Importe 
 			// exento + Importe neto gravado + todos los campos  de  IVA    al  XX%  +  Importe  de	tributos
 			detReq.setImpTotal(valor);
+			totales += " Total=" + valor;
 			
 			bigValor = LYEICommons.getImpTotConc(inv.getC_Invoice_ID());
 			if(bigValor == null)
-				throw new Exception("Error al leer NETO del comprobante!");
+				throw new Exception("Error al leer NO GRAVADO del comprobante!");
 			else
 				valor = bigValor.doubleValue();			
 			// Importe neto no gravado. Debe ser menor o igual a Importe total y no puede ser menor a cero. 
 			// No  puede  ser  mayor  al  Importe  total  de  la operación ni menor a cero (0)
 			detReq.setImpTotConc(valor);
+			totales += " NO gravado=" + valor;
 			
 			bigValor = LYEICommons.getImpOpEx(inv.getC_Invoice_ID());
 			if(bigValor == null)
-				throw new Exception("Error al leer NETO del comprobante!");
+				throw new Exception("Error al leer EXCENTO del comprobante!");
 			else
 				valor = bigValor.doubleValue();
 			// Importe  exento.  Debe  ser  menor  o  igual  a Importe total y no puede ser menor a cero
 			detReq.setImpOpEx(valor);
+			totales += " Excento=" + valor;
 			
 			// Opcionales
 			Opcional[] opcionales = getOpcionales();
@@ -417,6 +441,12 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 		}
 		// Retornar eventuales mensajes de error (similar a version original Wsfe)
 		MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.INFO, inv.getC_Invoice_ID(), posConfig!=null?posConfig.getC_LYEIElectronicPOSConfig_ID():null, genConfig!=null?genConfig.getC_LYEIElectronicInvoiceConfig_ID():null, getFinSolicitarCAEActivityLog());
+		
+		if(electronicInvoiceCaeError.length()>0)
+			Log.info("Error al procesar comprobante electronico, Importes: " + 
+					totales);
+		
+		
 		return electronicInvoiceCaeError.toString();
 	}
 	

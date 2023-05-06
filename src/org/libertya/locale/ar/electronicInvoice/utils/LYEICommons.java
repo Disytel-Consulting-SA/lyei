@@ -150,13 +150,13 @@ public class LYEICommons {
 	/** Periodo facturado del servicio: desde */
 	public static String setFchServDesde(MInvoice inv) {
 		// El campo es fecha/hora por posibles ampliaciones a futuro. por el momento solo se envía la fecha
-		return inv.get_Value("LYEIPeriodFrom")==null ? "" : (""+inv.get_Value("LYEIPeriodFrom")).substring(0, 10).replace("-", "");
+		return inv.get_Value("LYEIPeriodFrom")==null ? (""+inv.getDateInvoiced()).substring(0, 10).replace("-", "") : (""+inv.get_Value("LYEIPeriodFrom")).substring(0, 10).replace("-", "");
 	}
 	
 	/** Periodo facturado del servicio: hasta */
 	public static String setFchServHasta(MInvoice inv) {
 		// El campo es fecha/hora por posibles ampliaciones a futuro. por el momento solo se envía la fecha
-		return inv.get_Value("LYEIPeriodTo")==null ? "" : (""+inv.get_Value("LYEIPeriodTo")).substring(0, 10).replace("-", "");
+		return inv.get_Value("LYEIPeriodTo")==null ? (""+inv.getDateInvoiced()).substring(0, 10).replace("-", "") : (""+inv.get_Value("LYEIPeriodTo")).substring(0, 10).replace("-", "");
 	}
 
 	/** Total de la factura */

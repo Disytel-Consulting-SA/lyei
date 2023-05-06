@@ -169,7 +169,8 @@ public class LYEIManageElectronicInvoiceProcess extends WSFEConsultarComprobante
 		} else {
 			
 			// dREHER, se completo y no se genero CAE porque el comprobante anterior tampoco se habia gestionado CAE
-			if(anInvoice.getDocStatus().equals("CO")) {
+			// .getDocStatus().equals("CO") 
+			if(anInvoice.isProcessed()) {
 
 				MInvoice mInvoice = (MInvoice)anInvoice;
 				CallResult callResult = mInvoice.doCAEGeneration(mInvoice.getNumeroComprobante());
