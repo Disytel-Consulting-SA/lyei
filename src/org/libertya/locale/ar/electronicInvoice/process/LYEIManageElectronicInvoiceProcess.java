@@ -1,13 +1,18 @@
 package org.libertya.locale.ar.electronicInvoice.process;
 
 import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.logging.Level;
 
 import org.openXpertya.JasperReport.WSFEConsultarComprobanteProcess;
+import org.openXpertya.apps.ADialog;
 import org.openXpertya.model.MDocType;
 import org.openXpertya.model.MInvoice;
 import org.openXpertya.model.MUser;
@@ -29,7 +34,9 @@ public class LYEIManageElectronicInvoiceProcess extends WSFEConsultarComprobante
 
 	@Override
 	protected String doIt() throws Exception {
-	
+
+		StringBuffer sb = new StringBuffer();
+		
 		// Recuperar la factura
 		MInvoice anInvoice = new MInvoice(getCtx(), getRecord_ID(), get_TrxName());
 		MDocType invoiceDocType = new MDocType(getCtx(), anInvoice.getC_DocTypeTarget_ID(), get_TrxName());
@@ -37,35 +44,102 @@ public class LYEIManageElectronicInvoiceProcess extends WSFEConsultarComprobante
 			throw new Exception("La factura seleccionada no es de tipo electronica");
 		}
 		
-		/**
-		 * Verificar que el comprobante inmediatamente anterior a este
-		 * NO necesite gestionar CAE, caso contrario devuelvo excepcion al usuario
-		 * 
-		 * 
-		 * dREHER
-		 */
-		MInvoice before = anInvoice.getBeforeInvoice();
-		if(before!=null)
-			if( (before.getcae()==null || before.getcae().isEmpty()) ||
-					(before.getvtocae()==null))
-				return "Debe gestionar el comprobante anterior! - Comprobante nro:" + before.getDocumentNo();
+		boolean isMasivo = ADialog.ask(0, null, "Gestionar TODOS los comprobantes del punto de venta " + anInvoice.getPuntoDeVenta() + " ?");
+		ArrayList<Integer> InvoicesIds = new ArrayList<Integer>(); 
+		if(!isMasivo)
+			InvoicesIds.add(anInvoice.getC_Invoice_ID());
+		else
+			InvoicesIds = getInvoicedIDs(invoiceDocType.getC_DocType_ID());
 		
-		// Tenemos una factura en LY completada y con cae con igual tipo y nro de documento? 
-		String exists = checkIfAlreadyExistsInLY(anInvoice, invoiceDocType);
-		if (exists!=null) 
-			return exists;
+		for(Integer InvoiceID : InvoicesIds) {
+			
+			anInvoice = new MInvoice(getCtx(), InvoiceID, get_TrxName());
+			log.info("Va a gestionar CAE comprobante=" + anInvoice.getDocumentNo());
+
+			/**
+			 * Verificar que el comprobante inmediatamente anterior a este
+			 * NO necesite gestionar CAE, caso contrario devuelvo excepcion al usuario
+			 * 
+			 * 
+			 * dREHER
+			 */
+			MInvoice before = anInvoice.getBeforeInvoice();
+			if(before!=null)
+				if( (before.getcae()==null || before.getcae().isEmpty()) ||
+						(before.getvtocae()==null)) {
+					return "Debe gestionar el comprobante anterior! - Comprobante nro:" + before.getDocumentNo();
+				}
+					
+			// Tenemos una factura en LY completada y con cae con igual tipo y nro de documento? 
+			String exists = checkIfAlreadyExistsInLY(anInvoice, invoiceDocType);
+			if (exists!=null) { 
+				sb.append(exists + "\n");
+				continue;
+			}
+			
+			log.info("Supero instancias de controles Libertya, comienza gestion AFIP...");
+
+			// Cargar la configuracion inicial para poder usar la superclase
+			requestData(anInvoice, invoiceDocType);
+
+			// Algun error en conexion o procesamiento?
+			String resultado = checkForErrors();
+
+			// Modificar la factura segun corresponda
+			sb.append(anInvoice.getDocumentNo() + " " + handleResponse(resultado, anInvoice) + "\n");
+			
+			log.info("Gestiono comprobante Ok...");
+
+		}
 		
-		// Cargar la configuracion inicial para poder usar la superclase
-		requestData(anInvoice, invoiceDocType);
-								
-		// Algun error en conexion o procesamiento?
-		String resultado = checkForErrors();
+		if(sb.length()==0)
+			sb.append("No se encontraron comprobantes para gestionar!");
 		
-		// Modificar la factura segun corresponda
-		return handleResponse(resultado, anInvoice);
+		return sb.toString();
+		
 	}
 	
-	
+	/**
+	 * 
+	 * TODO: el filtro de la fecha mejorarlo con alguna configurarion...
+	 * 
+	 * @param invoiceDocType
+	 * @return
+	 * 
+	 * dREHER
+	 */
+	private ArrayList<Integer> getInvoicedIDs(int invoiceDocType) {
+		ArrayList<Integer>ids = new ArrayList<Integer>();
+		String sql = "SELECT C_Invoice_ID FROM C_Invoice" +
+					" WHERE C_DocTypeTarget_ID=?" + 
+					" AND cae ISNULL" + 
+					" AND IsActive='Y'" +
+					" AND DateInvoiced::DATE > '2023-05-01'::DATE" +
+					" ORDER BY NumeroComprobante";
+		ResultSet rs = null;
+		PreparedStatement stmt = DB.prepareStatement(sql, get_TrxName());
+		try {
+			
+			stmt.setInt(1, invoiceDocType);
+			rs = stmt.executeQuery();
+			while(rs.next()) {
+				ids.add(rs.getInt("C_Invoice_ID"));
+			}
+			
+		}catch(Exception ex) {
+			log.warning("Se produjo un error al leer comprobante a gestionar! Error:" + ex.toString());
+		}finally {
+			try {
+				rs.close();
+				stmt.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		return ids;
+	}
+
 	/** Valida si ya existe una factura en LY con iguales caracteristicas */
 	protected String checkIfAlreadyExistsInLY(X_C_Invoice anInvoice, X_C_DocType aDocType) throws Exception {
 		// Ya hay una factura en LY registrada con la información en cuestión?
