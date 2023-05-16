@@ -19,10 +19,13 @@ import org.openXpertya.model.MUser;
 import org.openXpertya.model.X_C_Currency;
 import org.openXpertya.model.X_C_DocType;
 import org.openXpertya.model.X_C_Invoice;
+import org.openXpertya.pos.exceptions.PosException;
+import org.openXpertya.process.DocAction;
 import org.openXpertya.reflection.CallResult;
 import org.openXpertya.util.CLogger;
 import org.openXpertya.util.DB;
 import org.openXpertya.util.Env;
+import org.openXpertya.util.Trx;
 
 public class LYEIManageElectronicInvoiceProcess extends WSFEConsultarComprobanteProcess {
 
@@ -49,11 +52,16 @@ public class LYEIManageElectronicInvoiceProcess extends WSFEConsultarComprobante
 		if(!isMasivo)
 			InvoicesIds.add(anInvoice.getC_Invoice_ID());
 		else
-			InvoicesIds = getInvoicedIDs(invoiceDocType.getC_DocType_ID());
+			InvoicesIds = getInvoicedIDs(anInvoice.getPuntoDeVenta()); 
 		
 		for(Integer InvoiceID : InvoicesIds) {
 			
-			anInvoice = new MInvoice(getCtx(), InvoiceID, get_TrxName());
+			Trx trx = null; // LOCAL. Solo para hacer rollback o commit
+			String trxName = createTrxName(anInvoice);
+			trx = Trx.get(trxName, true);
+			
+			anInvoice = new MInvoice(getCtx(), InvoiceID, trxName);
+			
 			log.info("Va a gestionar CAE comprobante=" + anInvoice.getDocumentNo());
 
 			/**
@@ -63,12 +71,15 @@ public class LYEIManageElectronicInvoiceProcess extends WSFEConsultarComprobante
 			 * 
 			 * dREHER
 			 */
-			MInvoice before = anInvoice.getBeforeInvoice();
-			if(before!=null)
-				if( (before.getcae()==null || before.getcae().isEmpty()) ||
-						(before.getvtocae()==null)) {
-					return "Debe gestionar el comprobante anterior! - Comprobante nro:" + before.getDocumentNo();
+			if(!isMasivo) {
+				MInvoice before = anInvoice.getBeforeInvoice();
+				if(before!=null) {
+					if( (before.getcae()==null || before.getcae().isEmpty()) ||
+							(before.getvtocae()==null)) {
+						return "Debe gestionar el comprobante anterior! - Comprobante nro:" + before.getDocumentNo();
+					}
 				}
+			}
 					
 			// Tenemos una factura en LY completada y con cae con igual tipo y nro de documento? 
 			String exists = checkIfAlreadyExistsInLY(anInvoice, invoiceDocType);
@@ -88,6 +99,11 @@ public class LYEIManageElectronicInvoiceProcess extends WSFEConsultarComprobante
 			// Modificar la factura segun corresponda
 			sb.append(anInvoice.getDocumentNo() + " " + handleResponse(resultado, anInvoice) + "\n");
 			
+			log.info("Comprobante=" + anInvoice.getDocumentNo() + " Resultado=" + resultado);
+			log.info("Commit de Transaccion Trx=" + trxName);
+			trx.commit();
+			trxName = null;
+			
 			log.info("Gestiono comprobante Ok...");
 
 		}
@@ -97,6 +113,14 @@ public class LYEIManageElectronicInvoiceProcess extends WSFEConsultarComprobante
 		
 		return sb.toString();
 		
+	}
+		
+	/**
+	 * @return Crea un nuevo nombre de transacción
+	 */
+	private String createTrxName(MInvoice invoice) {
+		return Trx.createTrxName(this.toString() + invoice.getDateInvoiced().toString()
+				+ Thread.currentThread().getId());
 	}
 	
 	/**
@@ -108,22 +132,24 @@ public class LYEIManageElectronicInvoiceProcess extends WSFEConsultarComprobante
 	 * 
 	 * dREHER
 	 */
-	private ArrayList<Integer> getInvoicedIDs(int invoiceDocType) {
+	private ArrayList<Integer> getInvoicedIDs(int puntoDeVenta) { 
 		ArrayList<Integer>ids = new ArrayList<Integer>();
-		String sql = "SELECT C_Invoice_ID FROM C_Invoice" +
-					" WHERE C_DocTypeTarget_ID=?" + 
+		String sql = "SELECT C_Invoice_ID, DocumentNo " +
+					" FROM C_Invoice" +
+					" WHERE PuntoDeVenta=?" +
 					" AND cae ISNULL" + 
 					" AND IsActive='Y'" +
 					" AND DateInvoiced::DATE > '2023-05-01'::DATE" +
-					" ORDER BY NumeroComprobante";
+					" ORDER BY PuntoDeVenta, C_DocTypeTarget_ID, NumeroComprobante";
 		ResultSet rs = null;
 		PreparedStatement stmt = DB.prepareStatement(sql, get_TrxName());
 		try {
 			
-			stmt.setInt(1, invoiceDocType);
+			stmt.setInt(1, puntoDeVenta);
 			rs = stmt.executeQuery();
 			while(rs.next()) {
 				ids.add(rs.getInt("C_Invoice_ID"));
+				log.info("Agregue la factura " + rs.getString("DocumentNo")+ " a la lista de comprobantes a gestionar...");
 			}
 			
 		}catch(Exception ex) {
@@ -254,8 +280,9 @@ public class LYEIManageElectronicInvoiceProcess extends WSFEConsultarComprobante
 					retMsg = callResult.getMsg();
 				}else {
 					mInvoice.setSkipIPNoCaeValidation(true);
-					mInvoice.save();
+					mInvoice.save(anInvoice.get_TrxName());
 					retMsg = "Se genero el CAE correspondiente: CAE= " + mInvoice.getcae();
+					log.info("Se genero el CAE correspondiente: CAE= " + mInvoice.getcae());
 				}
 				
 				
@@ -269,9 +296,11 @@ public class LYEIManageElectronicInvoiceProcess extends WSFEConsultarComprobante
 		}
 		
 		// Intentar persistir
-		if (!anInvoice.save()) {
+		if (!anInvoice.save(anInvoice.get_TrxName())) {
 			throw new Exception("Error al gestionar factura: " + CLogger.retrieveErrorAsString());
-		}
+		}else
+			log.info("Se guardo el comprobante correctamente!");
+		
 		return retMsg;
 	}
 	
@@ -287,6 +316,10 @@ public class LYEIManageElectronicInvoiceProcess extends WSFEConsultarComprobante
 		String cbteFch = getRetrievedDocuments().get(0).get("CbteFch");
 		String grandTotal = getRetrievedDocuments().get(0).get("ImpTotal");
 		String moneda = getRetrievedDocuments().get(0).get("MonId");
+		
+		log.info("Validacion datos de AFIP -> Libertya. \nFecha= " + cbteFch + " -> " + getCbteFch(anInvoice) + "\n" +
+		"Total= " + grandTotal + " -> " + anInvoice.getGrandTotal() + "\n" +
+		"Moneda= " + moneda + " -> " + aCurrency.getWSFECode());
 		
 		return (getCbteFch(anInvoice).equals(cbteFch) && 									// Fecha de comprobante
 				anInvoice.getGrandTotal().compareTo(new BigDecimal(grandTotal)) == 0 &&		// Monto total
