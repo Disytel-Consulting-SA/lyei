@@ -42,10 +42,6 @@ public class LYEIManageElectronicInvoiceProcess extends WSFEConsultarComprobante
 		
 		// Recuperar la factura
 		MInvoice anInvoice = new MInvoice(getCtx(), getRecord_ID(), get_TrxName());
-		MDocType invoiceDocType = new MDocType(getCtx(), anInvoice.getC_DocTypeTarget_ID(), get_TrxName());
-		if (!invoiceDocType.iselectronic()) {
-			throw new Exception("La factura seleccionada no es de tipo electronica");
-		}
 		
 		boolean isMasivo = ADialog.ask(0, null, "Gestionar TODOS los comprobantes del punto de venta " + anInvoice.getPuntoDeVenta() + " ?");
 		ArrayList<Integer> InvoicesIds = new ArrayList<Integer>(); 
@@ -63,6 +59,13 @@ public class LYEIManageElectronicInvoiceProcess extends WSFEConsultarComprobante
 			anInvoice = new MInvoice(getCtx(), InvoiceID, trxName);
 			
 			log.info("Va a gestionar CAE comprobante=" + anInvoice.getDocumentNo());
+			
+			MDocType invoiceDocType = new MDocType(getCtx(), anInvoice.getC_DocTypeTarget_ID(), trxName);
+			if (!invoiceDocType.iselectronic()) {
+				log.warning("El tipo de comprobante NO es electronico, saltea...");
+				trx.close();
+				continue;
+			}
 
 			/**
 			 * Verificar que el comprobante inmediatamente anterior a este
@@ -85,6 +88,7 @@ public class LYEIManageElectronicInvoiceProcess extends WSFEConsultarComprobante
 			String exists = checkIfAlreadyExistsInLY(anInvoice, invoiceDocType);
 			if (exists!=null) { 
 				sb.append(exists + "\n");
+				trx.close();
 				continue;
 			}
 			
@@ -140,7 +144,7 @@ public class LYEIManageElectronicInvoiceProcess extends WSFEConsultarComprobante
 					" AND cae ISNULL" + 
 					" AND IsActive='Y'" +
 					" AND DateInvoiced::DATE > '2023-05-01'::DATE" +
-					" ORDER BY PuntoDeVenta, C_DocTypeTarget_ID, NumeroComprobante";
+					" ORDER BY C_DocTypeTarget_ID, NumeroComprobante";
 		ResultSet rs = null;
 		PreparedStatement stmt = DB.prepareStatement(sql, get_TrxName());
 		try {
