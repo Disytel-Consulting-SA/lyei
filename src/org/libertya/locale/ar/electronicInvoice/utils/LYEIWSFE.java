@@ -688,7 +688,13 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			} else {
 				MInvoice origInv = new MInvoice(ctx, inv.getC_Invoice_Orig_ID(), trx);
 				MDocType origInvDT = new MDocType(ctx, origInv.getC_DocTypeTarget_ID(), trx);
-				int tipo = Integer.parseInt(origInvDT.getdocsubtypecae());
+				String subType = origInvDT.getdocsubtypecae();
+				if(subType==null || subType.isEmpty()) {
+					System.out.println("Documento original=" + origInvDT.getName() + " " + origInv.getDocumentNo() + " - El tipo de documento asociado NO esta correctamente configurado. DocSubTypeCAE=null");
+					return null;
+				}
+					
+				int tipo = Integer.parseInt(subType);
 					        
 		        nroCbteOrig = origInv.getNumeroComprobante();
 		        ptoVtaCbteOrig = origInv.getPuntoDeVenta();
