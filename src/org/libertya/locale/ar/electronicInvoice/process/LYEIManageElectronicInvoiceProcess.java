@@ -21,6 +21,7 @@ import org.openXpertya.model.X_C_DocType;
 import org.openXpertya.model.X_C_Invoice;
 import org.openXpertya.pos.exceptions.PosException;
 import org.openXpertya.process.DocAction;
+import org.openXpertya.process.ProcessInfoParameter;
 import org.openXpertya.reflection.CallResult;
 import org.openXpertya.util.CLogger;
 import org.openXpertya.util.DB;
@@ -29,9 +30,24 @@ import org.openXpertya.util.Trx;
 
 public class LYEIManageElectronicInvoiceProcess extends WSFEConsultarComprobanteProcess {
 
+	/**
+	 * Define si la anulacion es global para todo el punto de venta o solo para el comprobante actual
+	 * dREHER
+	 */
+	private boolean isMasiveVoid = false;
+	private boolean isParamDefine = false;
+	
 	@Override
 	protected void prepare() {
-		// TODO Auto-generated method stub
+		ProcessInfoParameter[] para = getParameter();
+		String name = null;
+        for( int i = 0;i < para.length;i++ ) {
+            name = para[ i ].getParameterName();
+            if( name.equalsIgnoreCase( "IsMasive" )) { // dREHER
+            	isParamDefine = true;
+            	isMasiveVoid = ((String)para[ i ].getParameter()).equals("Y");
+            }
+        }
 
 	}
 
@@ -43,13 +59,28 @@ public class LYEIManageElectronicInvoiceProcess extends WSFEConsultarComprobante
 		// Recuperar la factura
 		MInvoice anInvoice = new MInvoice(getCtx(), getRecord_ID(), get_TrxName());
 		
-		boolean isMasivo = ADialog.ask(0, null, "Gestionar TODOS los comprobantes del punto de venta " + anInvoice.getPuntoDeVenta() + " ?");
-		ArrayList<Integer> InvoicesIds = new ArrayList<Integer>(); 
+		boolean isMasivo = false;
+		ArrayList<Integer> InvoicesIds = new ArrayList<Integer>();
+		
+		if(!isParamDefine) {
+
+			try {
+
+				isMasivo = ADialog.ask(0, null, "Gestionar TODOS los comprobantes del punto de venta " + anInvoice.getPuntoDeVenta() + " ?");
+
+			}catch(Exception ex) { // ej: llamado desde version web 
+				isMasivo = false;
+			}
+
+		}else {
+			isMasivo = isMasiveVoid;
+		}
+		
 		if(!isMasivo)
 			InvoicesIds.add(anInvoice.getC_Invoice_ID());
 		else
 			InvoicesIds = getInvoicedIDs(anInvoice.getPuntoDeVenta()); 
-		
+			
 		for(Integer InvoiceID : InvoicesIds) {
 			
 			Trx trx = null; // LOCAL. Solo para hacer rollback o commit
