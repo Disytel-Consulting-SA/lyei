@@ -296,12 +296,14 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 				}
 			}
 			// Otros tributos
+			double tmpV = 0.00;
 			Tributo[] tributos = getTributos();
 			if (tributos!=null && tributos.length>0) {
 				// Array  para  informar  los  tributos  asociados a  un  comprobante  <Tributo>.
 				detReq.setTributos(tributos);
 				// Suma de los importes del array de tributos
 				detReq.setImpTrib(getImpTrib(tributos));
+				tmpV = detReq.getImpTrib();
 			}
 			
 			Double valor = 0.00;
@@ -323,13 +325,13 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			 * dREHER
 			 */ 
 			
-			if(valor==0.00) {
+			// CDA-2671 Si llega hasta aca SIN importe de IVA, no enviar valor NETO
+			if(valor==0.00 && impIva > 0) {
 				if(impIva > 0 || detReq.getImpTrib() > 0) {
 					bigValor = inv.getNetAmount();
 					valor = bigValor.doubleValue();
 				}
 			}
-			
 			
 			// Importe  neto    gravado.  Debe  ser  menor  o igual a Importe total y no puede ser menor a cero.
 			detReq.setImpNeto(valor);
@@ -363,6 +365,10 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			// Importe  exento.  Debe  ser  menor  o  igual  a Importe total y no puede ser menor a cero
 			detReq.setImpOpEx(valor);
 			totales += " Excento=" + valor;
+			
+			totales += " Otr Tributos=" + tmpV;
+			
+			totales += " IVA=" + impIva;
 			
 			// Opcionales
 			Opcional[] opcionales = getOpcionales();
@@ -442,9 +448,10 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 		// Retornar eventuales mensajes de error (similar a version original Wsfe)
 		MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.INFO, inv.getC_Invoice_ID(), posConfig!=null?posConfig.getC_LYEIElectronicPOSConfig_ID():null, genConfig!=null?genConfig.getC_LYEIElectronicInvoiceConfig_ID():null, getFinSolicitarCAEActivityLog());
 		
-		if(electronicInvoiceCaeError.length()>0)
-			Log.info("Error al procesar comprobante electronico, Importes: " + 
+		if(electronicInvoiceCaeError.length()>0) {
+			System.out.println("Error al procesar comprobante electronico, Importes: " + 
 					totales);
+		}
 		
 		
 		return electronicInvoiceCaeError.toString();
