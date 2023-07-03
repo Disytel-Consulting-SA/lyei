@@ -27,7 +27,7 @@ public abstract class ERDownloaderGetaudarStrategy implements IElectronicReportD
 
 	protected abstract boolean isSpoolerStopped();
 
-	protected abstract boolean executeGetaudar(String baseDir, String fechaInicio, String fechaFin, int lyeicom);
+	protected abstract boolean executeGetaudar(String baseDir, String fechaInicio, String fechaFin, int lyeicom, String tcip);
 	
 	protected int getRandomInt(int min, int max) {
 		int range = max - min;
@@ -59,11 +59,13 @@ public abstract class ERDownloaderGetaudarStrategy implements IElectronicReportD
 		ResultSet rs = null;
 		String res = null;
 		try {
-		rs = pstmtMLA.executeQuery();
-		rs.next();
-		res = rs.getString(1);
+			rs = pstmtMLA.executeQuery();
+			if(rs.next())
+				res = rs.getString(1);
 		} catch (SQLException e) {
-		e.printStackTrace();
+			e.printStackTrace();
+		}finally { // dREHER
+			DB.close(rs, pstmtMLA);
 		}
 		return res;
 	}

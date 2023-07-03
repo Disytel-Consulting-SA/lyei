@@ -36,9 +36,18 @@ public class LYEIPresentarDDJJAFIPProcess extends SvrProcess {
 
 	@Override
 	protected String doIt() throws Exception {
+		String res = null;
 		validarFechas();
 		
-		return new ElectronicReportHandler(fechaInicio, fechaFin, this.pos).execute();
+		// dREHER capturar mensaje de error en el caso de que falle algo en ElectronicReportHandler
+		try {
+			ElectronicReportHandler er = new ElectronicReportHandler(fechaInicio, fechaFin, this.pos);
+			res = er.execute();
+		}catch(Exception ex) {
+			res = "Se produjo un error al leer info para DDJJ: " + ex.toString();
+		}
+		
+		return res;
 	}
 	
 	public void validarFechas() throws Exception {

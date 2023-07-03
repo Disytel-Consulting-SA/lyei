@@ -9,13 +9,13 @@ public class ERDownloaderGetaudarLinuxStrategy extends ERDownloaderGetaudarStrat
 	}
 
 	@Override
-	public boolean downloadER(String fechaInicio, String fechaFin, int lyeicom) {
+	public boolean downloadER(String fechaInicio, String fechaFin, int lyeicom, String tcip) {
 		//directorio base donde se encuentra la herramienta
 		String baseDir = getFormattedPath(getAD_PreferenceGetaudar());
 		Runtime runtime = Runtime.getRuntime();
 		try {
 			//se invoca la herramienta externa para descargar afip.zip de impresora fiscal
-			executeGetaudar(baseDir, fechaInicio, fechaFin, lyeicom);
+			executeGetaudar(baseDir, fechaInicio, fechaFin, lyeicom, tcip);
 			
 			//Una vez obtenido el .zip desde la impresora fiscal es necesario
 			//guardar su contenido en un directorio particular, descomprimir y
@@ -69,11 +69,24 @@ public class ERDownloaderGetaudarLinuxStrategy extends ERDownloaderGetaudarStrat
 	}
 
 	@Override
-	protected boolean executeGetaudar(String baseDir, String fechaInicio, String fechaFin, int lyeicom){
+	protected boolean executeGetaudar(String baseDir, String fechaInicio, String fechaFin, int lyeicom, String tcip){
 		//obtener parametros para ejecucion del script/herramienta externa
 		String params = "getaudar -p " + lyeicom + " -i serial -a";
-		//ej: ubicacion/de/herramienta/getaudar -p 3 -i serial -a 200101 200331
+		/**
+		 * Si llega con puerto COM en cero, quiere decir que es por TCP
+		 * dREHER
+		 */
+		if(tcip!=null) {
+			params = " -p " + tcip + " -i tcp -a";
+		}
+		
+		//ej COM: ubicacion/de/herramienta/getaudar -p 3 -i serial -a 200101 200331
+		//ej TCIP: ubicacion/de/herramienta/getaudar -p 10.100.45.117 -i tcp -a 200101 200331
+		
 		String command = baseDir + params + " " + fechaInicio + " " + fechaFin;
+		
+		System.out.println("Linux.Ejecuta el comando: " + command);
+		
 		//ejecutamos comando para obtener afip.zip
 		Runtime runtime = Runtime.getRuntime();
 		Process proc;
@@ -84,6 +97,8 @@ public class ERDownloaderGetaudarLinuxStrategy extends ERDownloaderGetaudarStrat
 			e.printStackTrace();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
+		}finally {
+			System.out.println("Linux.Termino de ejecutar el comando: " + command);
 		}
 		return true;
 	}
