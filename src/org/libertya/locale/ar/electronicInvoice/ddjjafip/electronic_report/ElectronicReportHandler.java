@@ -91,7 +91,7 @@ public class ElectronicReportHandler {
 //		Luego se determina si la presentacion fue exitosa o no y se almacena un registro
 //		En la tabla c_lyeiddjjpresentada por cada archivo, con el trx_number si fue exitoso o errorMsg si fallo
 		StringBuilder output = new StringBuilder();
-		output.append("DDJJ <br>");
+		output.append("Archivos para DDJJ: <b>" + archivosPresentacion.size() + "</b><br>");
 		for(String archivoPresentacion : archivosPresentacion) {
 			String trxNumber = null;
 			String errorMsg = null;
