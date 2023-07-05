@@ -5,8 +5,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.openXpertya.model.MPreference;
 import org.openXpertya.util.Env;
 
@@ -18,14 +22,17 @@ public class ERDownloaderGetaudarWindowsStrategy extends ERDownloaderGetaudarStr
 	@Override
 	public boolean downloadER(String fechaInicio, String fechaFin, int lyeicom, String tcip) {
 
-		String unzipcommand = MPreference.GetCustomPreferenceValue("Unzip", Env.getAD_Client_ID(Env.getCtx()));
-		if(unzipcommand== null || unzipcommand.isEmpty())
-			unzipcommand = "C:\\Program Files\\WinRAR\\unrar.exe -x"; // TODO: Buscar alternativa como 7zip
+		// Se reemplaza por la libreria Apache Common Compress
+		// String unzipcommand = MPreference.GetCustomPreferenceValue("Unzip", Env.getAD_Client_ID(Env.getCtx()));
+		// if(unzipcommand== null || unzipcommand.isEmpty())
+		//	unzipcommand = "C:\\Program Files (x86)\\7-Zip\\7z"; 
+		
+		// Runtime runtime = Runtime.getRuntime();
 		int exitCode = -1;
 		
 		//directorio base donde se encuentra la herramienta
 		String baseDir = getFormattedPath(getAD_PreferenceGetaudar());
-		Runtime runtime = Runtime.getRuntime();
+		
 		try {
 			//se invoca la herramienta externa para descargar afip.zip de impresora fiscal executeGetaudar(baseDir, fechaInicio, fechaFin);
 			boolean isok = executeGetaudar(baseDir, fechaInicio, fechaFin, lyeicom, tcip);
@@ -43,8 +50,8 @@ public class ERDownloaderGetaudarWindowsStrategy extends ERDownloaderGetaudarStr
 			newDirectory.mkdirs();
 			
 			//mover afip.zip al nuevo directorio especifico
-			String sourceFile = getFormattedSeparator(baseDir + "afip.zip");
-			String targetFile = getFormattedSeparator(newDirAbsolute + File.separator + "afip.zip");
+			String sourceFile = baseDir + "afip.zip";
+			String targetFile = newDirAbsolute + File.separator + "afip.zip";
 			
 			/*
 			String[] mvCommand = {"cmd ", "/c", " move " + addSurroundingQuotes(baseDir + "afip.zip") + " " + 
@@ -81,8 +88,8 @@ public class ERDownloaderGetaudarWindowsStrategy extends ERDownloaderGetaudarStr
 			System.out.println("\nMovio el archivo afip.85... exitCode=" + exitCode);
 			*/
 			
-			sourceFile = getFormattedSeparator(baseDir + "afip.85");
-			targetFile = getFormattedSeparator(newDirAbsolute + File.separator + "afip.85");
+			sourceFile = baseDir + "afip.85";
+			targetFile = newDirAbsolute + File.separator + "afip.85";
 			
 			System.out.println("Copia archivo " + sourceFile.toString() + " a " + targetFile.toString());
 			success = FileCopy(sourceFile, targetFile);
@@ -91,24 +98,46 @@ public class ERDownloaderGetaudarWindowsStrategy extends ERDownloaderGetaudarStr
 				return false;
 			}
     
-			
+			/**
+			 * Se utiliza la libreria commons-compress-1.6.jar
+			 * de Apache para poder descomprimir los archivos y no necesitar de 
+			 * herramientas externas
+			 *  
+			 * dREHER
 			//descomprimir zip y obtener archivos de interes
 			//cmd /c tar -xf "C:\path\to\afip.zip" -C "C:\path\to\"
 			// dREHER tomar en cuenta que tar.exe solo viene disponible desde Windows 10 en adelante
+			// con 7-Zip por ejemplo quedaria de la siguiente manera:
+			//cmd /c 7z x "C:\path\to\afip.zip" -p"C:\path\to"
 			
-			String[] unzipCommand = {"cmd ", "/c ", addSurroundingQuotes(unzipcommand) + " " + addSurroundingQuotes(getFormattedPath(newDirAbsolute) + "afip.zip")};
+			String[] unzipCommand = {"cmd ", "/c ", addSurroundingQuotes(getFormattedSeparator(unzipcommand)), 
+					" x ", 
+					addSurroundingQuotes(getFormattedSeparator(getFormattedPath(newDirAbsolute) + "afip.zip")),
+					" -o", addSurroundingQuotes(getFormattedSeparator(newDirAbsolute))};
 					// + 
 					// " " + "-C " + addSurroundingQuotes(newDirAbsolute)};
 			
-			System.out.println("Descomprimir archivo afip.zip: ");
+			System.out.println("Descomprimir archivo afip.zip: \n");
 			for(String s: unzipCommand)
 				System.out.print(s);
 			
+			System.out.println("\nDescomprime archivo...");
+			
 			Process unzip = runtime.exec(unzipCommand);
+			
 			//se debe esperar a que finalice el proceso, de lo contrario puede haber fallos
 			exitCode = unzip.waitFor();
 			System.out.println("\nDescomprimio archivo afip.zip... exitCode=" + exitCode);
-			if(exitCode != 0)
+			if(exitCode != 0) {
+				exitCode = ejecutaComando(unzipCommand);
+				if(exitCode != 0)
+					return false;
+			}
+			*/
+			
+			exitCode = extractFilesFromZIP(getFormattedSeparator(getFormattedPath(newDirAbsolute) + "afip.zip"),
+					getFormattedSeparator(newDirAbsolute));
+			if(exitCode <= 0)
 				return false;
 			
 			
@@ -119,21 +148,94 @@ public class ERDownloaderGetaudarWindowsStrategy extends ERDownloaderGetaudarStr
 //				System.out.println("[ARCHIVO " + i +"] " + this.archivosPresentacion.get(i));
 //			}
 			
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		
 		return true;
 	}
+	
+	private int extractFilesFromZIP(String zipFilePath, String outputFolderPath) {
+		int files = 0;
+		
+		try {
+			
+			System.out.println("Extraer archivo " + zipFilePath + "\n" +
+			" en la carpeta " + outputFolderPath);
+			
+			File outputFolder = new File(outputFolderPath);
+			if (!outputFolder.exists()) {
+				outputFolder.mkdirs();
+				System.out.println("Debo crear carpeta destino!");
+			}
+
+			FileInputStream fis = new FileInputStream(zipFilePath);
+			ZipArchiveInputStream zis = new ZipArchiveInputStream(fis);
+
+			ZipArchiveEntry entry;
+			while ((entry = zis.getNextZipEntry()) != null) {
+				String entryPath = outputFolderPath + File.separator + entry.getName();
+
+				System.out.println("Entrada en el zip: " + entryPath);
+				
+				if (entry.isDirectory()) {
+					new File(entryPath).mkdirs();
+					System.out.println("La entrada es una carpeta, crearla...");
+				} else {
+					OutputStream os = new FileOutputStream(entryPath);
+					byte[] buffer = new byte[1024];
+					int length;
+					while ((length = zis.read(buffer)) > 0) {
+						os.write(buffer, 0, length);
+					}
+					os.close();
+					
+					System.out.println("Escribio la salida en disco: " + entryPath);
+					files++;
+				}
+			}
+
+			zis.close();
+			fis.close();
+
+			System.out.println("Extracción completa. Archivos= " + files);
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		return files;
+	}
+
+	private int ejecutaComando(String[] params) {
+		int exitCode = -1;
+		try {
+            ProcessBuilder processBuilder = new ProcessBuilder(params);
+            Process process = processBuilder.start();
+
+            InputStream inputStream = process.getInputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                System.out.println(line);
+            }
+
+            exitCode = process.waitFor();
+            System.out.println("Código de salida: " + exitCode);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+		return exitCode;
+	}
 
 	private String getFormattedSeparator(String string) {
 		String res = string;
 		try {
-			res = string.replaceAll("\\", "\\\\");
+			res = string.replace("\\", "\\\\");
 		}catch(Exception ex) {
 			ex.printStackTrace();
 		}
@@ -170,7 +272,9 @@ public class ERDownloaderGetaudarWindowsStrategy extends ERDownloaderGetaudarStr
 		Runtime runtime = Runtime.getRuntime();
 		Process proc;
 		try {
-			proc = runtime.exec(command);
+			
+			// dREHER Ejecutar el proceso indicando la carpeta donde ubicarse previamente
+			proc = runtime.exec(command, null, new File(getFormattedPath(baseDir)));
 						
 			// Lee la salida del proceso
             BufferedReader reader = new BufferedReader(new InputStreamReader(proc.getInputStream()));

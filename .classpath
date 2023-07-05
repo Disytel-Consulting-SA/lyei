@@ -4,6 +4,7 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/org.libertya.core.micro.r3000.dev.facturacion"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/java-8-openjdk-amd64"/>
 	<classpathentry kind="lib" path="lib/commons-io-2.4.jar"/>
+	<classpathentry kind="lib" path="lib/commons-compress-1.6.jar"/>
 	<classpathentry kind="lib" path="/home/jorge/disytel/libertyaR3027-src/lib/AxisJar.jar"/>
 	<classpathentry kind="lib" path="/home/jorge/disytel/libertyaR3027-src/lib/JasperReports.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/org.libertya.teh"/>

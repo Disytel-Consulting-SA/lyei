@@ -116,23 +116,26 @@ public class LYEIWSDDJJ {
 	private String getCUITfromPOSConfig(LP_C_LYEIElectronicPOSConfig posConfig) {
 		
 		int posConfigID = posConfig.getC_LYEIElectronicPOSConfig_ID();
+		String sql = "select cuit " +
+				"from c_lyeielectronicinvoiceconfig " +
+				"where c_lyeielectronicinvoiceconfig_id = ( " +
+												"select c_lyeielectronicinvoiceconfig_id " +
+												"from c_lyeielectronicposconfig " +
+												"where c_lyeielectronicposconfig_id = " + posConfigID +
+												");";
+		System.out.println("Obtiene el CUIT de la empresa desde sql=\n" + sql);
 		PreparedStatement pstmt = 
-				DB.prepareStatement(	
-									"select cuit " +
-									"from c_lyeielectronicinvoiceconfig " +
-									"where c_lyeielectronicinvoiceconfig_id = ( " +
-																	"select c_lyeielectronicinvoiceconfig_id " +
-																	"from c_lyeielectronicposconfig " +
-																	"where c_lyeielectronicposconfig_id = " + posConfigID +
-																	");");
+				DB.prepareStatement(sql);
 		ResultSet rs = null;
 		String res = null;
 		try {
-		rs = pstmt.executeQuery();
-		rs.next();
-		res = rs.getString(1);
+			rs = pstmt.executeQuery();
+			if(rs.next())
+				res = rs.getString(1);
 		} catch (SQLException e) {
-		e.printStackTrace();
+			e.printStackTrace();
+		}finally { // dREHER
+			DB.close(rs, pstmt);
 		}
 		return res;
 	}
