@@ -970,7 +970,8 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 		
 		// Solo se informa actividad por propiedad si 
 		// dREHER se agrega validacion para el caso de que inv.getOrigInvTipo() sea nulo...
-		if (invioceHasOriginalDocument() && (inv.getOrigInvTipo()!=null?inv.getOrigInvTipo():"").compareTo(X_C_Invoice.ORIGINVTIPO_RemitoElectronicoCarnico) == 0) {
+		// X_C_Invoice.ORIGINVTIPO_RemitoElectronicoCarnico = 995
+		if (invioceHasOriginalDocument() && (inv.getOrigInvTipo()!=null?inv.getOrigInvTipo():"").compareTo("995") == 0) {
 			String actividadCarnicaStr = MPreference.GetCustomPreferenceValue(LYEIConstants.WSFE_ACTIVIDADES_ACTIVIDAD_CARNICA, inv.getAD_Client_ID());
 			if (actividadCarnicaStr == null || actividadCarnicaStr.length() == 0) {	
 				throw new Exception ("Para comprobantes con Remito Cárnico Asociado debe configuar la actividad cárnica utilizando la preferencia LYEI_WSFE_ACTIVIDADES_ACTIVIDAD_CARNICA");
