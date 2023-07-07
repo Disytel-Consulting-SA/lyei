@@ -50,9 +50,18 @@ public class LYEICommons {
 
 	/** Fecha de vencimiento de la factura */
 	public static Date getFechaVtoDate(MInvoice inv) throws Exception {
+		
 		// Si el concepto es 1, no lleva fecha de vencimiento.
 		if(getConcepto(inv.getC_Invoice_ID()) == 1) {
-			return null;
+			
+			/**
+			 * Verificar si es miPyme, en caso de que lo sea, informar fecha de vto de pago
+			 * sin importar el concepto de la misma
+			 * dREHER
+			 */
+			MDocType doct = new MDocType(Env.getCtx(), inv.getC_DocTypeTarget_ID(), null);
+			if(!doct.isMiPyME())
+				return null;
 		}
 		
 		Date date = inv.getFechaVto();

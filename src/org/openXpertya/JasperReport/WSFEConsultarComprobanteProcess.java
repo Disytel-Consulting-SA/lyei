@@ -586,6 +586,7 @@ public class WSFEConsultarComprobanteProcess extends SvrProcess {
 
 
 	public void setaDocType(MDocType aDocType) {
+		System.out.println("WSFEConsultarComprobanteProcess... setaDocType");
 		this.aDocType = aDocType;
 	}
 

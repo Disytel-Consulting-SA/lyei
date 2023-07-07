@@ -243,6 +243,9 @@ public class LYEIManageElectronicInvoiceProcess extends WSFEConsultarComprobante
 	 * Carga la configuracion inicial para poder apoyarse en la superclase 
 	 */
 	protected void requestData(X_C_Invoice anInvoice, MDocType aDocType) throws Exception {
+		
+		System.out.println("LYEIManageElectronicInvoiceProcess.requestData");
+		
 		// Configuracion basica para consulta
 		setaDocType(aDocType);
 		setClientID(getaDocType().getAD_Client_ID());
