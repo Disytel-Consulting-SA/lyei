@@ -35,8 +35,8 @@
 	<parameter name="AD_CLIENT_ID" isForPrompting="true" class="java.lang.Integer">
 		<defaultValueExpression ><![CDATA[new Integer(1010016)]]></defaultValueExpression>
 	</parameter>
-	<parameter name="Pos" isForPrompting="true" class="java.lang.Integer">
-		<defaultValueExpression ><![CDATA[new Integer(0)]]></defaultValueExpression>
+	<parameter name="Pos" isForPrompting="true" class="java.math.BigDecimal">
+		<defaultValueExpression ><![CDATA[new BigDecimal(0)]]></defaultValueExpression>
 	</parameter>
 	<queryString><![CDATA[SELECT 
 o.Name as Organizacion, 
@@ -339,7 +339,7 @@ ddjj.fyh_presentacion, ddjj.datefrom, ddjj.dateto]]></queryString>
 					<textElement verticalAlignment="Bottom">
 						<font pdfFontName="Helvetica-Bold" size="9" isBold="true"/>
 					</textElement>
-				<textFieldExpression   class="java.lang.String"><![CDATA[$P{Pos} != null && $P{Pos}.compareTo(new Integer(0)) > 0? $P{Pos}.toString():"Todos"]]></textFieldExpression>
+				<textFieldExpression   class="java.lang.String"><![CDATA[$P{Pos} != null && $P{Pos}.compareTo(BigDecimal.ZERO) > 0? $P{Pos}.toString():"Todos"]]></textFieldExpression>
 				</textField>
 				<line direction="TopDown">
 					<reportElement
