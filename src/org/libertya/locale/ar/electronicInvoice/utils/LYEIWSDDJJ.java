@@ -123,7 +123,7 @@ public class LYEIWSDDJJ {
 												"from c_lyeielectronicposconfig " +
 												"where c_lyeielectronicposconfig_id = " + posConfigID +
 												");";
-		System.out.println("Obtiene el CUIT de la empresa desde sql=\n" + sql);
+		
 		PreparedStatement pstmt = 
 				DB.prepareStatement(sql);
 		ResultSet rs = null;
@@ -137,6 +137,9 @@ public class LYEIWSDDJJ {
 		}finally { // dREHER
 			DB.close(rs, pstmt);
 		}
+		
+		System.out.println("Obtiene el CUIT de la empresa desde sql=\n" + sql + " cuit:" + res);
+		
 		return res;
 	}
 
