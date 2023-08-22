@@ -47,7 +47,24 @@ ddjj.datefrom::date,
 ddjj.dateto::date, 
 ddjj.trx_number, 
 ddjj.error_msg, 
-ddjj.filename
+ddjj.filename,
+(select sum(fiscaldocumentamt)
+from c_controlador_fiscal_closing_info ci
+where ad_client_id = ddjj.ad_client_id
+	and ddjj.ad_org_id = ad_org_id
+	and ci.fiscalclosingtype = 'Z'
+	and ci.puntodeventa = cl.pos
+	and not ddjj.trx_number isnull
+	and ci.fiscalclosingdate::date between ddjj.datefrom::date and ddjj.dateto::date)  as cierrez_debito,
+(select sum(creditnoteamt)
+from c_controlador_fiscal_closing_info ci
+where ad_client_id = ddjj.ad_client_id
+	and ddjj.ad_org_id = ad_org_id
+	and ci.fiscalclosingtype = 'Z'
+	and ci.puntodeventa = cl.pos
+        and not ddjj.trx_number isnull
+	and ci.fiscalclosingdate::date between ddjj.datefrom::date and ddjj.dateto::date)  as cierrez_credito	
+  
 
 FROM C_LYEIDDJJPresentada ddjj
 inner join C_Controlador_Fiscal cf on cf.c_controlador_fiscal_id = ddjj.c_controlador_fiscal_id 
@@ -71,7 +88,13 @@ ddjj.fyh_presentacion, ddjj.datefrom, ddjj.dateto]]></queryString>
 	<field name="trx_number" class="java.lang.Long"/>
 	<field name="error_msg" class="java.lang.String"/>
 	<field name="filename" class="java.lang.String"/>
+	<field name="cierrez_debito" class="java.math.BigDecimal"/>
+	<field name="cierrez_credito" class="java.math.BigDecimal"/>
 
+	<variable name="cierrez_saldo" class="java.math.BigDecimal" resetType="Report" calculation="Nothing">
+		<variableExpression><![CDATA[$F{cierrez_debito}.subtract( $F{cierrez_credito} )]]></variableExpression>
+		<initialValueExpression><![CDATA[new BigDecimal(0)]]></initialValueExpression>
+	</variable>
 
 		<group  name="Organizacion" >
 			<groupExpression><![CDATA[$F{Organizacion}]]></groupExpression>
@@ -376,7 +399,7 @@ ddjj.fyh_presentacion, ddjj.datefrom, ddjj.dateto]]></queryString>
 					<reportElement
 						x="48"
 						y="2"
-						width="56"
+						width="44"
 						height="16"
 						key="staticText-9"
 						isRemoveLineWhenBlank="true"/>
@@ -388,9 +411,9 @@ ddjj.fyh_presentacion, ddjj.datefrom, ddjj.dateto]]></queryString>
 				</staticText>
 				<staticText>
 					<reportElement
-						x="107"
+						x="93"
 						y="3"
-						width="56"
+						width="48"
 						height="16"
 						key="staticText-10"
 						isRemoveLineWhenBlank="true"/>
@@ -402,9 +425,9 @@ ddjj.fyh_presentacion, ddjj.datefrom, ddjj.dateto]]></queryString>
 				</staticText>
 				<staticText>
 					<reportElement
-						x="166"
+						x="142"
 						y="3"
-						width="56"
+						width="47"
 						height="16"
 						key="staticText-11"
 						isRemoveLineWhenBlank="true"/>
@@ -416,7 +439,7 @@ ddjj.fyh_presentacion, ddjj.datefrom, ddjj.dateto]]></queryString>
 				</staticText>
 				<staticText>
 					<reportElement
-						x="226"
+						x="428"
 						y="3"
 						width="64"
 						height="16"
@@ -430,9 +453,9 @@ ddjj.fyh_presentacion, ddjj.datefrom, ddjj.dateto]]></queryString>
 				</staticText>
 				<staticText>
 					<reportElement
-						x="290"
+						x="492"
 						y="3"
-						width="486"
+						width="285"
 						height="16"
 						key="staticText-13"
 						isRemoveLineWhenBlank="true"/>
@@ -441,6 +464,48 @@ ddjj.fyh_presentacion, ddjj.datefrom, ddjj.dateto]]></queryString>
 						<font pdfFontName="Helvetica-Bold" size="9" isBold="true" isUnderline="false"/>
 					</textElement>
 				<text><![CDATA[Mensaje de Error]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="190"
+						y="3"
+						width="78"
+						height="16"
+						key="staticText-15"
+						isRemoveLineWhenBlank="true"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Bottom">
+						<font pdfFontName="Helvetica-Bold" size="9" isBold="true" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Debitos]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="269"
+						y="3"
+						width="78"
+						height="16"
+						key="staticText-16"
+						isRemoveLineWhenBlank="true"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Bottom">
+						<font pdfFontName="Helvetica-Bold" size="9" isBold="true" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Creditos]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="348"
+						y="3"
+						width="78"
+						height="16"
+						key="staticText-17"
+						isRemoveLineWhenBlank="true"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Bottom">
+						<font pdfFontName="Helvetica-Bold" size="9" isBold="true" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Saldo]]></text>
 				</staticText>
 			</band>
 		</columnHeader>
@@ -461,46 +526,46 @@ ddjj.fyh_presentacion, ddjj.datefrom, ddjj.dateto]]></queryString>
 				</textField>
 				<textField isStretchWithOverflow="false" pattern="dd/MM/yy" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
 					<reportElement
-						x="50"
+						x="47"
 						y="1"
-						width="54"
+						width="45"
 						height="18"
 						key="textField"/>
 					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
 					<textElement>
-						<font/>
+						<font size="8"/>
 					</textElement>
 				<textFieldExpression   class="java.util.Date"><![CDATA[$F{fyh_presentacion}]]></textFieldExpression>
 				</textField>
 				<textField isStretchWithOverflow="false" pattern="dd/MM/yy" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
 					<reportElement
-						x="106"
+						x="93"
 						y="1"
-						width="59"
+						width="49"
 						height="18"
 						key="textField"/>
 					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
 					<textElement>
-						<font/>
+						<font size="8"/>
 					</textElement>
 				<textFieldExpression   class="java.util.Date"><![CDATA[$F{datefrom}]]></textFieldExpression>
 				</textField>
 				<textField isStretchWithOverflow="false" pattern="dd/MM/yy" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
 					<reportElement
-						x="166"
+						x="143"
 						y="1"
-						width="59"
+						width="47"
 						height="18"
 						key="textField"/>
 					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
 					<textElement>
-						<font/>
+						<font size="8"/>
 					</textElement>
 				<textFieldExpression   class="java.util.Date"><![CDATA[$F{dateto}]]></textFieldExpression>
 				</textField>
 				<textField isStretchWithOverflow="false" isBlankWhenNull="true" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
 					<reportElement
-						x="225"
+						x="431"
 						y="1"
 						width="57"
 						height="18"
@@ -513,9 +578,9 @@ ddjj.fyh_presentacion, ddjj.datefrom, ddjj.dateto]]></queryString>
 				</textField>
 				<textField isStretchWithOverflow="false" isBlankWhenNull="true" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
 					<reportElement
-						x="285"
+						x="492"
 						y="0"
-						width="494"
+						width="284"
 						height="40"
 						key="textField"/>
 					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#1A0C0C"/>
@@ -523,6 +588,48 @@ ddjj.fyh_presentacion, ddjj.datefrom, ddjj.dateto]]></queryString>
 						<font/>
 					</textElement>
 				<textFieldExpression   class="java.lang.String"><![CDATA[$F{error_msg}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="false" pattern="#,##0.00;-#,##0.00" isBlankWhenNull="true" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="191"
+						y="1"
+						width="77"
+						height="18"
+						key="textField"
+						isRemoveLineWhenBlank="true"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right">
+						<font/>
+					</textElement>
+				<textFieldExpression   class="java.math.BigDecimal"><![CDATA[$F{cierrez_debito}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="false" pattern="#,##0.00;-#,##0.00" isBlankWhenNull="true" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="269"
+						y="1"
+						width="77"
+						height="18"
+						key="textField-9"
+						isRemoveLineWhenBlank="true"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right">
+						<font/>
+					</textElement>
+				<textFieldExpression   class="java.math.BigDecimal"><![CDATA[$F{cierrez_credito}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="false" pattern="#,##0.00;-#,##0.00" isBlankWhenNull="true" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="348"
+						y="1"
+						width="77"
+						height="18"
+						key="textField-10"
+						isRemoveLineWhenBlank="true"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right">
+						<font/>
+					</textElement>
+				<textFieldExpression   class="java.math.BigDecimal"><![CDATA[$V{cierrez_saldo}]]></textFieldExpression>
 				</textField>
 			</band>
 		</detail>
