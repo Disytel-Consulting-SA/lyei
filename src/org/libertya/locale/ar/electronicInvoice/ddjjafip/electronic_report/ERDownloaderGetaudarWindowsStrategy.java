@@ -256,10 +256,15 @@ public class ERDownloaderGetaudarWindowsStrategy extends ERDownloaderGetaudarStr
 		/**
 		 * Si llega con puerto COM en cero, quiere decir que es por TCP
 		 * dREHER
-		 */
+		
+		 29/09/2023 SOLO FUNCIONA CON PUERTO SERIAL
+		 
 		if(tcip!=null) {
 			params = " -p " + tcip + " -i tcp -a";
 		}
+		
+		*/
+		
 		
 		//ej COM: ubicacion/de/herramienta/getaudar -p 3 -i serial -a 200101 200331
 		//ej TCIP: ubicacion/de/herramienta/getaudar -p 10.100.45.117 -i tcp -a 200101 200331
