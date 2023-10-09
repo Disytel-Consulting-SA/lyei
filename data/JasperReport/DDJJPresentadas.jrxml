@@ -48,22 +48,22 @@ ddjj.dateto::date,
 ddjj.trx_number, 
 ddjj.error_msg, 
 ddjj.filename,
-(select sum(fiscaldocumentamt)
+COALESCE((select sum(fiscaldocumentamt)
 from c_controlador_fiscal_closing_info ci
 where ad_client_id = ddjj.ad_client_id
 	and ddjj.ad_org_id = ad_org_id
 	and ci.fiscalclosingtype = 'Z'
 	and ci.puntodeventa = cl.pos
 	and not ddjj.trx_number isnull
-	and ci.fiscalclosingdate::date between ddjj.datefrom::date and ddjj.dateto::date)  as cierrez_debito,
-(select sum(creditnoteamt)
+	and ci.fiscalclosingdate::date between ddjj.datefrom::date and ddjj.dateto::date),0)  as cierrez_debito,
+COALESCE((select sum(creditnoteamt)
 from c_controlador_fiscal_closing_info ci
 where ad_client_id = ddjj.ad_client_id
 	and ddjj.ad_org_id = ad_org_id
 	and ci.fiscalclosingtype = 'Z'
 	and ci.puntodeventa = cl.pos
         and not ddjj.trx_number isnull
-	and ci.fiscalclosingdate::date between ddjj.datefrom::date and ddjj.dateto::date)  as cierrez_credito	
+	and ci.fiscalclosingdate::date between ddjj.datefrom::date and ddjj.dateto::date),0)  as cierrez_credito	
   
 
 FROM C_LYEIDDJJPresentada ddjj

@@ -75,10 +75,14 @@ public class ERDownloaderGetaudarLinuxStrategy extends ERDownloaderGetaudarStrat
 		/**
 		 * Si llega con puerto COM en cero, quiere decir que es por TCP
 		 * dREHER
-		 */
+		 
 		if(tcip!=null) {
 			params = " -p " + tcip + " -i tcp -a";
 		}
+		
+		29/09/2023 SOLO FUNCIONA CON PUERTO SERIAL
+		
+		*/
 		
 		//ej COM: ubicacion/de/herramienta/getaudar -p 3 -i serial -a 200101 200331
 		//ej TCIP: ubicacion/de/herramienta/getaudar -p 10.100.45.117 -i tcp -a 200101 200331
