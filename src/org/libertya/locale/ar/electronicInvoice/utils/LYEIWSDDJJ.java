@@ -21,6 +21,9 @@ import gov.afip.osiris.seti.presentacion.domain.PresentacionFileB2B;
 import gov.afip.osiris.seti.presentacion.domain.PresentacionProcessorMTOMService;
 import gov.afip.osiris.seti.presentacion.domain.service.implementation.ws.UploadLocator;
 
+import javax.xml.ws.BindingProvider;
+import javax.xml.ws.soap.SOAPBinding;
+
 public class LYEIWSDDJJ {
 	protected LP_C_LYEIElectronicPOSConfig posConfig;
 	private String qNameURL = "http://ws.implementation.service.domain.presentacion.seti.osiris.afip.gov/";
@@ -43,9 +46,9 @@ public class LYEIWSDDJJ {
 			PresentacionProcessorMTOMService port = locator.getPresentacionProcessorMTOMImplPort();
 //			((SOAPBinding)((BindingProvider)port).getBinding()).setMTOMEnabled(true); //este metodo estuvo dando problemas en ejecución
 //			Binding asd = ((BindingProvider)port).getBinding();
-//			BindingProvider bprovider = (BindingProvider) port; //no se puede castear
-//			SOAPBinding soapbinding = (SOAPBinding) bprovider.getBinding();
-//			soapbinding.setMTOMEnabled(true);
+			BindingProvider bprovider = (BindingProvider) port; //no se puede castear
+			SOAPBinding soapbinding = (SOAPBinding) bprovider.getBinding();
+			soapbinding.setMTOMEnabled(true);
 			
 			//Configuracion para archivo de presentacion
 			File aFile = new File(archivoPresentacion);
