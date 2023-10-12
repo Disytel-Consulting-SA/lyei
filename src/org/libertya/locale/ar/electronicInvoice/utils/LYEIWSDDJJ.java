@@ -12,6 +12,7 @@ import java.util.logging.Level;
 import javax.xml.namespace.QName;
 import javax.xml.rpc.ServiceException;
 
+import org.apache.axis.client.Call;
 import org.libertya.locale.ar.electronicInvoice.model.LP_C_LYEIElectronicPOSConfig;
 import org.libertya.locale.ar.electronicInvoice.model.MLYEIElectronicInvoiceLog;
 import org.openXpertya.util.DB;
@@ -20,6 +21,7 @@ import org.openXpertya.util.Env;
 import gov.afip.osiris.seti.presentacion.domain.PresentacionFileB2B;
 import gov.afip.osiris.seti.presentacion.domain.PresentacionProcessorMTOMService;
 import gov.afip.osiris.seti.presentacion.domain.service.implementation.ws.UploadLocator;
+import gov.afip.osiris.seti.presentacion.domain.service.implementation.ws.UploadSoapBindingStub;
 
 import javax.xml.ws.BindingProvider;
 import javax.xml.ws.soap.SOAPBinding;
@@ -46,9 +48,11 @@ public class LYEIWSDDJJ {
 			PresentacionProcessorMTOMService port = locator.getPresentacionProcessorMTOMImplPort();
 //			((SOAPBinding)((BindingProvider)port).getBinding()).setMTOMEnabled(true); //este metodo estuvo dando problemas en ejecución
 //			Binding asd = ((BindingProvider)port).getBinding();
-			BindingProvider bprovider = (BindingProvider) port; //no se puede castear
-			SOAPBinding soapbinding = (SOAPBinding) bprovider.getBinding();
-			soapbinding.setMTOMEnabled(true);
+//			BindingProvider bprovider = (BindingProvider) port; //no se puede castear
+//			SOAPBinding soapbinding = (SOAPBinding) bprovider.getBinding();
+//			soapbinding.setMTOMEnabled(true);
+			UploadSoapBindingStub usbs = (UploadSoapBindingStub) port;
+			usbs._getCall().setProperty(Call.ATTACHMENT_ENCAPSULATION_FORMAT, Call.ATTACHMENT_ENCAPSULATION_FORMAT_MTOM);
 			
 			//Configuracion para archivo de presentacion
 			File aFile = new File(archivoPresentacion);
