@@ -12,21 +12,28 @@ import java.util.logging.Level;
 import javax.xml.namespace.QName;
 import javax.xml.rpc.ServiceException;
 
-import org.apache.axis.client.Call;
 import org.libertya.locale.ar.electronicInvoice.model.LP_C_LYEIElectronicPOSConfig;
 import org.libertya.locale.ar.electronicInvoice.model.MLYEIElectronicInvoiceLog;
+import org.openXpertya.db.CConnection;
+import org.openXpertya.util.CLogMgt;
 import org.openXpertya.util.DB;
 import org.openXpertya.util.Env;
+import org.openXpertya.util.Ini;
+import org.openXpertya.util.Secure;
 
 import gov.afip.osiris.seti.presentacion.domain.PresentacionFileB2B;
 import gov.afip.osiris.seti.presentacion.domain.PresentacionProcessorMTOMService;
 import gov.afip.osiris.seti.presentacion.domain.service.implementation.ws.UploadLocator;
 import gov.afip.osiris.seti.presentacion.domain.service.implementation.ws.UploadSoapBindingStub;
 
-import javax.xml.ws.BindingProvider;
-import javax.xml.ws.soap.SOAPBinding;
-
 public class LYEIWSDDJJ {
+	
+	/** Request XML	 */
+	protected String requestXML = null;
+	/** Response XML */
+	protected String responseXML = null;
+	
+	
 	protected LP_C_LYEIElectronicPOSConfig posConfig;
 	private String qNameURL = "http://ws.implementation.service.domain.presentacion.seti.osiris.afip.gov/";
 	
@@ -40,19 +47,20 @@ public class LYEIWSDDJJ {
 		QName SERVICE_NAME = new QName(qNameURL, "upload");
 		String nombreArchivoPresentacion = new File(archivoPresentacion).getName();
 		
+		PresentacionProcessorMTOMService port = null;
 		try {
 			//se obtiene el endpoint mediante LYEITools dependiendo del environment actual (homologacion/produccion)
 			String endPoint = LYEITools.getEndPointAddress(LYEIConstants.EXTERNAL_SERVICE_WSDDJJ_PREFIX, posConfig.getCurrentEnvironment());
 			
 			UploadLocator locator = new UploadLocator(endPoint, SERVICE_NAME);
-			PresentacionProcessorMTOMService port = locator.getPresentacionProcessorMTOMImplPort();
+			port = locator.getPresentacionProcessorMTOMImplPort();
 //			((SOAPBinding)((BindingProvider)port).getBinding()).setMTOMEnabled(true); //este metodo estuvo dando problemas en ejecución
 //			Binding asd = ((BindingProvider)port).getBinding();
 //			BindingProvider bprovider = (BindingProvider) port; //no se puede castear
 //			SOAPBinding soapbinding = (SOAPBinding) bprovider.getBinding();
 //			soapbinding.setMTOMEnabled(true);
-			UploadSoapBindingStub usbs = (UploadSoapBindingStub) port;
-			usbs._getCall().setProperty(Call.ATTACHMENT_ENCAPSULATION_FORMAT, Call.ATTACHMENT_ENCAPSULATION_FORMAT_MTOM);
+			//UploadSoapBindingStub usbs = (UploadSoapBindingStub) port;
+			//usbs._getCall().setProperty(Call.ATTACHMENT_ENCAPSULATION_FORMAT, Call.ATTACHMENT_ENCAPSULATION_FORMAT_MTOM);
 			
 			//Configuracion para archivo de presentacion
 			File aFile = new File(archivoPresentacion);
@@ -87,6 +95,11 @@ public class LYEIWSDDJJ {
 			e.printStackTrace();
 			MLYEIElectronicInvoiceLog.logActivity(LYEIWSDDJJ.class, Level.SEVERE, null, posConfig!=null?posConfig.getC_LYEIElectronicPOSConfig_ID():null, null, "Error en Presentacion DDJJ: " + e.getMessage());
 			uploadResponse = "[Error] " + e.getMessage();
+		} finally {
+			requestXML = ((UploadSoapBindingStub) port).getCallRequestXML();
+			responseXML = ((UploadSoapBindingStub) port).getCallResponseXML();
+			MLYEIElectronicInvoiceLog.logActivity(LYEIWSDDJJ.class, Level.INFO, null, posConfig.getC_LYEIElectronicPOSConfig_ID(), null, "RequestXML: " + requestXML);
+			MLYEIElectronicInvoiceLog.logActivity(LYEIWSDDJJ.class, Level.INFO, null, posConfig.getC_LYEIElectronicPOSConfig_ID(), null, "ResponseXML: " + responseXML);
 		}
 		
 		return uploadResponse;
@@ -150,4 +163,107 @@ public class LYEIWSDDJJ {
 		return res;
 	}
 
+	/** Log de XML request/response */
+	protected String getXMLRequestResponse() {
+		StringBuffer retValue = new StringBuffer();
+		retValue.append(requestXML!=null?" RequestXML: "+requestXML:"")
+				.append(responseXML!=null?" ResponseXML: "+responseXML:"");
+		return retValue.toString();
+	}
+	
+	
+	// ==============================================================================
+	
+	static String dbHost, dbPort, dbName, dbUser, dbPass, fileName;
+	static Integer posConfigID, clientID, orgID;
+	
+	
+	public static void main(String args[]) throws Exception {
+		if (args.length<9) {
+			System.err.println("Se requiere dbHost, dbPort, dbName, dbUser, dbPass, clientID, orgID, LP_C_LYEIElectronicPOSConfig_ID, fileName");
+			System.exit(1);
+		}
+		dbHost 		= args[0];
+		dbPort 		= args[1];
+		dbName 		= args[2];
+		dbUser 		= args[3];
+		dbPass 		= args[4];
+		clientID 	= Integer.parseInt(args[5]);
+		orgID 		= Integer.parseInt(args[6]);
+		posConfigID = Integer.parseInt(args[7]);
+		fileName 	= args[8];
+		
+		try {
+			init();
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.exit(1);
+		}	
+
+		LP_C_LYEIElectronicPOSConfig posConfig = new LP_C_LYEIElectronicPOSConfig(Env.getCtx(), posConfigID, null);
+		LYEIWSDDJJ ddjjService = new LYEIWSDDJJ(posConfig);
+		//String res = ddjjService.dummy();
+		String res = ddjjService.uploadToAFIP(fileName);
+		System.out.println(res);
+	}
+	
+		
+    /**
+     * Realiza la configuración inicial a partir de la información recibida
+     * @throws Exception en caso de error o rechazo
+     */
+    public static void init() throws Exception
+    {
+        setConnection();
+        startupEnvironment();
+    }
+
+    protected static void setConnection() {
+        Ini.getProperties().put(Ini.P_CONNECTION,
+                Secure.CLEARTEXT +
+                        "CConnection["
+                        + "name=localhost{DEVELOPMENT-DEVELOPMENT},"
+                        + "AppsHost=localhost,"
+                        + "AppsPort=1099,"
+                        + "RMIoverHTTP=false,"
+                        + "type=PostgreSQL,"
+                        + "DBhost="+dbHost+","
+                        + "DBport="+dbPort+","
+                        + "DBname="+dbName+","
+                        + "BQ=false,"
+                        + "FW=false,"
+                        + "FWhost=,"
+                        + "FWport=0,"
+                        + "UID="+dbUser+","
+                        + "PWD="+dbPass+"]");
+    }
+
+    /**
+     * Configura en entorno inicial
+     * @throws Exception en caso de error
+     */
+    protected static void startupEnvironment() throws Exception
+    {
+        Env.setContext(Env.getCtx(), "#AD_Language", "es_AR");
+        Env.setContext(Env.getCtx(), "#AD_Client_ID", clientID);
+        Env.setContext(Env.getCtx(), "#AD_Org_ID", orgID);
+        if (!setup())
+            throw new Exception ("Error al iniciar entorno (Hay conexión a Base de Datos?) ");
+    }
+
+    protected static boolean setup() {
+        if (DB.isConnected())
+            return true;
+        // La gestion de log corre por cuenta del aspect EventLogAspect
+        CLogMgt.shutdown();
+        // Gestion server-side
+        Ini.setClient(false);
+        // Conectar a BDD
+        CConnection cc = CConnection.get();
+        DB.setDBTarget(cc);
+        return DB.isConnected();
+    }
+	
+	
+	
 }
