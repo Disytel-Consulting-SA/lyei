@@ -96,13 +96,25 @@ public class LYEIWSDDJJ {
 			MLYEIElectronicInvoiceLog.logActivity(LYEIWSDDJJ.class, Level.SEVERE, null, posConfig!=null?posConfig.getC_LYEIElectronicPOSConfig_ID():null, null, "Error en Presentacion DDJJ: " + e.getMessage());
 			uploadResponse = "[Error] " + e.getMessage();
 		} finally {
-			requestXML = ((UploadSoapBindingStub) port).getCallRequestXML();
-			responseXML = ((UploadSoapBindingStub) port).getCallResponseXML();
-			MLYEIElectronicInvoiceLog.logActivity(LYEIWSDDJJ.class, Level.INFO, null, posConfig.getC_LYEIElectronicPOSConfig_ID(), null, "RequestXML: " + requestXML);
-			MLYEIElectronicInvoiceLog.logActivity(LYEIWSDDJJ.class, Level.INFO, null, posConfig.getC_LYEIElectronicPOSConfig_ID(), null, "ResponseXML: " + responseXML);
+			if (port!=null) {
+				logXMLRequestResponse(port);
+			}
 		}
 		
 		return uploadResponse;
+	}
+	
+	/** Log de XML request/response */
+	protected void logXMLRequestResponse(PresentacionProcessorMTOMService port) {
+		if (port==null) {
+			return;
+		}
+		requestXML = ((UploadSoapBindingStub) port).getCallRequestXML();
+		responseXML = ((UploadSoapBindingStub) port).getCallResponseXML();
+		StringBuffer content = new StringBuffer();
+		content.append(requestXML!=null?" RequestXML: "+requestXML:"")
+				.append(responseXML!=null?" ResponseXML: "+responseXML:"");
+		MLYEIElectronicInvoiceLog.logActivity(LYEIWSDDJJ.class, Level.INFO, null, posConfig.getC_LYEIElectronicPOSConfig_ID(), null, content.toString());
 	}
 	
 	public String dummy() {
