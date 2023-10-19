@@ -53,6 +53,7 @@ public class LYEIWSDDJJ {
 			String endPoint = LYEITools.getEndPointAddress(LYEIConstants.EXTERNAL_SERVICE_WSDDJJ_PREFIX, posConfig.getCurrentEnvironment());
 			
 			UploadLocator locator = new UploadLocator(endPoint, SERVICE_NAME);
+			locator.setPresentacionProcessorMTOMImplPortEndpointAddress(endPoint);
 			port = locator.getPresentacionProcessorMTOMImplPort();
 //			((SOAPBinding)((BindingProvider)port).getBinding()).setMTOMEnabled(true); //este metodo estuvo dando problemas en ejecución
 //			Binding asd = ((BindingProvider)port).getBinding();
@@ -94,11 +95,8 @@ public class LYEIWSDDJJ {
 		} catch (Exception e) {
 			e.printStackTrace();
 			MLYEIElectronicInvoiceLog.logActivity(LYEIWSDDJJ.class, Level.SEVERE, null, posConfig!=null?posConfig.getC_LYEIElectronicPOSConfig_ID():null, null, "Error en Presentacion DDJJ: " + e.getMessage());
+			logXMLRequestResponse(port);
 			uploadResponse = "[Error] " + e.getMessage();
-		} finally {
-			if (port!=null) {
-				logXMLRequestResponse(port);
-			}
 		}
 		
 		return uploadResponse;
