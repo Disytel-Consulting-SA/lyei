@@ -28,6 +28,14 @@ public class LYEIConstants {
 	
 	/** Prefijo servicio externo MTXCA */
 	public static final String EXTERNAL_SERVICE_MTXCA_PREFIX = "MTXCA";
+	
+	/** Prefijo servicio externo WSCI */
+	// dREHER
+	public static final String EXTERNAL_SERVICE_WSCI_PREFIX = "WSCI";
+	
+	/** Prefijo servicio externo WSFECRED */
+	// dREHER
+	public static final String EXTERNAL_SERVICE_WSFECRED_PREFIX = "WSFECRED";
 
 	/** Sufijo de Homologacion */
 	public static final String EXTERNAL_SERVICE_HOMOLOGACION_SUFFIX = "HOMO";
@@ -91,6 +99,14 @@ public class LYEIConstants {
 	
 	/** Servicio de facturacion mediante CAEA */
 	public static final String AFIP_SERVICE_MTXCA = "wsmtxca";
+	
+	/** Servicio de consulta de inscripcion mediante CUIT */
+	// dREHER
+	public static final String AFIP_SERVICE_WSCI = "wsci";
+	
+	/** Servicio de consulta de factura de credito miPyme mediante CUIT */
+	// dREHER
+	public static final String AFIP_SERVICE_WSFECRED = "wsfecred";
 	
 	/** Para adjuntar remito carnico en FE debe configurar actividad carnica */
 	public static final String WSFE_ACTIVIDADES_ACTIVIDAD_CARNICA = "LYEI_WSFE_ACTIVIDADES_ACTIVIDAD_CARNICA";
