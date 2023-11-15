@@ -609,7 +609,7 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			cant++;
 			Opcional opcionalAnulacion = new Opcional();
 			opcionalAnulacion.setId(""+LYEIConstants.WSFE_OPCIONALES_ANULACION_CODIGO);
-			opcionalAnulacion.setValor(inv.isVoidProcess()?"S":"N");
+			opcionalAnulacion.setValor((inv.isVoidProcess() || inv.get_ValueAsString("HTS_CreditNoteReason").equals("V")) ?"S":"N");
 			options.add(opcionalAnulacion);
 		}
 
