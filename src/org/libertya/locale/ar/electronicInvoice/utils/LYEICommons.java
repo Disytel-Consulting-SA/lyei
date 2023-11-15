@@ -60,7 +60,7 @@ public class LYEICommons {
 			 * dREHER
 			 */
 			MDocType doct = new MDocType(Env.getCtx(), inv.getC_DocTypeTarget_ID(), null);
-			if(!doct.isMiPyME())
+			if(!doct.isMiPyME() || (doct.isMiPyME() && doct.getsigno_issotrx().equals(MDocType.SIGNO_ISSOTRX__1)) )
 				return null;
 		}
 		
