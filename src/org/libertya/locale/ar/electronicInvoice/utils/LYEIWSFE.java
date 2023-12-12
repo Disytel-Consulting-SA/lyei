@@ -33,7 +33,9 @@ import org.openXpertya.model.MTax;
 import org.openXpertya.model.MTaxCategory;
 import org.openXpertya.model.X_C_DocType;
 import org.openXpertya.model.X_C_Invoice;
+import org.openXpertya.reflection.CallResult;
 import org.openXpertya.util.CLogger;
+import org.openXpertya.util.DB;
 import org.openXpertya.util.Util;
 
 import FEV1.dif.afip.gov.ar.Actividad;
@@ -243,18 +245,36 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			// dREHER trae el numero segun secuencia Libertya			
 			long cbteNro = 0L; 
 				
+			// TODO: ver bien que pasa cuando un comprobante queda en proceso ... la secuencia ya se incremento ?
+			// en ese caso cuando se quiere completar se pasa a la siguiente secuencia y queda defazado de AFIP
+			// por eso siempre verificar si la factura tiene numero de comprobante (por ahora solo cuando se carga manualmente)
+			if(nroComprobante == 0 && !inv.isTPVInstance())
+				nroComprobante = inv.getNumeroComprobante();
+			
 			// Si viene de gestionar CAE desde ventana, debe venir con el numero de comprobante a gestionar, sino siguiente secuencia...
 			if(nroComprobante > 0)
 				cbteNro = nroComprobante;
 			else {
 				cbteNro = getSigCbteNro(cbteNroAFIP); // chequear la secuencia en este punto
-				if(cbteNro > cbteNroAFIP && cbteNro > MInvoice.getLastFEIssued(inv.getCtx(), inv.getDocTypeID(), 0, inv.get_TrxName())) {
+				/**
+				 * 
+				 * EN ESTE PUNTO NO HACER NADA CON LA SECUENCIA
+				 * dREHER
+				 * 
+				if(cbteNro > cbteNroAFIP && cbteNro > getLastFEIssued(inv.getCtx(), inv.getDocTypeID(), 0, inv.get_TrxName())) {
 					
-					inv.doSequenceControls();
+					// Verifica si la secuencia debe ser actualizada
+					CallResult r = inv.doSequenceControls();
+					// Si tuvo que actualizar y dio error al hacerlo, cortar aca el proceso...
+					if(r.isError()) {
+						throw new Exception ("ERROR: " + r.getMsg());
+					}
+					
+					// Tomar el siguiente numero desde la secuencia
 					MSequence seq = new MSequence(inv.getCtx(), inv.getAD_Sequence_ID(), inv.get_TrxName());
 					cbteNro = seq.getCurrentNext().intValue();
 				}
-					
+				*/
 			}
 			
 			detReq.setCbteDesde(cbteNro);
@@ -275,8 +295,10 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			// Fecha del comprobante  (yyyymmdd). Si  no  se envía la	fecha del comprobante se   
 			// asignará la fecha de proceso
 			detReq.setCbteFch(LYEICommons.getCbteFchString(inv));
+			
 			// Fecha vencimiento pago. Si el tipo de comprobante que está autorizando es MiPyMEs (FCE) tipos 201/206/211 (Factura A/B/C), es obligatorio informar FchVtoPago.
 			detReq.setFchVtoPago(LYEICommons.getFechaVtoString(inv));
+			
 			// Código de  moneda  del comprobante. Consultar método FEParamGetTiposMonedas para valores posibles
 			detReq.setMonId(LYEICommons.getMonId(currency));
 			// Cotizacion de  la  moneda  informada.  Para PES, pesos argentinos  la misma debe ser 1
@@ -455,6 +477,31 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 		
 		
 		return electronicInvoiceCaeError.toString();
+	}
+	
+	/**
+	 * 
+	 * @param ctx
+	 * @param docTypeID
+	 * @param excludedInvoiceID
+	 * @param trxName
+	 * @return maximo numero de comprobante utilizado para este tipo de documento
+	 * dREHER
+	 */
+	protected int getLastFEIssued(
+			Properties ctx, Integer docTypeID, Integer excludedInvoiceID,
+			String trxName) {
+		String sql = "select max(i.NumeroComprobante) "
+				+ "from c_invoice i "
+				+ "inner join c_doctype dt on dt.c_doctype_id = i.c_doctypetarget_id "
+				+ "where i.c_doctypetarget_id = " + docTypeID
+				+ "			and dt.iselectronic = 'Y' "
+				+ "			and i.docstatus in ('CO','CL','VO','RE') "
+				+ "			and i.cae is not null "
+				+ "			and length(trim(i.cae)) > 0 "
+				+ (Util.isEmpty(excludedInvoiceID, true) ? "" : " AND i.c_invoice_id <> " + excludedInvoiceID);
+		
+		return DB.getSQLValue(trxName, sql);
 	}
 	
 	/** 
