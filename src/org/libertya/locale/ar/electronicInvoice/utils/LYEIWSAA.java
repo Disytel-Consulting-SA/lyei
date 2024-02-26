@@ -17,12 +17,15 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.axis.AxisProperties;
+import org.libertya.locale.ar.electronicInvoice.model.LP_C_ExternalService;
 import org.libertya.locale.ar.electronicInvoice.model.LP_C_LYEIElectronicInvoiceConfig;
 import org.libertya.locale.ar.electronicInvoice.model.LP_C_LYEIElectronicPOSConfig;
 import org.libertya.locale.ar.electronicInvoice.model.MLYEIElectronicInvoiceLog;
 import org.openXpertya.model.MPreference;
 import org.openXpertya.model.PO;
 import org.openXpertya.util.CLogger;
+import org.openXpertya.util.DB;
+import org.openXpertya.util.Env;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 
@@ -37,11 +40,25 @@ public class LYEIWSAA {
 	/** Sign del TA */
 	public static final String TA_SIGN = "sign";
 	
+	/** ServiceName - dREHER */
+	public static String ServiceName = null;
+	
+	/** Guardar compatibilidad con todas las llamadas existentes */
+	// dREHER
+	//public static synchronized HashMap<String, String> getTokenAndSign(LP_C_LYEIElectronicPOSConfig aConfig, Properties ctx, String targetEnv) throws Exception {
+		//return getTokenAndSign(aConfig, ctx, targetEnv, null);
+	//}
+	
+	
 	/** 
 	 * Recupera el TA actual y lo devuelve.  Si está vencido, obtiene uno nuevo
 	 * @throws Exception en caso de error
 	 */
 	public static synchronized HashMap<String, String> getTokenAndSign(LP_C_LYEIElectronicPOSConfig aConfig, Properties ctx, String targetEnv) throws Exception {
+		
+		// dREHER
+		ServiceName = null;
+		
 		// Recuperar el TA actual
 		byte[] ta = getTA(aConfig, ctx, targetEnv);
 		
@@ -61,6 +78,70 @@ public class LYEIWSAA {
 		retValue.put(TA_SIGN, (signNodes.item(0).getFirstChild().getNodeValue()));
 		
 		return retValue;
+	}
+	
+	/** 
+	 * Recupera el TA actual y lo devuelve.  Si está vencido, obtiene uno nuevo
+	 * @throws Exception en caso de error
+	 * 
+	 * 
+	 * dREHER - siempre genera un nuevo TA para el servicio especificado...
+	 */
+	public static synchronized HashMap<String, String> getNewTokenAndSign(LP_C_LYEIElectronicPOSConfig aConfig, Properties ctx, String targetEnv, String serviceName) throws Exception {
+
+		ServiceName = serviceName;
+		
+		// Valores de retorno
+		HashMap<String, String> retValue = new HashMap<String, String>();
+		
+		// newTA(aConfig, ctx, targetEnv);
+		// TODO: el CRT de Servicio Externo, debe ser validado al igual que los de facturacion electronica para guardar el CRT correspondiente
+		
+		
+		// Recuperar el TA actual
+		byte[] ta = getTA(aConfig, ctx, targetEnv, ServiceName);
+		
+		
+		// Parse del TA.xml
+		DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+		System.out.println("TA: " + ta);
+		Document doc = builder.parse(new ByteArrayInputStream(ta));
+
+		// Token
+		NodeList tokenNodes = doc.getElementsByTagName("token");
+		retValue.put(TA_TOKEN, (tokenNodes.item(0).getFirstChild().getNodeValue()));
+		
+		// Sign
+		NodeList signNodes = doc.getElementsByTagName("sign");
+		retValue.put(TA_SIGN, (signNodes.item(0).getFirstChild().getNodeValue()));
+		
+		return retValue;
+	}
+	
+	/** Intenta utilizar el TA actual, si no sirve, genera uno nuevo basado en Servicio Externo NO configuracion factura electronica 
+	 *  dREHER
+	 * 
+	 */
+	public static synchronized byte[] getTA(LP_C_LYEIElectronicPOSConfig aConfig, Properties ctx, String targetEnv, String serviceName) throws Exception {
+		String clave = getClaveSE(serviceName, targetEnv);
+		byte[] ta = null;
+		
+		// Recuperar el TA actual
+		LP_C_ExternalService es = getExternalService(clave);
+		if(es!=null) 
+			ta = (LP_C_LYEIElectronicPOSConfig.CURRENTENVIRONMENT_Homo.equals(targetEnv)?es.getHomoTA():es.getProdTA());
+		
+		// Ya expiró?
+		if (requiresNewTA(ta)) {
+			// Verificar si existe otros POSConfig con igual CRT que no tenga el TA expirado
+			// ta = findTA(aConfig, ctx, targetEnv);
+			// Si no se encontró un TA no expirado, obtener uno nuevo
+			System.out.println("Expiro TA, requiere uno nuevo!");
+			// if (ta == null)
+			ta = newTA(aConfig, ctx, targetEnv, serviceName);
+		}
+		
+		return ta;
 	}
 	
 	/** Intenta utilizar el TA actual, si no sirve, genera uno nuevo */
@@ -125,10 +206,24 @@ public class LYEIWSAA {
 	 * @throws exception en caso de error
 	 */
 	public static synchronized byte[] newTA(LP_C_LYEIElectronicPOSConfig aConfig, Properties ctx, String targetEnv) throws Exception {
+		return newTA(aConfig, ctx, targetEnv, null);
+	}
+	
+	/**
+	 * Obtiene un nuevo TA valido para acceso a servicios de Factura Electronica para un TPV dado. 
+	 * El mismo queda almacenado en el registro de POSconfiguración para su utilización cuando sea necesario 
+	 * @return el TA obtenido
+	 * @throws exception en caso de error
+	 * 
+	 * dREHER sobrecargo para poder indicar el servicio a validar
+	 */
+	public static synchronized byte[] newTA(LP_C_LYEIElectronicPOSConfig aConfig, Properties ctx, String targetEnv, String serviceName) throws Exception {
 		String requestXML = null;
 		String responseXML = null;
 		LoginCMS login = null;
 		try {
+			
+			ServiceName = serviceName;
 			
 			// Forzar TLS 1.2 si es que existe el factory correspondiente
 			try {
@@ -140,6 +235,8 @@ public class LYEIWSAA {
 			String endPointAddress = LYEITools.getEndPointAddress(LYEIConstants.EXTERNAL_SERVICE_WSAA_PREFIX, targetEnv);
 			LoginCMSServiceLocator locator = new LoginCMSServiceLocator();
 			locator.setLoginCmsEndpointAddress(endPointAddress);
+
+			System.out.println("newTA. ServiceName=" + ServiceName + " endPointAddress:" + endPointAddress);
 			
 			// Obtener un TA valido
 			MLYEIElectronicInvoiceLog.logActivity(LYEIWSAA.class, Level.INFO, null, aConfig.getC_LYEIElectronicPOSConfig_ID(), aConfig.getC_LYEIElectronicInvoiceConfig_ID(), "Invocando a loginCms para POS " + aConfig.getPOS() + " en " + endPointAddress);
@@ -147,15 +244,24 @@ public class LYEIWSAA {
 			String response = login.loginCms(generateTRABase64(aConfig, ctx, targetEnv));
 			if (response==null) 
 				throw new Exception("Sin respuesta desde WSAA");
-			
-			// Almacenar en el registro correspondiente al punto de venta el TA (homo o prod)
-			if (LP_C_LYEIElectronicPOSConfig.CURRENTENVIRONMENT_Homo.equals(targetEnv))
-				aConfig.setHomoTA(response.getBytes());
-			else
-				aConfig.setProdTA(response.getBytes());
-			if (!aConfig.save()) {
-				throw new Exception ("Error al almacenar el TA: " + CLogger.retrieveErrorAsString());
+
+			// dREHER evalua donde guardar el TA obtenido
+			if(ServiceName==null) {
+				// Almacenar en el registro correspondiente al punto de venta el TA (homo o prod)
+				if (LP_C_LYEIElectronicPOSConfig.CURRENTENVIRONMENT_Homo.equals(targetEnv))
+					aConfig.setHomoTA(response.getBytes());
+				else
+					aConfig.setProdTA(response.getBytes());
+				if (!aConfig.save()) {
+					throw new Exception ("Error al almacenar el TA: " + CLogger.retrieveErrorAsString());
+				}
+			}else {
+				// dREHER
+				/** guarda en el servicio externo para evitar tener que configurar uno por cada punto de venta */
+				if(!saveTA2SE(ServiceName, targetEnv, response.getBytes()))
+					throw new Exception ("Error al almacenar el TA en Servicio Externo: " + CLogger.retrieveErrorAsString());
 			}
+
 			// Ademas de almacenarlo, retornarlo
 			return response.getBytes();
 		} catch (Exception e) {
@@ -168,6 +274,84 @@ public class LYEIWSAA {
 		}
 	}
 	
+	/**
+	 * 
+	 * @param serviceName2
+	 * @param targetEnv
+	 * @return clave del servicio externo segun nombre de servicio y entorno
+	 * dREHER
+	 */
+	protected static String getClaveSE(String serviceName2, String targetEnv) {
+		String clave = "";
+
+		if(serviceName2.equals(LYEIConstants.AFIP_SERVICE_WSCI)) {
+			clave = "WSCI_";
+		}else if(serviceName2.equals(LYEIConstants.AFIP_SERVICE_WSFECRED)) {
+			clave = "WSFECRED_";
+		}
+		if(targetEnv.equals("H"))
+			clave += "HOMO";
+		else
+			clave += "PROD";
+		
+		return clave;
+	}
+	
+	/**
+	 * 
+	 * @param serviceName2
+	 * @param targetEnv
+	 * @return clave del servicio externo segun nombre de servicio y entorno
+	 * dREHER
+	 */
+	public static String getServiceFromClaveSE(String clave) {
+		String serviceName = "";
+
+		if(clave.equals("WSCI_HOMO") || clave.equals("WSCI_PROD"))
+				serviceName = LYEIConstants.AFIP_SERVICE_WSCI;
+		else if(clave.equals("WSFECRED_HOMO") || clave.equals("WSFECRED_PROD"))
+				serviceName = LYEIConstants.AFIP_SERVICE_WSFECRED;
+		
+		return serviceName;
+	}
+	
+	/**
+	 * Devuelve el servicio externo correspondiente al servicio y entorno correspondiente
+	 * @param clave
+	 * @return
+	 * dREHER
+	 */
+	protected static LP_C_ExternalService getExternalService(String clave) {
+		int C_ExternalService_ID = DB.getSQLValue(null, "SELECT C_ExternalService_ID FROM C_ExternalService WHERE Value=? AND isActive='Y'", clave);
+		if(C_ExternalService_ID > 0) 
+			return new LP_C_ExternalService(Env.getCtx(), C_ExternalService_ID, null);
+		else
+			return null;
+	}
+	
+	/**
+	 * 
+	 * @param serviceName2 wsfecred / ws_sr_padron_a5
+	 * @param targetEnv
+	 * @param bytes
+	 * @return true -> save OK!
+	 * dREHER
+	 * @throws Exception 
+	 */
+	protected static boolean saveTA2SE(String serviceName2, String targetEnv, byte[] bytes) throws Exception {
+		String clave = getClaveSE(serviceName2, targetEnv);
+		
+		LP_C_ExternalService es = getExternalService(clave);
+		if(es!=null) {
+			if(LP_C_LYEIElectronicPOSConfig.CURRENTENVIRONMENT_Homo.equals(targetEnv))
+				es.setHomoTA(bytes);
+			else
+				es.setProdTA(bytes);
+			return es.save();
+		}else
+			throw new Exception("No se encontro servicio externo clave: " + clave);
+	}
+
 	/** 
 	 * A partir del TA recibido como argumento, verifica si es necesario requerir un nuevo TA
 	 */
@@ -176,14 +360,20 @@ public class LYEIWSAA {
 			// Es nulo el TA obtenido?
 			if (ta==null)
 				return true;
+			
 			// Si no es nulo, buscar el expirationTime y comparar con la fecha actual 
 			DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+			System.out.println("requiresNewTA. TA:" + ta);
+			
 			Document doc = builder.parse(new ByteArrayInputStream(ta));
 			NodeList signNodes = doc.getElementsByTagName("expirationTime"); 
 			String expStr = (signNodes.item(0).getFirstChild().getNodeValue());
 			DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
 			Date exp = df.parse(expStr.substring(0, expStr.length()-6));
 			Date now = new Date();
+			
+			System.out.println("Vto token:" + exp + " hoy:" + now);
+			
 			return (exp.compareTo(now)<0);
 		} catch (Exception e) {
 			return true;
@@ -193,6 +383,11 @@ public class LYEIWSAA {
 	/** Retorna el nombre de la columna CRT dependiendo del ambiente */
 	protected static String getCRTColumnName(String targetEnv) {
 		return LP_C_LYEIElectronicPOSConfig.CURRENTENVIRONMENT_Homo.equals(targetEnv) ? "testcrt" : "productioncrt";
+	}
+	
+	/** Retorna el nombre de la columna CRT dependiendo del ambiente */
+	protected static String getFormatCRTColumnName(String targetEnv) {
+		return LP_C_LYEIElectronicPOSConfig.CURRENTENVIRONMENT_Homo.equals(targetEnv) ? "TestCRT" : "ProductionCRT";
 	}
 	
 	/**
@@ -205,7 +400,7 @@ public class LYEIWSAA {
 				"<loginTicketRequest version=\"1.0\">"+
 				"<header><uniqueId>"+Math.abs((int)System.currentTimeMillis())+"</uniqueId><generationTime>"+getGenTime("yyyy-MM-dd'T'HH:mm:ss.SSS", now)+"</generationTime><expirationTime>"+getExpireTime("yyyy-MM-dd'T'HH:mm:ss.SSS", now)+"</expirationTime>"+
 				"</header>"+
-				"<service>" + getServiceName(aConfig) + "</service>"+		
+				"<service>" + (ServiceName==null?getServiceName(aConfig):ServiceName) + "</service>"+ // dREHER si viene preconfigurado el servicio, lamar ese servicio...		
 				"</loginTicketRequest>";
 	}
 	
@@ -262,9 +457,41 @@ public class LYEIWSAA {
 		// Gen config
 		LP_C_LYEIElectronicInvoiceConfig aConfig = new LP_C_LYEIElectronicInvoiceConfig(ctx, aPOSConfig.getC_LYEIElectronicInvoiceConfig_ID(), null);
 		
+		// dREHER
+		byte[] crt = null;
+		
+		
 		// Validaciones
-		if (aPOSConfig.getTestCRT()==null)
-			throw new Exception("El CRT en la configuracion del punto de venta " + aPOSConfig.getPOS() + " no se encuentra cargado");
+		// dREHER
+		if(ServiceName==null) {
+			if (aPOSConfig.getTestCRT()==null) {
+				throw new Exception("El CRT en la configuracion del punto de venta " + aPOSConfig.getPOS() + " no se encuentra cargado");
+			}
+			
+			crt = LP_C_LYEIElectronicPOSConfig.CURRENTENVIRONMENT_Homo.equals(targetEnv) ? aPOSConfig.getTestCRT() : aPOSConfig.getProductionCRT();
+			
+		}else {
+			String clave = getClaveSE(ServiceName, targetEnv);
+			LP_C_ExternalService es = getExternalService(clave);
+			if(es!=null) {
+				if(LP_C_LYEIElectronicPOSConfig.CURRENTENVIRONMENT_Homo.equals(targetEnv)) {
+					if(es.getTestCRT()==null)
+						throw new Exception("El CRT en la configuracion del servicio externo " + clave + " HOMOLOGACION no se encuentra cargado");
+					else
+						crt = es.getTestCRT();
+				}else {
+					if(es.getProductionCRT()==null)
+						throw new Exception("El CRT en la configuracion del servicio externo " + clave + " PRODUCCION no se encuentra cargado");
+					else
+						crt = es.getProductionCRT();
+				}
+			}else
+				throw new Exception("No se encuentra configuracion de servicio externo para el servicio:" + ServiceName + " - clave:" + clave);
+			
+			
+			
+		}
+		
 		if (aConfig.getRSAKey()==null)
 			throw new Exception("El KEY en la configuracion general para el punto de venta " + aPOSConfig.getPOS() + " no se encuentra cargado");
 
@@ -277,7 +504,10 @@ public class LYEIWSAA {
 		try {
 			// Recuperar el CRT del TPV
 			FileOutputStream fos = new FileOutputStream(crtFileName);
-			fos.write(LP_C_LYEIElectronicPOSConfig.CURRENTENVIRONMENT_Homo.equals(targetEnv) ? aPOSConfig.getTestCRT() : aPOSConfig.getProductionCRT());
+			// fos.write(LP_C_LYEIElectronicPOSConfig.CURRENTENVIRONMENT_Homo.equals(targetEnv) ? aPOSConfig.getTestCRT() : aPOSConfig.getProductionCRT());
+
+			// dREHER
+			fos.write(crt);
 			fos.close();
 			
 			// Recuperar el KEY de la config gral del client

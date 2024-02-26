@@ -36,6 +36,7 @@ import sr.puc.server.ws.soap.a5.PersonaServiceA5SoapBindingStub;
 
 public class LYEIWSCI {
 	
+	private static final String SERVICE = "ws_sr_padron_a5";
 	/** Request XML	 */
 	protected String requestXML = null;
 	/** Response XML */
@@ -75,7 +76,10 @@ public class LYEIWSCI {
 			port = locator.getPersonaServiceA5Port();
 	
 			// token & sign
-			HashMap<String, String> tokenAndSign = LYEIWSAA.getTokenAndSign(posConfig, Env.getCtx(), posConfig.getCurrentEnvironment());
+			HashMap<String, String> tokenAndSign = LYEIWSAA.getNewTokenAndSign(posConfig, Env.getCtx(), posConfig.getCurrentEnvironment(), SERVICE);
+
+			
+			// HashMap<String, String> tokenAndSign = LYEIWSAA.getTokenAndSign(posConfig, Env.getCtx(), posConfig.getCurrentEnvironment(), "ws_sr_padron_a5");
 			String token = tokenAndSign.get(LYEIWSAA.TA_TOKEN);
 			String sign = tokenAndSign.get(LYEIWSAA.TA_SIGN);
 			// cuit
@@ -85,6 +89,8 @@ public class LYEIWSCI {
 			MLYEIElectronicInvoiceLog.logActivity(LYEIWSCI.class, Level.INFO, null, posConfig.getC_LYEIElectronicPOSConfig_ID(), null, "Consultando CUIT: " + CUIT);
 			
 			//invocacion afip
+			System.out.println("representado_cuit=" + Long.parseLong(representado_cuit) + " CUIT:" + CUIT);
+			
 			persona = port.getPersona_v2(token, sign, Long.parseLong(representado_cuit), CUIT);
 			System.out.println("PersonaReturn.result[" + persona + "]");
 			

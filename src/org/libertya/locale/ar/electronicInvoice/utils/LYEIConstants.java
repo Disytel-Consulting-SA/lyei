@@ -102,7 +102,7 @@ public class LYEIConstants {
 	
 	/** Servicio de consulta de inscripcion mediante CUIT */
 	// dREHER
-	public static final String AFIP_SERVICE_WSCI = "wsci";
+	public static final String AFIP_SERVICE_WSCI = "ws_sr_padron_a5";
 	
 	/** Servicio de consulta de factura de credito miPyme mediante CUIT */
 	// dREHER

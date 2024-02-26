@@ -22,10 +22,11 @@ public class LYEITools {
 	/** Ejecuta un comando por terminal en un directorio dado.  Si el exitValue es mayor a cero eleva una excepcion */
 	public static void executeCommand(String activity, String command, File directory) throws Exception {
 		Process p = null;
+		System.out.println("Ejecuta " + command + " en directorio:" + directory);
 		p = Runtime.getRuntime().exec(command, null, directory);
 		p.waitFor();
 		if (p.exitValue() != 0) {
-			throw new Exception("Exit code " + p.exitValue() + " en actividad " + activity + ": " + getProcessError(p));
+			throw new Exception("Command:" + command + " - Exit code " + p.exitValue() + " en actividad " + activity + ": " + getProcessError(p));
 		}
 	}
 	

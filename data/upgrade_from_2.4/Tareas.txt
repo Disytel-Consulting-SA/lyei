@@ -1,0 +1,4 @@
+1- Agregar columnas nuevas para poder validar certificados AFIP desde Servicios Externos
+2- Generar nuevo modelo de C_ExternalService
+3- Acomodar ventana de servicios externos para poder mostrar las nuevas columnas y el boton para llamar al proceso
+de validacion -> LYEIValidateCRTProcess

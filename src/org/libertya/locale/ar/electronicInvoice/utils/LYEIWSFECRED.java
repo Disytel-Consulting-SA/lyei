@@ -37,6 +37,9 @@ import wsfecred.afip.gob.ar.FECredService.FECredServiceSOAPStub;
 
 public class LYEIWSFECRED {
 	
+
+	private static final String SERVICE = "wsfecred";
+	
 	/** Request XML	 */
 	protected String requestXML = null;
 	/** Response XML */
@@ -53,11 +56,12 @@ public class LYEIWSFECRED {
 		System.out.println("LYEIWSFECRED." + s);
 	}
 	
-	public BigDecimal consultaFromAFIP(Long CUIT, Date fecha) {
+	public ConsultarMontoObligadoRecepcionReturnType consultaFromAFIP(Long CUIT, Date fecha) {
 		
 		ConsultarMontoObligadoRecepcionResponseType mo = null;
 		BigDecimal montoDesde = null;
 		FECredServicePortType port = null;
+		ConsultarMontoObligadoRecepcionReturnType re = null;
 		try {
 			
 			// Forzar TLS 1.2 si es que existe el factory correspondiente
@@ -75,7 +79,7 @@ public class LYEIWSFECRED {
 			debug("endPoint: " + endPoint + " serviceName: " + locator.getServiceName());
 	
 			// token & sign
-			HashMap<String, String> tokenAndSign = LYEIWSAA.getTokenAndSign(posConfig, Env.getCtx(), posConfig.getCurrentEnvironment());
+			HashMap<String, String> tokenAndSign = LYEIWSAA.getNewTokenAndSign(posConfig, Env.getCtx(), posConfig.getCurrentEnvironment(), SERVICE);
 			String token = tokenAndSign.get(LYEIWSAA.TA_TOKEN);
 			String sign = tokenAndSign.get(LYEIWSAA.TA_SIGN);
 			// cuit
@@ -92,12 +96,14 @@ public class LYEIWSFECRED {
 			mor.setFechaEmision(fecha);
 			
 			mo = port.consultarMontoObligadoRecepcion(mor);
-			ConsultarMontoObligadoRecepcionReturnType re = mo.getConsultarMontoObligadoRecepcionReturn();
+			re = mo.getConsultarMontoObligadoRecepcionReturn();
 			montoDesde = re.getMontoDesde();
 			SiNoSimpleType sino = re.getObligado();
 			String yes = sino.getValue();
 			
 			System.out.println("Obligado.result[" + yes + " Desde : " + montoDesde + "]");
+			
+			
 			
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -105,7 +111,7 @@ public class LYEIWSFECRED {
 			logXMLRequestResponse(port);
 		}
 		
-		return montoDesde;
+		return re;
 	}
 	
 	/** Log de XML request/response */
