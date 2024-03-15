@@ -1,6 +1,7 @@
 package wsfecred.afip.gob.ar.FECredService;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Properties;
@@ -42,6 +43,10 @@ public class FECred {
 	private Properties localCtx;
 	/** Nombre de transacción local */
 	private String localTrxName;
+	
+	private BigDecimal amount = Env.ZERO;
+	private boolean isMiPyme = false;
+	private Timestamp Updated = Env.getDate();
 
 	public FECred() {
 		clientID = Env.getAD_Client_ID(getCtx());
@@ -73,7 +78,10 @@ public class FECred {
 
 			// En este punto se supone valores recibidos conformes a un CUIT encontrado
 			retValues.put("Corresponde",			"" + yes);
-			retValues.put("Monto Minimo",			"" + montoDesde);
+			retValues.put("Monto Minimo",			"" + (montoDesde!=null?montoDesde:""));
+			
+			setMiPyme(yes.equals("S"));
+			setAmount(montoDesde);
 		}
 		
 		return retValues; 
@@ -174,6 +182,30 @@ public class FECred {
 
 	public void setFecha(Date fecha) {
 		this.fecha = fecha;
+	}
+
+	public BigDecimal getAmount() {
+		return amount;
+	}
+
+	public void setAmount(BigDecimal amount) {
+		this.amount = amount;
+	}
+
+	public boolean isMiPyme() {
+		return isMiPyme;
+	}
+
+	public void setMiPyme(boolean isMiPyme) {
+		this.isMiPyme = isMiPyme;
+	}
+
+	public Timestamp getUpdated() {
+		return Updated;
+	}
+
+	public void setUpdated(Timestamp updated) {
+		Updated = updated;
 	}
 
 }

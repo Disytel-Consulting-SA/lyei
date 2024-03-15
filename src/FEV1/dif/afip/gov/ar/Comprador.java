@@ -8,7 +8,9 @@
 package FEV1.dif.afip.gov.ar;
 
 public class Comprador  implements java.io.Serializable {
-    private int docTipo;
+    private static final long serialVersionUID = 1L;
+
+	private int docTipo;
 
     private long docNro;
 
