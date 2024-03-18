@@ -58,7 +58,7 @@ public class WSFECREDConsultarCUITProcess extends SvrProcess {
 				this.addLog(0, null, null, entry.getKey() + " " + entry.getValue());
 			}
 
-			if(getCUIT()!=0L && getRecord_ID() > 0) {
+			if(getCUIT()!=0L && getRecord_ID() > 0 && this.getTable_ID()==MBPartner.Table_ID) {
 				MBPartner bp = new MBPartner(Env.getCtx(), getRecord_ID(), get_TrxName());
 				bp.set_Value("IsMiPyme", fc.isMiPyme());
 				bp.set_Value("MiPymeUpdated", fc.getUpdated());

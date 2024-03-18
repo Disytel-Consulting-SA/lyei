@@ -9,6 +9,7 @@ import java.util.Properties;
 import org.libertya.locale.ar.electronicInvoice.model.MLYEIElectronicInvoiceConfig;
 import org.libertya.locale.ar.electronicInvoice.model.MLYEIElectronicPOSConfig;
 import org.libertya.locale.ar.electronicInvoice.utils.LYEIWSFECRED;
+import org.openXpertya.model.MBPartner;
 import org.openXpertya.model.MPOS;
 import org.openXpertya.model.MPOSJournal;
 import org.openXpertya.util.Env;
@@ -60,6 +61,8 @@ public class FECred {
 		setCUIT(cuit);
 		setFecha(fecha);
 		
+		debug("consultarCUIT. cuit=" + getCUIT() + " fecha=" + getFecha());
+		
 		// Validaciones preliminares
 		checkPreconditions();
 		// Carga de valores iniciales
@@ -82,15 +85,25 @@ public class FECred {
 			
 			setMiPyme(yes.equals("S"));
 			setAmount(montoDesde);
-		}
+			
+			debug("Corresponde miPyme:" + (isMiPyme?"Si":"No") + " Monto minimo:" + montoDesde);
+			
+		}else
+			debug("consultarCUIT. Se produjo un error!");
 		
 		return retValues; 
 	}
 	
+	private void debug(String string) {
+		System.out.println("==> FECred." + string);
+	}
+
 	/** Validaciones preliminares */
 	protected void checkPreconditions() throws Exception {
 		if (CUIT < 99999999)
 			throw new Exception("CUIT no valido!");
+		
+		debug("Valido CUIT");
 	}
 	
 	/** 
@@ -118,6 +131,8 @@ public class FECred {
 		}
 		
 		loadInitialValues(ptoVta);
+		
+		debug("Carga datos inciales de configuracion...");
 	}
 	
 	/** Carga inicial */
@@ -134,6 +149,24 @@ public class FECred {
 		} catch (Exception ex) {
 			throw new Exception ("Error al recuperar CUIT de la BBDD de compañía " + getClientID() + ". " + ex.getMessage());
 		}
+	}
+	
+	/**
+	 * Guarda la informacion de miPyme en la Entidad Comercial
+	 * @param bp
+	 * dREHER
+	 */
+	public void updatedBPMiPyme(MBPartner bp) {
+		
+		System.out.println("FECred.updatedBPMiPyme. Guarda la info de MiPyme en la EC CUIT=" + bp.getTaxID());
+		
+		bp.set_Value("IsMiPyme", isMiPyme());
+		bp.set_Value("MiPymeUpdated", getUpdated());
+		bp.set_Value("MiPymeAmount", getAmount());
+		
+		if(bp.save())
+			System.out.println("FECred.updatedBPMiPyme. Guardo data en el cliente CUIT:" + bp.getTaxID());
+		
 	}
 	
 	public Long getCUIT() {
