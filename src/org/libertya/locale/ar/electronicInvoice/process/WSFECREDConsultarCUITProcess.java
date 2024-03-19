@@ -52,11 +52,20 @@ public class WSFECREDConsultarCUITProcess extends SvrProcess {
 		FECred fc = new FECred();
 		HashMap<String, String> resp = fc.consultarCUIT(getCUIT(), getFecha());
 		if(resp!=null) {
+			int i = 0;
 			
+			/* El orden no se puede manejar, queda mas prolijo mostrarlo de manera ordenada...
 			for (Map.Entry<String, String> entry : resp.entrySet()) {
 				System.out.println("clave=" + entry.getKey() + ", valor=" + entry.getValue());
-				this.addLog(0, null, null, entry.getKey() + " " + entry.getValue());
+				i++;
+				this.addLog(i, null, null, entry.getKey() + ": " + entry.getValue());
 			}
+			*/
+			
+			this.addLog(++i, null, null, "CUIT: " + resp.get("CUIT"));
+			this.addLog(++i, null, null, "Corresponde FC MiPyme: " + resp.get("Corresponde"));
+			this.addLog(++i, null, null, "Monto Minimo: " + resp.get("Monto Minimo"));
+			
 
 			if(getCUIT()!=0L && getRecord_ID() > 0 && this.getTable_ID()==MBPartner.Table_ID) {
 				MBPartner bp = new MBPartner(Env.getCtx(), getRecord_ID(), get_TrxName());

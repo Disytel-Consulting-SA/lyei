@@ -536,6 +536,9 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 		MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.INFO, inv.getC_Invoice_ID(), posConfig.getC_LYEIElectronicPOSConfig_ID(), genConfig.getC_LYEIElectronicInvoiceConfig_ID(), "Invocando a RECompUltimoAutorizado");
 		FERecuperaLastCbteResponse ult = wsfe.FECompUltimoAutorizado(auth, inv.getPuntoDeVenta(), LYEICommons.getCbteTipo(docType));
 		MLYEIElectronicInvoiceLog.logActivity(LYEIWSFE.class, Level.INFO, inv.getC_Invoice_ID(), posConfig.getC_LYEIElectronicPOSConfig_ID(), genConfig.getC_LYEIElectronicInvoiceConfig_ID(), "RECompUltimoAutorizado obtenido " + ult.getCbteNro());
+		
+		System.out.println("===> LYEIWSFE.getSigCbteNro. Ultimo numero autorizado en AFIP=" + ult.getCbteNro());
+		
 		return ult.getCbteNro() + 1L;
 	}
 	

@@ -20,6 +20,7 @@ import org.openXpertya.util.Ini;
 import org.openXpertya.util.Secure;
 
 import wsfecred.afip.gob.ar.FECredService.AuthRequestType;
+import wsfecred.afip.gob.ar.FECredService.CodigoDescripcionType;
 import wsfecred.afip.gob.ar.FECredService.ConsultarMontoObligadoRecepcionRequestType;
 import wsfecred.afip.gob.ar.FECredService.ConsultarMontoObligadoRecepcionResponseType;
 import wsfecred.afip.gob.ar.FECredService.ConsultarMontoObligadoRecepcionReturnType;
@@ -101,9 +102,23 @@ public class LYEIWSFECRED {
 			SiNoSimpleType sino = re.getObligado();
 			String yes = sino.getValue();
 			
+			CodigoDescripcionType[] cdt = re.getArrayErrores();
+			if(cdt!=null) {
+				System.out.println("Errores funcionales:");
+				for(CodigoDescripcionType c: cdt)
+					System.out.println("Errores: " + c.getCodigo() + " " + c.getDescripcion());
+			}else
+				System.out.println("Sin errores funcionales!");
+
+			cdt = re.getArrayObservacion();
+			if(cdt!=null) {
+				System.out.println("Observaciones funcionales:");
+				for(CodigoDescripcionType c: cdt)
+					System.out.println("Errores: " + c.getCodigo() + " " + c.getDescripcion());
+			}else
+				System.out.println("Sin observaciones funcionales!");
+
 			System.out.println("Obligado.result[" + yes + " Desde : " + montoDesde + "]");
-			
-			
 			
 		} catch (Exception e) {
 			e.printStackTrace();

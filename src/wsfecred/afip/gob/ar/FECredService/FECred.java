@@ -80,11 +80,12 @@ public class FECred {
 			String yes = sino.getValue();
 
 			// En este punto se supone valores recibidos conformes a un CUIT encontrado
-			retValues.put("Corresponde",			"" + yes);
-			retValues.put("Monto Minimo",			"" + (montoDesde!=null?montoDesde:""));
+			retValues.put("Monto Minimo",			"" + (montoDesde!=null?montoDesde:"0.00"));
+			retValues.put("Corresponde",			"" + (yes.equals("S")?"Si":"No"));
 			
-			setMiPyme(yes.equals("S"));
+			
 			setAmount(montoDesde);
+			setMiPyme(yes.equals("S"));
 			
 			debug("Corresponde miPyme:" + (isMiPyme?"Si":"No") + " Monto minimo:" + montoDesde);
 			
@@ -166,7 +167,8 @@ public class FECred {
 		
 		if(bp.save())
 			System.out.println("FECred.updatedBPMiPyme. Guardo data en el cliente CUIT:" + bp.getTaxID());
-		
+		else
+			System.out.println("FECred.updatedBPMiPyme. No pudo guardar la actualizacion de info miPyme en el cliente CUIT:"+ bp.getTaxID());
 	}
 	
 	public Long getCUIT() {
@@ -222,6 +224,8 @@ public class FECred {
 	}
 
 	public void setAmount(BigDecimal amount) {
+		if(amount==null)
+			amount = Env.ZERO;
 		this.amount = amount;
 	}
 
