@@ -10,6 +10,7 @@ import org.openXpertya.model.MBPartner;
 import org.openXpertya.process.ProcessInfoParameter;
 import org.openXpertya.process.SvrProcess;
 import org.openXpertya.util.Env;
+import org.openXpertya.util.Util;
 
 import wsfecred.afip.gob.ar.FECredService.FECred;
 
@@ -35,8 +36,19 @@ public class WSFECREDConsultarCUITProcess extends SvrProcess {
 			if (para[i].getParameter() == null)
 				;
 			else if (name.equalsIgnoreCase("CUIT")) {
-				if(para[i].getParameter()!=null && para[i].getParameter()!="")
-					setCUIT((new BigDecimal(para[i].getParameter().toString()).longValue()));
+				if(para[i].getParameter()!=null && !Util.isEmpty(para[i].getParameter().toString(), true)) {
+					// setCUIT((new BigDecimal(para[i].getParameter().toString()).longValue()));
+					
+					try {
+						setCUIT(((BigDecimal)para[i].getParameter()).longValue());
+					}catch(Exception ex) {
+						String cuit = (String)para[i].getParameter();
+						setCUIT(new BigDecimal(cuit).longValue());
+					}
+					
+				}
+				
+				
 			}
 			else if (name.equalsIgnoreCase("Fecha")) {
 				setFecha(((Date)para[i].getParameter()));
@@ -90,6 +102,8 @@ public class WSFECREDConsultarCUITProcess extends SvrProcess {
 			
 			MBPartner bp = new MBPartner(Env.getCtx(), getRecord_ID(), get_TrxName());
 			String cuit = bp.getTaxID();
+			if(Util.isEmpty(cuit, true))
+				throw new Exception("El cliente NO tiene registrado el numero de identificacion!");
 			
 			setCUIT((new BigDecimal(cuit)).longValue());
 		}

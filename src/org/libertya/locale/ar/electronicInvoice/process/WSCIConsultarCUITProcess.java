@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.Properties;
 import org.openXpertya.process.ProcessInfoParameter;
 import org.openXpertya.process.SvrProcess;
+import org.openXpertya.util.Util;
+
 import sr.puc.server.ws.soap.a5.WSCI;
 
 public class WSCIConsultarCUITProcess extends SvrProcess {
@@ -33,7 +35,12 @@ public class WSCIConsultarCUITProcess extends SvrProcess {
 			if (para[i].getParameter() == null)
 				;
 			else if (name.equalsIgnoreCase("CUIT")) {
-				setCUIT(((BigDecimal)para[i].getParameter()).longValue());
+				try {
+					setCUIT(((BigDecimal)para[i].getParameter()).longValue());
+				}catch(Exception ex) {
+					String cuit = (String)para[i].getParameter();
+					setCUIT(new BigDecimal(cuit).longValue());
+				}
 			}
 		}
 	}
@@ -42,6 +49,10 @@ public class WSCIConsultarCUITProcess extends SvrProcess {
 	@Override
 	protected String doIt() throws Exception {
 
+		if(getCUIT()==0L)
+			throw new Exception("El cliente NO tiene registrado el numero de identificacion!");
+		
+		
 		WSCI w = new WSCI();
 		// Consulta de CUIT
 		HashMap<String, String> resp = w.consultarCUIT(getCUIT());
