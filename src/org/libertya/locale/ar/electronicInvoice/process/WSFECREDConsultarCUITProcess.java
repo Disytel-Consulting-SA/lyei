@@ -9,6 +9,7 @@ import java.util.Properties;
 import org.openXpertya.model.MBPartner;
 import org.openXpertya.process.ProcessInfoParameter;
 import org.openXpertya.process.SvrProcess;
+import org.openXpertya.util.DB;
 import org.openXpertya.util.Env;
 import org.openXpertya.util.Util;
 
@@ -64,6 +65,7 @@ public class WSFECREDConsultarCUITProcess extends SvrProcess {
 		FECred fc = new FECred();
 		HashMap<String, String> resp = fc.consultarCUIT(getCUIT(), getFecha());
 		if(resp!=null) {
+			
 			int i = 0;
 			
 			/* El orden no se puede manejar, queda mas prolijo mostrarlo de manera ordenada...
@@ -80,6 +82,7 @@ public class WSFECREDConsultarCUITProcess extends SvrProcess {
 			
 
 			if(getCUIT()!=0L && getRecord_ID() > 0 && this.getTable_ID()==MBPartner.Table_ID) {
+				
 				MBPartner bp = new MBPartner(Env.getCtx(), getRecord_ID(), get_TrxName());
 				bp.set_Value("IsMiPyme", fc.isMiPyme());
 				bp.set_Value("MiPymeUpdated", fc.getUpdated());
@@ -87,6 +90,18 @@ public class WSFECREDConsultarCUITProcess extends SvrProcess {
 				
 				if(bp.save())
 					System.out.println("Guardo data en el cliente CUIT:" + getCUIT());
+				else {
+					String up = "UPDATE C_BPartner SET IsMiPyme='" + (fc.isMiPyme()?"Y":"N") + "', " +
+							" MiPymeUpdated='" + fc.getUpdated() + "', " +
+							" MiPymeAmount= " + fc.getAmount() + ", " +
+							" Updated=now(), " +
+							" UpdatedBy=" + Env.getAD_User_ID(getCtx()) + " " +
+							" WHERE C_BPartner_ID=" + bp.getC_BPartner_ID();
+					System.out.println("Se actualiza por BDD - cliente CUIT:" + up);
+					int ups = DB.executeUpdate(up, get_TrxName());
+					if(ups==-1)
+						return "No pudo actualizar cliente CUIT:" + getCUIT();
+				}
 			}
 			
 			return "MiPyme actualizado: " + getCUIT();

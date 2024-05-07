@@ -12,6 +12,7 @@ import org.libertya.locale.ar.electronicInvoice.utils.LYEIWSFECRED;
 import org.openXpertya.model.MBPartner;
 import org.openXpertya.model.MPOS;
 import org.openXpertya.model.MPOSJournal;
+import org.openXpertya.util.DB;
 import org.openXpertya.util.Env;
 import org.openXpertya.util.Util;
 
@@ -167,8 +168,19 @@ public class FECred {
 		
 		if(bp.save())
 			System.out.println("FECred.updatedBPMiPyme. Guardo data en el cliente CUIT:" + bp.getTaxID());
-		else
+		else {
 			System.out.println("FECred.updatedBPMiPyme. No pudo guardar la actualizacion de info miPyme en el cliente CUIT:"+ bp.getTaxID());
+			String up = "UPDATE C_BPartner SET IsMiPyme='" + (isMiPyme()?"Y":"N") + "', " +
+					" MiPymeUpdated='" + getUpdated() + "', " +
+					" MiPymeAmount= " + getAmount() + ", " +
+					" Updated=now(), " +
+					" UpdatedBy=" + Env.getAD_User_ID(getCtx()) + " " +
+					" WHERE C_BPartner_ID=" + bp.getC_BPartner_ID();
+			System.out.println("Se actualiza por BDD - cliente CUIT:" + up);
+			int ups = DB.executeUpdate(up, get_TrxName());
+			if(ups==-1)
+				System.out.println("No pudo actualizar cliente CUIT:" + getCUIT());
+		}
 	}
 	
 	public Long getCUIT() {
