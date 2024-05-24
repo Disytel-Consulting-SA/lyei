@@ -59,4 +59,22 @@ public class MLYEIElectronicPOSConfig extends LP_C_LYEIElectronicPOSConfig {
 		// En cualquier caso, no es factible tener una combinación de organizaciones y adicionalmente la organización * 
 		return (MLYEIElectronicPOSConfig)PO.findFirst(ctx, LP_C_LYEIElectronicPOSConfig.Table_Name, " POS = ? ", new Object[]{pos}, null, trxName);
 	}
+	
+	/**
+	 * Retorna una POSConfig dentro de la organizacion que tenga validado al certificado y este activa
+	 * @param pos
+	 * @return
+	 */
+	public static MLYEIElectronicPOSConfig get(Properties ctx, String trxName, int AD_Org_ID) {
+		// Segun la configuracion realizada, pueden darse los siguientes casos:
+		//		1) Que en la configuracion se utilice la organizacion *, por lo tanto hay que buscar bajo AD_Org_ID = 0
+		//		2) Que en la configuracion se utilicen distintas organizaciones, por lo tanto hay que buscar con la org recibida como argumente
+		// En cualquier caso, no es factible tener una combinación de organizaciones y adicionalmente la organización * 
+		return (MLYEIElectronicPOSConfig)PO.findFirst(ctx, LP_C_LYEIElectronicPOSConfig.Table_Name,
+				"(AD_Org_ID = 0 OR AD_Org_ID = ?) AND IsActive='Y' " +
+				"AND ( (CurrentEnvironment='H' AND TestCRTStatus='V') " +
+						" OR " +
+				" (CurrentEnvironment='P' AND ProductionCRTStatus='V') " +
+				" ) AND caemethod = 'C'", new Object[]{AD_Org_ID}, null, trxName);
+	}
 }

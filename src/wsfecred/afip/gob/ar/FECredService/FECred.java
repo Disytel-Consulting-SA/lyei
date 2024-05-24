@@ -141,9 +141,17 @@ public class FECred {
 	public void loadInitialValues(int ptoVta) throws Exception {
 		// Token & Sign
 		posConfig = MLYEIElectronicPOSConfig.get((ptoVta>0?ptoVta:0), getOrgID(), getCtx(), null);
-		if (posConfig==null) 
-			throw new Exception("No se ha encontrado configuracion electronica para el punto de venta " + (ptoVta>0?ptoVta:0)
-					+ " y la organizacion del tipo de documento (" + getOrgID() + ")");
+		if (posConfig==null) { 
+		
+			// Si no encontro una configuracion electronica para el punto de venta indicado, seguramente
+			// estan trabajando con una caja de impresora fiscal, de todas maneras debe validar mipyme
+			// y para ello requiere una configuracion de factura electronica activa y validada dentro
+			// de la misma organizacion
+			posConfig = MLYEIElectronicPOSConfig.get(getCtx(), null, getOrgID());
+			if (posConfig==null)
+				throw new Exception("No se ha encontrado configuracion electronica "
+					+ " la organizacion del tipo de documento (" + getOrgID() + ")");
+		}
 		// Cuit
 		try {
 			genConfig = new  MLYEIElectronicInvoiceConfig(getCtx(), posConfig.getC_LYEIElectronicInvoiceConfig_ID(), get_TrxName());
