@@ -178,7 +178,7 @@ public byte[] getProdTA()
 {
 return (byte[])get_Value("ProdTA");
 }
-public static final int PRODUCTIONCRTSTATUS_AD_Reference_ID = MReference.getReferenceID("CRT Status");
+public static final int PRODUCTIONCRTSTATUS_AD_Reference_ID = MReference.getReferenceID("CRT Status SE");
 /** No CRT = X */
 public static final String PRODUCTIONCRTSTATUS_NoCRT = "X";
 /** Validation Pending = P */
@@ -224,7 +224,7 @@ public byte[] getHomoTA()
 {
 return (byte[])get_Value("HomoTA");
 }
-public static final int TESTCRTSTATUS_AD_Reference_ID = MReference.getReferenceID("CRT Status");
+public static final int TESTCRTSTATUS_AD_Reference_ID = MReference.getReferenceID("CRT Status SE");
 /** No CRT = X */
 public static final String TESTCRTSTATUS_NoCRT = "X";
 /** Validation Pending = P */
