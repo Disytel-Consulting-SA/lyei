@@ -2,3 +2,5 @@
 2- Generar nuevo modelo de C_ExternalService
 3- Acomodar ventana de servicios externos para poder mostrar las nuevas columnas y el boton para llamar al proceso
 de validacion -> LYEIValidateCRTProcess
+
+NOTA: por ahora esto quedo en el micro de facturacion !!!!!
