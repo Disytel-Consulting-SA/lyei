@@ -259,7 +259,7 @@ public class LYEIWSAA {
 				// dREHER
 				/** guarda en el servicio externo para evitar tener que configurar uno por cada punto de venta */
 				if(!saveTA2SE(ServiceName, targetEnv, response.getBytes()))
-					throw new Exception ("Error al almacenar el TA en Servicio Externo: " + CLogger.retrieveErrorAsString());
+					throw new Exception ("Error al almacenar el TA en Servicio Externo: " + ServiceName + " " + targetEnv + " " + CLogger.retrieveErrorAsString());
 			}
 
 			// Ademas de almacenarlo, retornarlo
@@ -347,6 +347,9 @@ public class LYEIWSAA {
 				es.setHomoTA(bytes);
 			else
 				es.setProdTA(bytes);
+			
+			System.out.println("Guarda TA en Servicio Externo=" + serviceName2 + " " + targetEnv);
+			
 			return es.save();
 		}else
 			throw new Exception("No se encontro servicio externo clave: " + clave);

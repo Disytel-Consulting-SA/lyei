@@ -1900,9 +1900,8 @@ public class FECredServiceSOAPStub extends org.apache.axis.client.Stub implement
 }
     }
     
-    // Modificaciones ad-hoc para poder recuperar el XML request y response 
+    // dREHER - Modificaciones ad-hoc para poder recuperar el XML request y response 
     public String getCallRequestXML() {	try { return _call.getMessageContext().getRequestMessage().getSOAPPartAsString(); } catch (Exception e) { e.printStackTrace(); return ""; } } 
     public String getCallResponseXML() { try { return _call.getMessageContext().getResponseMessage().getSOAPPartAsString(); } catch (Exception e) { e.printStackTrace(); return ""; } } 
- 
 
 }

@@ -1,10 +1,14 @@
 package wsfecred.afip.gob.ar.FECredService;
 
 import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.Timestamp;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Properties;
+import java.util.logging.Level;
 
 import org.libertya.locale.ar.electronicInvoice.model.MLYEIElectronicInvoiceConfig;
 import org.libertya.locale.ar.electronicInvoice.model.MLYEIElectronicPOSConfig;
@@ -12,6 +16,7 @@ import org.libertya.locale.ar.electronicInvoice.utils.LYEIWSFECRED;
 import org.openXpertya.model.MBPartner;
 import org.openXpertya.model.MPOS;
 import org.openXpertya.model.MPOSJournal;
+import org.openXpertya.model.MPreference;
 import org.openXpertya.util.DB;
 import org.openXpertya.util.Env;
 import org.openXpertya.util.Util;
@@ -49,6 +54,9 @@ public class FECred {
 	private BigDecimal amount = Env.ZERO;
 	private boolean isMiPyme = false;
 	private Timestamp Updated = Env.getDate();
+	
+	/** Preference de tolerancia de horas para determinar la fecha  */
+	public static String HOUR_TOLERANCE_PREFERENCE_NAME = "POSJournalHourTolerance";
 
 	public FECred() {
 		clientID = Env.getAD_Client_ID(getCtx());
@@ -115,7 +123,7 @@ public class FECred {
 	 * */
 	public void loadInitialValues() throws Exception {
 		
-		if (MPOSJournal.isActivated() && Util.isEmpty(ptoVta, true) ) {
+		if (MPOSJournal.isActivated() && Util.isEmpty(ptoVta, false) ) {  // dREHER ptoVta==0 debe considerarse para leer config desde Organizacion y no desde caja abierta
 			MPOSJournal caja = MPOSJournal.get(Env.getCtx(), 
 												Env.getAD_User_ID(getCtx()), 
 												Env.getDate(), 
@@ -130,11 +138,109 @@ public class FECred {
 			}else
 				throw new Exception("No se encontro una caja abierta para este usuario!");
 			
+		}else if (MPOSJournal.isActivated()) {
+			MPOSJournal caja = getPOSJournal(Env.getCtx(), 
+					Env.getAD_Org_ID(getCtx()), 
+					null,
+					Env.getDate(), 
+					new String[]{"IP"}, 
+					get_TrxName());
+			
+			if(caja!=null) {
+				MPOS pos = caja.getPOS();
+				if(pos!=null)
+					ptoVta = pos.getPOSNumber();
+				else
+					throw new Exception("No se encontro punto de venta en la caja abierta de esta sucursal!");
+			}else
+				throw new Exception("No se encontro una caja abierta para esta sucursal!");
 		}
+		
+		// TODO: ver de que manera determinar que nos encontramos en ambiente de Homolagacion o Produccion
+		// podria ser mediante una preferencia... asi tomamos una config electronica que cumpla con esa 
+		// condicion y listo
 		
 		loadInitialValues(ptoVta);
 		
-		debug("Carga datos inciales de configuracion...");
+		debug("Carga datos inciales de configuracion..." + ptoVta);
+	}
+	
+	/**
+	 * Busca una caja abierta para la sucursal actual
+	 * @param ctx
+	 * @param orgID
+	 * @param posID
+	 * @param date
+	 * @param docStatus
+	 * @param trxName
+	 * @return
+	 * dREHER
+	 */
+	public MPOSJournal getPOSJournal(Properties ctx, int orgID, Integer posID, Timestamp date, String[] docStatus, String trxName) {
+		MPOSJournal journal = null;
+		StringBuffer sql = new StringBuffer(); 
+		sql.append("SELECT * ")
+		   .append("FROM C_POSJournal ")
+		   .append("WHERE AD_Org_ID = ? ")
+		   .append(  "AND date_trunc('day',DateTrx) = date_trunc('day',?::date) ");
+		if(!Util.isEmpty(posID, true)){
+			sql.append(" AND c_pos_id = ").append(posID).append(" ");
+		}
+		
+		// Filtro de los dosStatus
+		if (docStatus != null && docStatus.length > 0) {
+			sql.append( "AND DocStatus IN (");
+			for (int i = 0; i < docStatus.length; i++) {
+				String status = docStatus[i];
+				sql.append("'").append(status).append("'");
+				if (i < docStatus.length - 1) {
+					sql.append(",");
+				}
+			}
+			sql.append(") "); 
+		}
+		sql.append("ORDER BY Created DESC");
+		
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		
+		// Verificar si existe la preference para la tolerancia de horas
+		String hourToleranceValue = MPreference.searchCustomPreferenceValue(
+				HOUR_TOLERANCE_PREFERENCE_NAME, Env.getAD_Client_ID(ctx),
+				Env.getAD_Org_ID(ctx), Env.getAD_User_ID(ctx), true);
+		if(!Util.isEmpty(hourToleranceValue, true)){
+			Integer hourTolerance = Integer.parseInt(hourToleranceValue);
+			Calendar newDate = Calendar.getInstance();
+			// Busco la fecha actual en la base
+			Timestamp actualDate = DB.getDBTimestamp(trxName);
+			// Seteo la fecha parámetro
+			newDate.setTimeInMillis(actualDate.getTime());
+			// Restar la cantidad de horas y tomar la fecha resultante para la
+			// comparación
+			newDate.add(Calendar.HOUR_OF_DAY, hourTolerance * -1);
+			date = new Timestamp(newDate.getTimeInMillis());
+		}
+		
+		try {
+			pstmt = DB.prepareStatement(sql.toString(), trxName);
+			pstmt.setInt(1, orgID);
+			pstmt.setTimestamp(2, date);
+			
+			rs = pstmt.executeQuery();
+			if (rs.next()) {
+				journal = new MPOSJournal(ctx, rs, trxName);
+			}
+			
+		} catch (Exception e) {
+			System.out.println("Error getting POS Journal. OrgID="
+					+ orgID + ", Date=" + date);
+		} finally {
+			try {
+				if (rs != null) rs.close();
+				if (pstmt != null) pstmt.close();
+			} catch (Exception e) { }
+		}
+		return journal;
 	}
 	
 	/** Carga inicial */
@@ -151,6 +257,8 @@ public class FECred {
 			if (posConfig==null)
 				throw new Exception("No se ha encontrado configuracion electronica "
 					+ " la organizacion del tipo de documento (" + getOrgID() + ")");
+			
+			this.ptoVta = posConfig.getPOS();
 		}
 		// Cuit
 		try {

@@ -14,6 +14,7 @@ import org.openXpertya.util.Env;
 import org.openXpertya.util.Util;
 
 import wsfecred.afip.gob.ar.FECredService.FECred;
+// homo funciona ok
 
 public class WSFECREDConsultarCUITProcess extends SvrProcess {
 

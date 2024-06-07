@@ -81,8 +81,14 @@ public class LYEIWSFECRED {
 	
 			// token & sign
 			HashMap<String, String> tokenAndSign = LYEIWSAA.getNewTokenAndSign(posConfig, Env.getCtx(), posConfig.getCurrentEnvironment(), SERVICE);
+
 			String token = tokenAndSign.get(LYEIWSAA.TA_TOKEN);
 			String sign = tokenAndSign.get(LYEIWSAA.TA_SIGN);
+			
+			// String token = "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9InllcyI/Pgo8c3NvIHZlcnNpb249IjIuMCI+CiAgICA8aWQgc3JjPSJDTj13c2FhLCBPPUFGSVAsIEM9QVIsIFNFUklBTE5VTUJFUj1DVUlUIDMzNjkzNDUwMjM5IiB1bmlxdWVfaWQ9IjU3OTgxMTIxMCIgZ2VuX3RpbWU9IjE3MTc3Nzc0ODgiIGV4cF90aW1lPSIxNzE3ODIwNzQ4Ii8+CiAgICA8b3BlcmF0aW9uIHR5cGU9ImxvZ2luIiB2YWx1ZT0iZ3JhbnRlZCI+CiAgICAgICAgPGxvZ2luIGVudGl0eT0iMzM2OTM0NTAyMzkiIHNlcnZpY2U9IndzZmVjcmVkIiB1aWQ9IlNFUklBTE5VTUJFUj1DVUlUIDMzNTA0NDg3MTE5LCBDTj12aWVkbWEiIGF1dGhtZXRob2Q9ImNtcyIgcmVnbWV0aG9kPSIyMiI+CiAgICAgICAgICAgIDxyZWxhdGlvbnM+CiAgICAgICAgICAgICAgICA8cmVsYXRpb24ga2V5PSIzMzUwNDQ4NzExOSIgcmVsdHlwZT0iNCIvPgogICAgICAgICAgICA8L3JlbGF0aW9ucz4KICAgICAgICA8L2xvZ2luPgogICAgPC9vcGVyYXRpb24+Cjwvc3NvPgo=";
+			// String sign = "PtGlxwEwkjSVqi2yRNO9wsFTSul/RU3WdoD8UdzkrtBpSKVuBOqd/++a3QlSH7dOurlpc5ykoUEvN4dn1ES1A4I3XW4vvse7r5rjUFQIJbWyRiFY7k0bfk+12tzQigzIG1m0+gqeOIJRnUK7arU/bsxuhr3qYXKan+S+aTjKFTY=";
+			
+			
 			// cuit
 			String representado_cuit = getCUITfromPOSConfig(posConfig);
 			
@@ -134,8 +140,10 @@ public class LYEIWSFECRED {
 		if (port==null) {
 			return;
 		}
+
 		requestXML = ((FECredServiceSOAPStub) port).getCallRequestXML();
 		responseXML = ((FECredServiceSOAPStub) port).getCallResponseXML();
+		
 		StringBuffer content = new StringBuffer();
 		content.append(requestXML!=null?" RequestXML: "+requestXML:"")
 				.append(responseXML!=null?" ResponseXML: "+responseXML:"");
