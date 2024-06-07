@@ -22,7 +22,11 @@ public class FECredServiceLocator extends org.apache.axis.client.Service impleme
     }
 
     // Use to get a proxy class for FECredServiceSOAP
+    // Produccion
     private java.lang.String FECredServiceSOAP_address = "https://serviciosjava.afip.gob.ar:443/wsfecred/FECredService";
+    
+    // Homologacion
+    // private java.lang.String FECredServiceSOAP_address_Homo = "https://fwshomo.afip.gov.ar:443/wsfecred/FECredService";
 
     public java.lang.String getFECredServiceSOAPAddress() {
         return FECredServiceSOAP_address;

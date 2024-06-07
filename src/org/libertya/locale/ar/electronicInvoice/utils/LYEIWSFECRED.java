@@ -75,6 +75,10 @@ public class LYEIWSFECRED {
 			String endPoint = LYEITools.getEndPointAddress(LYEIConstants.EXTERNAL_SERVICE_WSFECRED_PREFIX, posConfig.getCurrentEnvironment());
 			
 			FECredServiceLocator locator = new FECredServiceLocator();
+			
+			// dREHER - indicar al locator el endPoint correspondiente segun configuracion
+			locator.setFECredServiceSOAPEndpointAddress(endPoint);
+			
 			port = locator.getFECredServiceSOAP();
 			
 			debug("endPoint: " + endPoint + " serviceName: " + locator.getServiceName());
