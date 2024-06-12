@@ -210,7 +210,7 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			
 			// Conexion a WSFEV1
 			ServiceLocator locator = new ServiceLocator();
-			locator.setServiceSoapEndpointAddress(endPoint);
+			locator.setServiceSoapEndpointAddress(endPoint); // <= IMPORTANTE esta linea setea la URL del servicio, dependiendo del entorno (Homologacion/Produccion)
 			ServiceSoap wsfe = locator.getServiceSoap(); 
 			((ServiceSoapStub)wsfe).setTimeout(LYEITools.getTimeout(LYEIConstants.EXTERNAL_SERVICE_WSFEV1_PREFIX, posConfig.getCurrentEnvironment()));
 			
@@ -644,6 +644,13 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 		return inv.getInvoice_Adress();
 	}
 	
+	/**  
+	 * Retorna nro de identificacion de cliente
+	 * dREHER
+	 */
+	protected String getNroIdentificacion() {
+		return inv.getNroIdentificCliente();
+	}
 
 	/** Nomina de opcionales a enviar, si es que corresponde */ 
 	protected Opcional[] getOpcionales() throws Exception {

@@ -15,6 +15,7 @@ import org.openXpertya.model.MPaymentTerm;
 import org.openXpertya.model.X_C_DocType;
 import org.openXpertya.util.DB;
 import org.openXpertya.util.Env;
+import org.openXpertya.util.Util;
 
 import ar.gov.afip.wsmtxca.service.impl.service.CodigoDescripcionType;
 
@@ -89,8 +90,13 @@ public class LYEICommons {
 	
 	/** CUIT del cliente */
 	public static Long getDocNro(MBPartner partner, MInvoice inv) {
-		if (partner.isConsumidorFinal()) 
-			return 1L;
+		if (partner.isConsumidorFinal()) {
+			// dREHER si en la factura se guardo el nro de identificacion tomarlo desde ahi, sino envia 1
+			if(!Util.isEmpty(inv.getNroIdentificCliente(), true))
+				return Long.parseLong(inv.getNroIdentificCliente().trim());
+			else
+				return 1L;
+		}
 		if (inv.getCUIT()==null) {
 			throw new RuntimeException("La factura requiere el CUIT del cliente");
 		}
