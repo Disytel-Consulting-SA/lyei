@@ -279,6 +279,13 @@ public class WSFEConsultarComprobanteProcess extends SvrProcess {
 		retValues.put("PtoVta", 			"" + response.getResultGet().getPtoVta());
 		retValues.put("Resultado", 			"" + response.getResultGet().getResultado());
 		
+		System.out.println("--> WSFEConsultarComprobante. Resultado OK: " + 
+				" CbteDesde:"+ response.getResultGet().getCbteDesde() +
+				" - CbteFch:" + response.getResultGet().getCbteFch() +
+				" - ImpTotal:" + response.getResultGet().getImpTotal() +
+				" - MonCotiz:" + response.getResultGet().getMonCotiz() +
+				" - MonId:" + response.getResultGet().getMonId());
+		
 		return retValues; 
 	}
 	

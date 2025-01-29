@@ -50,6 +50,10 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 	/** Fecha parámetro en string */
 	private String dateParamStr;
 	
+	// dREHER
+	private BigDecimal totalAmt = Env.ZERO;
+	private BigDecimal totalCreditAmt = Env.ZERO;
+	
 	/**
 	 * @return Fecha parámetro
 	 */
@@ -226,6 +230,7 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 			// Setear el tipo de documento al wccp
 			try {
 				dt = getDocType(rs);
+				System.out.println("--> LYEIELectronicClosing. Tipo de Doc leido:" + dt.getName()); // dREHER
 			} catch(Exception e) {
 				log.warning(e.getMessage());
 				continue;
@@ -237,7 +242,10 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 			min = getExtremeDocumentNos("min", dt.getID());
 			// Consultar el máximo de la fecha actual, agregando 10 por las dudas
 			max = getExtremeDocumentNos("max", dt.getID());
-			if(min <= 0 && max <= 0) continue;
+			
+			System.out.println("--> LYEIELectronicClosing. Recorre comprobantes - min:" + min + " max:" + max); // dREHER
+			
+			if(min <= 0 && max <= 0) continue; 
 			// Al menos un mínimo y máximo existen
 			min = (min - DELTA_DAYS) < 0?0:min - DELTA_DAYS;
 			max = max + DELTA_DAYS;
@@ -282,6 +290,12 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 		if(!cinfo.save()){
 			throw new Exception(CLogger.retrieveErrorAsString());
 		}
+		
+		System.out.println("LYEIElectronicClosing.Final del cierre electronico: DocumentAmt:" + getResult().fiscaldocumentamt +
+				" CreditNoteAmt:" + getResult().creditnoteamt);
+		
+		totalAmt = totalAmt.add(getResult().fiscaldocumentamt);
+		totalCreditAmt = totalCreditAmt.add(getResult().creditnoteamt);
 	}
 	
 	/**
@@ -379,10 +393,16 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 	 */
 	protected void processDocuments() throws Exception {
 		for (HashMap<String, String> document : getWsfeProvider().getRetrievedDocuments()) {
+			
+			System.out.println("--> LYEIELectronicClosing. Documento:" +
+									document.get("CbteDesde") + " - ImpTotal: " + document.get("ImpTotal"));
+			
 			if(document.get("ImpTotal") == null) continue;
+			
 			// Verificar que la fecha del comprobante sea la fecha parámetro, sino no es de
 			// la misma fecha
 			if(!validateDocument(document)) continue;
+			
 			// Traerme los datos y sumar al objeto DTO del Fiscal Close
 			// Si es crédito va para lo que es creditnote y lo que es debito va para fiscal
 			processDocument(document);
@@ -398,6 +418,11 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 	protected void processDocument(HashMap<String, String> document) throws Exception {
 		BigDecimal sign = new BigDecimal(getWsfeProvider().getaDocType().getsigno_issotrx());
 		BigDecimal monCotiz = new BigDecimal(document.get("MonCotiz"));
+
+		// dREHER 5.0
+		if(Util.isEmpty(monCotiz, true))
+			monCotiz = Env.ONE;
+		
 		BigDecimal compAmt = new BigDecimal(document.get("ImpTotal")).multiply(monCotiz);
 		BigDecimal taxAmt = (document.get("ImpIVA") == null ? BigDecimal.ZERO : new BigDecimal(document.get("ImpIVA")))
 				.multiply(monCotiz);
@@ -407,6 +432,11 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 		BigDecimal tribAmt = (tmp == null || tmp.equals("null") || tmp.isEmpty() ? BigDecimal.ZERO : new BigDecimal(tmp))
 				.multiply(monCotiz);
 		
+		System.out.println("--> LYEIELectronicClosing. processDocument:" +
+				document.get("CbteDesde") + " - NC ?: " + ((sign.compareTo(BigDecimal.ZERO) < 0)?"Si":"No") +
+				" - compAmt:" + compAmt + 
+				" - taxAmt:" + taxAmt +
+				" - monCotiz:" + monCotiz); // dREHER
 		
 		if(sign.compareTo(BigDecimal.ZERO) < 0) {
 			getResult().creditnoteamt = getResult().creditnoteamt.add(compAmt);
@@ -418,6 +448,11 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 			getResult().fiscaldocumenttaxamt = getResult().fiscaldocumenttaxamt.add(taxAmt);
 			getResult().fiscaldocumentperceptionamt = getResult().fiscaldocumentperceptionamt.add(tribAmt);
 		}
+		
+		System.out.println("--> LYEIELectronicClosing. processDocument Totales hasta el comprobante:" +
+				document.get("CbteDesde") + 
+				" - fiscaldocumentamt:" + getResult().fiscaldocumentamt + 
+				" - fiscaldocumenttaxamt:" + getResult().fiscaldocumenttaxamt); // dREHER
 	}
 	
 	/**
@@ -477,8 +512,11 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 	 */
 	protected boolean validateDocument(HashMap<String, String> document) {
 		String cbteFech = document.get("CbteFch");
-		if(cbteFech==null)
+		
+		if(cbteFech==null) {
+			System.out.println("--> LYEIELectronicClosing. Documento.CbteFch: NULA, no valido!"); // dREHER
 			return false;
+		}
 		
 		try {
 			if(cbteFech.length() > 8)
@@ -486,6 +524,8 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 		}catch(Exception ex) {
 			cbteFech = DB.getSQLValueString(get_TrxName(), "SELECT TO_CHAR(?::date, 'yyyymmdd');", document.get("CbteFch"));
 		}
+		
+		System.out.println("--> LYEIELectronicClosing. Valida fechas- Documento.CbteFch: " + cbteFech + " Parametro fecha:" + dateParamStr); // dREHER
 		return dateParamStr.equals(cbteFech);
 	}
 	
@@ -547,7 +587,9 @@ public class LYEIElectronicClosing extends AbstractSvrProcess {
 	protected String getMsg(int ptoVta) {
 		String ret = "@ProcessOK@ <br>" +
 		"Se realizo cierre del Pto.Vta.: " + getPOSNumber() + "<br>" +
-		(ptoVta>0?"Se realizo cierre del Pto.Vta. de Contingencia: " + ptoVta:"");
+		(ptoVta>0?"Se realizo cierre del Pto.Vta. de Contingencia: " + ptoVta:"") +
+		"<br>Total Debitos: <b>" + totalAmt + "</b> " +
+			" Total Creditos: <b>" + totalCreditAmt + "</b> ";
 		
 		return ret;
 	}
