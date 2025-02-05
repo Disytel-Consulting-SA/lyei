@@ -45,6 +45,7 @@ public class FECompConsResponse  extends FEV1.dif.afip.gov.ar.FECAEDetRequest  i
            java.lang.String fchVtoPago,
            java.lang.String monId,
            double monCotiz,
+           int condicionIvaReceptorId, // dREHER Feb 25
            FEV1.dif.afip.gov.ar.CbteAsoc[] cbtesAsoc,
            FEV1.dif.afip.gov.ar.Tributo[] tributos,
            FEV1.dif.afip.gov.ar.AlicIva[] iva,
@@ -78,6 +79,7 @@ public class FECompConsResponse  extends FEV1.dif.afip.gov.ar.FECAEDetRequest  i
             fchVtoPago,
             monId,
             monCotiz,
+            condicionIvaReceptorId, // dREHER Feb 25
             cbtesAsoc,
             tributos,
             iva,

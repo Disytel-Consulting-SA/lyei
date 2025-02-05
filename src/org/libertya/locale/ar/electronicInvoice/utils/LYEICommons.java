@@ -8,6 +8,7 @@ import java.util.Properties;
 
 import org.libertya.locale.ar.electronicInvoice.model.LP_C_Invoice;
 import org.openXpertya.model.MBPartner;
+import org.openXpertya.model.MCategoriaIva;
 import org.openXpertya.model.MCurrency;
 import org.openXpertya.model.MDocType;
 import org.openXpertya.model.MInvoice;
@@ -235,5 +236,45 @@ public class LYEICommons {
 	public static String getFormaPago(MInvoice inv) {
 		return inv.getPaymentRule().equals(MInvoice.PAYMENTRULE_Cash) ? "Contado"
 				: (new MPaymentTerm(inv.getCtx(), inv.getC_PaymentTerm_ID(), inv.get_TrxName()).getName());
+	}
+
+	/**
+	 * Condicion de IVA del Receptor
+	 * 
+	 * Código	Descripción
+		1	Responsable Inscripto
+		2	Monotributista
+		3	Sujeto Exento
+		4	Consumidor Final
+		5	Responsable No Inscripto
+	 * 
+	 * @param partner
+	 * @return
+	 * @author dREHER Feb 25
+	 */
+	public static int getCondIva(MBPartner partner) {
+		int condIva = 0;
+		
+		if(partner.isConsumidorFinal())
+			condIva = 5;
+		else {
+
+			int cateIva = partner.getC_Categoria_Iva_ID();
+			MCategoriaIva ci = new MCategoriaIva(Env.getCtx(), cateIva, partner.get_TrxName());
+			if(ci.getCodigo() == 2 || ci.getCodigo() == 0 || ci.getCodigo() == 9) // Resp Incripto
+				condIva = 1;
+			else if(ci.getCodigo() == 4 || ci.getCodigo() == 15) // Exento / Iva No Alcanzado
+				condIva = 4;
+			else if(ci.getCodigo() ==  5 || ci.getCodigo() ==  10) // Monotributista
+				condIva = 2;
+			else if(ci.getCodigo() ==  3 || ci.getCodigo() ==  6 || ci.getCodigo() ==  8) // No responsable
+				condIva = 6;
+		}
+
+		// No categorizado, default CF
+		if(condIva == 0)
+			condIva = 5;
+		
+		return condIva;
 	}
 }

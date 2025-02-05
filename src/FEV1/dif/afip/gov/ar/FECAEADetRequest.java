@@ -33,6 +33,7 @@ public class FECAEADetRequest  extends FEV1.dif.afip.gov.ar.FEDetRequest  implem
            java.lang.String fchVtoPago,
            java.lang.String monId,
            double monCotiz,
+           int condicionIvaReceptorId, // dREHER Feb 25
            FEV1.dif.afip.gov.ar.CbteAsoc[] cbtesAsoc,
            FEV1.dif.afip.gov.ar.Tributo[] tributos,
            FEV1.dif.afip.gov.ar.AlicIva[] iva,
@@ -60,6 +61,7 @@ public class FECAEADetRequest  extends FEV1.dif.afip.gov.ar.FEDetRequest  implem
             fchVtoPago,
             monId,
             monCotiz,
+            condicionIvaReceptorId, // dREHER Feb 25
             cbtesAsoc,
             tributos,
             iva,

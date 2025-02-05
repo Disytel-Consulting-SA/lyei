@@ -292,6 +292,11 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			detReq.setDocTipo(LYEICommons.getDocTipo(partner));
 			// Nro.  de identificación del comprador
 			detReq.setDocNro(LYEICommons.getDocNro(partner, inv));
+			
+			// dREHER Condicion de IVA del receptor
+			detReq.setCondicionIvaReceptorId(LYEICommons.getCondIva(partner));
+			
+			
 			// Fecha del comprobante  (yyyymmdd). Si  no  se envía la	fecha del comprobante se   
 			// asignará la fecha de proceso
 			detReq.setCbteFch(LYEICommons.getCbteFchString(inv));
@@ -423,6 +428,8 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			
 			requestXML = ((ServiceSoapStub)wsfe).getCallRequestXML();
 			responseXML = ((ServiceSoapStub)wsfe).getCallResponseXML();
+			
+			System.out.println("--> LYEIWSFE.requestXML: \n" + requestXML);
 			
 			// Obtuvimos errores?
 			StringBuffer retErrors = null;

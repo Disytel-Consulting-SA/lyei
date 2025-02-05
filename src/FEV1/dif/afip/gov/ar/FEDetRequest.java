@@ -13,6 +13,8 @@ public class FEDetRequest  implements java.io.Serializable {
     private int docTipo;
 
     private long docNro;
+    
+    private int condicionIvaReceptorId; // dREHER' Feb 25
 
     private long cbteDesde;
 
@@ -77,6 +79,7 @@ public class FEDetRequest  implements java.io.Serializable {
            java.lang.String fchVtoPago,
            java.lang.String monId,
            double monCotiz,
+           int condicionIvaReceptorId, // dREHER' Feb 25
            FEV1.dif.afip.gov.ar.CbteAsoc[] cbtesAsoc,
            FEV1.dif.afip.gov.ar.Tributo[] tributos,
            FEV1.dif.afip.gov.ar.AlicIva[] iva,
@@ -101,6 +104,7 @@ public class FEDetRequest  implements java.io.Serializable {
            this.fchVtoPago = fchVtoPago;
            this.monId = monId;
            this.monCotiz = monCotiz;
+           this.condicionIvaReceptorId = condicionIvaReceptorId; // dREHER' Feb 25
            this.cbtesAsoc = cbtesAsoc;
            this.tributos = tributos;
            this.iva = iva;
@@ -170,6 +174,23 @@ public class FEDetRequest  implements java.io.Serializable {
         this.docNro = docNro;
     }
 
+    /**
+     * Gets the condicion Iva receptor for this FEDetRequest.
+     * @param condicionIvaReceptorId
+     * @author dREHER Feb 25
+     */
+	public int getCondicionIvaReceptorId() {
+		return this.condicionIvaReceptorId;
+	}
+    
+    /**
+     * Sets the condicion Iva receptor for this FEDetRequest.
+     * @param condIva
+     * @author dREHER Feb 25
+     */
+	public void setCondicionIvaReceptorId(int condIva) {
+		this.condicionIvaReceptorId = condIva;
+	}
 
     /**
      * Gets the cbteDesde value for this FEDetRequest.
@@ -628,6 +649,7 @@ public class FEDetRequest  implements java.io.Serializable {
              (this.monId!=null &&
               this.monId.equals(other.getMonId()))) &&
             this.monCotiz == other.getMonCotiz() &&
+            this.condicionIvaReceptorId == other.getCondicionIvaReceptorId() && // dREHER Feb 25
             ((this.cbtesAsoc==null && other.getCbtesAsoc()==null) || 
              (this.cbtesAsoc!=null &&
               java.util.Arrays.equals(this.cbtesAsoc, other.getCbtesAsoc()))) &&
@@ -681,6 +703,7 @@ public class FEDetRequest  implements java.io.Serializable {
             _hashCode += getMonId().hashCode();
         }
         _hashCode += new Double(getMonCotiz()).hashCode();
+        _hashCode += getCondicionIvaReceptorId(); // dREHER Feb 25
         if (getCbtesAsoc() != null) {
             for (int i=0;
                  i<java.lang.reflect.Array.getLength(getCbtesAsoc());
@@ -764,6 +787,7 @@ public class FEDetRequest  implements java.io.Serializable {
         elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "long"));
         elemField.setNillable(false);
         typeDesc.addFieldDesc(elemField);
+        
         elemField = new org.apache.axis.description.ElementDesc();
         elemField.setFieldName("cbteDesde");
         elemField.setXmlName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.FEV1/", "CbteDesde"));
@@ -853,6 +877,16 @@ public class FEDetRequest  implements java.io.Serializable {
         elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "double"));
         elemField.setNillable(false);
         typeDesc.addFieldDesc(elemField);
+
+        
+        // dREHER Feb 25
+        elemField = new org.apache.axis.description.ElementDesc();
+        elemField.setFieldName("condicionIvaReceptorId");
+        elemField.setXmlName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.FEV1/", "CondicionIVAReceptorId"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "int"));
+        elemField.setNillable(false);
+        typeDesc.addFieldDesc(elemField);
+        
         elemField = new org.apache.axis.description.ElementDesc();
         elemField.setFieldName("cbtesAsoc");
         elemField.setXmlName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.FEV1/", "CbtesAsoc"));
