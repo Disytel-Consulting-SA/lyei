@@ -22,6 +22,8 @@ import ar.gov.afip.wsmtxca.service.impl.service.CodigoDescripcionType;
 
 public class LYEICommons {
 
+	public static int CONDICION_IVA_RECEPTOR_CONSFINAL = 5;
+	
 	/** Convierte una fecha a formato yyyyMMdd */
 	public static String dateToString(Date date) {
 		DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
@@ -256,24 +258,32 @@ public class LYEICommons {
 		int condIva = 0;
 		
 		if(partner.isConsumidorFinal())
-			condIva = 5;
+			condIva = CONDICION_IVA_RECEPTOR_CONSFINAL;
 		else {
 
 			int cateIva = partner.getC_Categoria_Iva_ID();
 			MCategoriaIva ci = new MCategoriaIva(Env.getCtx(), cateIva, partner.get_TrxName());
-			if(ci.getCodigo() == 2 || ci.getCodigo() == 0 || ci.getCodigo() == 9) // Resp Incripto
-				condIva = 1;
-			else if(ci.getCodigo() == 4 || ci.getCodigo() == 15) // Exento / Iva No Alcanzado
-				condIva = 4;
-			else if(ci.getCodigo() ==  5 || ci.getCodigo() ==  10) // Monotributista
-				condIva = 2;
-			else if(ci.getCodigo() ==  3 || ci.getCodigo() ==  6 || ci.getCodigo() ==  8) // No responsable
-				condIva = 6;
+			int codConfig = 0;
+			if(ci.get_Value("IVAReceptorID")!=null) {
+				codConfig = (Integer)ci.get_Value("IVAReceptorID");
+			}
+			
+			if(codConfig <=0) {
+				if(ci.getCodigo() == 2 || ci.getCodigo() == 0 || ci.getCodigo() == 9) // Resp Incripto
+					condIva = 1;
+				else if(ci.getCodigo() == 4 || ci.getCodigo() == 15) // Exento / Iva No Alcanzado
+					condIva = 4;
+				else if(ci.getCodigo() ==  5 || ci.getCodigo() ==  10) // Monotributista
+					condIva = 2;
+				else if(ci.getCodigo() ==  3 || ci.getCodigo() ==  6 || ci.getCodigo() ==  8) // No responsable
+					condIva = 6;
+			}else
+				condIva = codConfig;
 		}
 
 		// No categorizado, default CF
 		if(condIva == 0)
-			condIva = 5;
+			condIva = CONDICION_IVA_RECEPTOR_CONSFINAL;
 		
 		return condIva;
 	}

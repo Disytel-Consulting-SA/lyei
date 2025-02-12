@@ -293,7 +293,7 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			// Nro.  de identificación del comprador
 			detReq.setDocNro(LYEICommons.getDocNro(partner, inv));
 			
-			// dREHER Condicion de IVA del receptor
+			// dREHER Feb'25 Condicion de IVA del receptor
 			detReq.setCondicionIvaReceptorId(LYEICommons.getCondIva(partner));
 			
 			
