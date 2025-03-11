@@ -3,6 +3,7 @@ package sr.puc.server.ws.soap.a5;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Properties;
 
 import org.libertya.locale.ar.electronicInvoice.model.MLYEIElectronicInvoiceConfig;
@@ -52,7 +53,7 @@ public class WSCI {
 	}
 	
 	/** Genera la consulta al WS de AFIP por el CUIT dado */
-	public HashMap<String, String> consultarCUIT(long cuit) throws Exception {
+	public LinkedHashMap<String, String> consultarCUIT(long cuit) throws Exception {
 		
 		// Seteo datos iniciales
 		setCUIT(cuit);
@@ -62,7 +63,7 @@ public class WSCI {
 		loadInitialValues();
 		
 		// Valores minimos a retornar, bien sea error o no (numero de documento, tipo de comprobante y punto de venta)
-		HashMap<String, String> retValues = new HashMap<String, String>(); 
+		LinkedHashMap<String, String> retValues = new LinkedHashMap<String, String>(); 
 		retValues.put("CUIT", 	"" + cuit);
 
 		LYEIWSCI wsci = new LYEIWSCI(posConfig);
@@ -117,6 +118,22 @@ public class WSCI {
 				retValues.put("DF			Provincia",	"" + d.getDescripcionProvincia());
 				retValues.put("DF			Dato Adicional",	"" + d.getTipoDatoAdicional());
 			}
+			retValues.put("------------------------","---------------------------");
+			
+			retValues.put("DRG Caracterizaciones", "");
+			Caracterizacion[] cars = dg.getCaracterizacion();
+			if(cars!=null) {
+				int i = 0;
+				for(Caracterizacion a: cars) {
+					i++;
+					retValues.put("DRG-CA" + i +"	Id Caracterizacion",		"" + a.getIdCaracterizacion());
+					retValues.put("DRG-CA" + i +"	Descripcion",		"" + a.getDescripcionCaracterizacion());
+					retValues.put("DRG-CA" + i +"	Periodo",		"" + a.getPeriodo());
+					retValues.put("------------------------","---------------------------");
+				}
+				retValues.put("------------------------","---------------------------");
+			}
+			
 		}
 		
 		retValues.put("------------------------","---------------------------");
@@ -151,14 +168,54 @@ public class WSCI {
 				retValues.put("------------------------","---------------------------");
 			}
 			
+			retValues.put("DRG Regimen",	"");
+			Regimen[] regs = drg.getRegimen();
+			if(regs!=null) {
+				int x = 0;
+				for(Regimen reg: regs) {
+					x++;
+					retValues.put("DRG-RE" + x + " Id Regimen",		"" + reg.getIdRegimen());
+					retValues.put("DRG-RE" + x + " Tipo Regimen",		"" + reg.getTipoRegimen());
+					retValues.put("DRG-RE" + x + " Id Impuesto",		"" + reg.getIdImpuesto());
+					retValues.put("DRG-RE" + x + " Categoria",		"" + reg.getDescripcionRegimen());
+					retValues.put("DRG-RE" + x + " Periodo",		"" + cat.getPeriodo());
+					retValues.put("------------------------","---------------------------");
+				}
+				retValues.put("------------------------","---------------------------");
+			}
+			
+			Impuesto[] i = drg.getImpuesto();
+			retValues.put("DRG IM Impuesto", "");
+			if(i!=null) {
+				int x = 0;
+				for(Impuesto imp: i) {
+					x++;
+					retValues.put("I-I" + x + "	Descripcion",		"" + imp.getDescripcionImpuesto());
+					retValues.put("I-I" + x + "	Estado",		"" + imp.getEstadoImpuesto());
+					retValues.put("I-I" + x + "	Id",		"" + imp.getIdImpuesto());
+					retValues.put("I-I" + x + "	Motivo",		"" + imp.getMotivo());
+					retValues.put("I-I" + x + "	Periodo",		"" + imp.getPeriodo());
+					retValues.put("------------------------","---------------------------");
+				}
+				retValues.put("------------------------","---------------------------");
+			}
+			
 		}
 		
 		DatosMonotributo m = persona.getDatosMonotributo();
 		if(m!=null) {
 			retValues.put("DM Datos Monotributo",	"");
-			retValues.put("DM		Categoria Monotributo",		"" + m.getCategoriaMonotributo());
+			retValues.put("DM		Categoria Monotributo",		"");
+			Categoria cat = m.getCategoriaMonotributo();
+			if(cat!=null) {
+				retValues.put("DM-CA		Id Categoria",		"" + cat.getIdCategoria());
+				retValues.put("DM-CA		Id Impuesto",		"" + cat.getIdImpuesto());
+				retValues.put("DM-CA		Descripcion",		"" + cat.getDescripcionCategoria());
+				retValues.put("DM-CA		Periodo",		"" + cat.getPeriodo());
+				retValues.put("------------------------","---------------------------");
+			}
+			
 			retValues.put("DM		Actividad Monotributo",		"");
-
 			Actividad am = m.getActividadMonotributista();
 			if(am!=null) {
 				retValues.put("DM-AM		Descripcion",		"" + am.getDescripcionActividad());
@@ -206,7 +263,9 @@ public class WSCI {
 				for(Impuesto act: i) {
 					x++;
 					retValues.put("I-I" + x + "	Descripcion",		"" + act.getDescripcionImpuesto());
+					retValues.put("I-I" + x + "	Estado",		"" + act.getEstadoImpuesto());
 					retValues.put("I-I" + x + "	Id",		"" + act.getIdImpuesto());
+					retValues.put("I-I" + x + "	Motivo",		"" + act.getMotivo());
 					retValues.put("I-I" + x + "	Periodo",		"" + act.getPeriodo());
 					retValues.put("------------------------","---------------------------");
 				}

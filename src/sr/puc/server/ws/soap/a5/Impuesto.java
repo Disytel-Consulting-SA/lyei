@@ -13,17 +13,25 @@ public class Impuesto  implements java.io.Serializable {
     private java.lang.Integer idImpuesto;
 
     private java.lang.Integer periodo;
+    
+    private java.lang.String motivo;
+    
+    private java.lang.String estadoImpuesto;
 
     public Impuesto() {
     }
 
     public Impuesto(
            java.lang.String descripcionImpuesto,
+           java.lang.String estadoImpuesto,
            java.lang.Integer idImpuesto,
+           java.lang.String motivo,
            java.lang.Integer periodo) {
            this.descripcionImpuesto = descripcionImpuesto;
            this.idImpuesto = idImpuesto;
            this.periodo = periodo;
+           this.estadoImpuesto = estadoImpuesto;
+           this.motivo = motivo;
     }
 
 
@@ -44,6 +52,44 @@ public class Impuesto  implements java.io.Serializable {
      */
     public void setDescripcionImpuesto(java.lang.String descripcionImpuesto) {
         this.descripcionImpuesto = descripcionImpuesto;
+    }
+    
+    /**
+     * Gets the estadoImpuesto value for this Impuesto.
+     * 
+     * @return estadoImpuesto
+     */
+    public java.lang.String getEstadoImpuesto() {
+        return estadoImpuesto;
+    }
+
+
+    /**
+     * Sets the estadoImpuesto value for this Impuesto.
+     * 
+     * @param estadoImpuesto
+     */
+    public void setEstadoImpuesto(java.lang.String estadoImpuesto) {
+        this.estadoImpuesto = estadoImpuesto;
+    }
+
+    /**
+     * Gets the motivo value for this Impuesto.
+     * 
+     * @return motivoImpuesto
+     */
+    public java.lang.String getMotivo() {
+        return motivo;
+    }
+
+
+    /**
+     * Sets the motivo value for this Impuesto.
+     * 
+     * @param motivo
+     */
+    public void setMotivo(java.lang.String motivo) {
+        this.motivo = motivo;
     }
 
 
@@ -106,7 +152,13 @@ public class Impuesto  implements java.io.Serializable {
               this.idImpuesto.equals(other.getIdImpuesto()))) &&
             ((this.periodo==null && other.getPeriodo()==null) || 
              (this.periodo!=null &&
-              this.periodo.equals(other.getPeriodo())));
+              this.periodo.equals(other.getPeriodo()))) && 
+            ((this.motivo==null && other.getMotivo()==null) || 
+                     (this.motivo!=null &&
+                      this.motivo.equals(other.getMotivo()))) &&
+            ((this.estadoImpuesto==null && other.getEstadoImpuesto()==null) || 
+                             (this.estadoImpuesto!=null &&
+                              this.estadoImpuesto.equals(other.getEstadoImpuesto())));
         __equalsCalc = null;
         return _equals;
     }
@@ -121,8 +173,14 @@ public class Impuesto  implements java.io.Serializable {
         if (getDescripcionImpuesto() != null) {
             _hashCode += getDescripcionImpuesto().hashCode();
         }
+        if (getEstadoImpuesto() != null) {
+            _hashCode += getEstadoImpuesto().hashCode();
+        }
         if (getIdImpuesto() != null) {
             _hashCode += getIdImpuesto().hashCode();
+        }
+        if (getMotivo() != null) {
+            _hashCode += getMotivo().hashCode();
         }
         if (getPeriodo() != null) {
             _hashCode += getPeriodo().hashCode();
@@ -137,6 +195,7 @@ public class Impuesto  implements java.io.Serializable {
 
     static {
         typeDesc.setXmlType(new javax.xml.namespace.QName("http://a5.soap.ws.server.puc.sr/", "impuesto"));
+        
         org.apache.axis.description.ElementDesc elemField = new org.apache.axis.description.ElementDesc();
         elemField.setFieldName("descripcionImpuesto");
         elemField.setXmlName(new javax.xml.namespace.QName("", "descripcionImpuesto"));
@@ -144,6 +203,15 @@ public class Impuesto  implements java.io.Serializable {
         elemField.setMinOccurs(0);
         elemField.setNillable(false);
         typeDesc.addFieldDesc(elemField);
+        
+        elemField = new org.apache.axis.description.ElementDesc();
+        elemField.setFieldName("estadoImpuesto");
+        elemField.setXmlName(new javax.xml.namespace.QName("", "estadoImpuesto"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "string"));
+        elemField.setMinOccurs(0);
+        elemField.setNillable(false);
+        typeDesc.addFieldDesc(elemField);
+        
         elemField = new org.apache.axis.description.ElementDesc();
         elemField.setFieldName("idImpuesto");
         elemField.setXmlName(new javax.xml.namespace.QName("", "idImpuesto"));
@@ -151,6 +219,15 @@ public class Impuesto  implements java.io.Serializable {
         elemField.setMinOccurs(0);
         elemField.setNillable(false);
         typeDesc.addFieldDesc(elemField);
+        
+        elemField = new org.apache.axis.description.ElementDesc();
+        elemField.setFieldName("motivo");
+        elemField.setXmlName(new javax.xml.namespace.QName("", "motivo"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "string"));
+        elemField.setMinOccurs(0);
+        elemField.setNillable(false);
+        typeDesc.addFieldDesc(elemField);
+        
         elemField = new org.apache.axis.description.ElementDesc();
         elemField.setFieldName("periodo");
         elemField.setXmlName(new javax.xml.namespace.QName("", "periodo"));

@@ -461,60 +461,60 @@ public class PersonaServiceA5SoapBindingStub extends org.apache.axis.client.Stub
 
         setRequestHeaders(_call);
         setAttachments(_call);
- try {        java.lang.Object _resp = _call.invoke(new java.lang.Object[] {token, sign, new java.lang.Long(cuitRepresentada), new java.lang.Long(idPersona)});
+        try {        java.lang.Object _resp = _call.invoke(new java.lang.Object[] {token, sign, new java.lang.Long(cuitRepresentada), new java.lang.Long(idPersona)});
 
         if (_resp instanceof java.rmi.RemoteException) {
-            throw (java.rmi.RemoteException)_resp;
+        	throw (java.rmi.RemoteException)_resp;
         }
         else {
-            extractAttachments(_call);
-            try {
-                return (sr.puc.server.ws.soap.a5.PersonaReturn) _resp;
-            } catch (java.lang.Exception _exception) {
-                return (sr.puc.server.ws.soap.a5.PersonaReturn) org.apache.axis.utils.JavaUtils.convert(_resp, sr.puc.server.ws.soap.a5.PersonaReturn.class);
-            }
+        	extractAttachments(_call);
+        	try {
+        		return (sr.puc.server.ws.soap.a5.PersonaReturn) _resp;
+        	} catch (java.lang.Exception _exception) {
+        		return (sr.puc.server.ws.soap.a5.PersonaReturn) org.apache.axis.utils.JavaUtils.convert(_resp, sr.puc.server.ws.soap.a5.PersonaReturn.class);
+        	}
         }
-  } catch (org.apache.axis.AxisFault axisFaultException) {
-    if (axisFaultException.detail != null) {
-        if (axisFaultException.detail instanceof java.rmi.RemoteException) {
-              throw (java.rmi.RemoteException) axisFaultException.detail;
-         }
-        if (axisFaultException.detail instanceof sr.puc.server.ws.soap.a5.SRValidationException) {
-              throw (sr.puc.server.ws.soap.a5.SRValidationException) axisFaultException.detail;
-         }
-   }
-  throw axisFaultException;
-}
+        } catch (org.apache.axis.AxisFault axisFaultException) {
+        	if (axisFaultException.detail != null) {
+        		if (axisFaultException.detail instanceof java.rmi.RemoteException) {
+        			throw (java.rmi.RemoteException) axisFaultException.detail;
+        		}
+        		if (axisFaultException.detail instanceof sr.puc.server.ws.soap.a5.SRValidationException) {
+        			throw (sr.puc.server.ws.soap.a5.SRValidationException) axisFaultException.detail;
+        		}
+        	}
+        	throw axisFaultException;
+        }
     }
 
     public sr.puc.server.ws.soap.a5.DummyReturn dummy() throws java.rmi.RemoteException {
-        if (super.cachedEndpoint == null) {
-            throw new org.apache.axis.NoEndPointException();
-        }
-        org.apache.axis.client.Call _call = createCall();
-        _call.setOperation(_operations[3]);
-        _call.setUseSOAPAction(true);
-        _call.setSOAPActionURI("");
-        _call.setEncodingStyle(null);
-        _call.setProperty(org.apache.axis.client.Call.SEND_TYPE_ATTR, Boolean.FALSE);
-        _call.setProperty(org.apache.axis.AxisEngine.PROP_DOMULTIREFS, Boolean.FALSE);
-        _call.setSOAPVersion(org.apache.axis.soap.SOAPConstants.SOAP11_CONSTANTS);
-        _call.setOperationName(new javax.xml.namespace.QName("http://a5.soap.ws.server.puc.sr/", "dummy"));
+    	if (super.cachedEndpoint == null) {
+    		throw new org.apache.axis.NoEndPointException();
+    	}
+    	org.apache.axis.client.Call _call = createCall();
+    	_call.setOperation(_operations[3]);
+    	_call.setUseSOAPAction(true);
+    	_call.setSOAPActionURI("");
+    	_call.setEncodingStyle(null);
+    	_call.setProperty(org.apache.axis.client.Call.SEND_TYPE_ATTR, Boolean.FALSE);
+    	_call.setProperty(org.apache.axis.AxisEngine.PROP_DOMULTIREFS, Boolean.FALSE);
+    	_call.setSOAPVersion(org.apache.axis.soap.SOAPConstants.SOAP11_CONSTANTS);
+    	_call.setOperationName(new javax.xml.namespace.QName("http://a5.soap.ws.server.puc.sr/", "dummy"));
 
-        setRequestHeaders(_call);
-        setAttachments(_call);
- try {        java.lang.Object _resp = _call.invoke(new java.lang.Object[] {});
+    	setRequestHeaders(_call);
+    	setAttachments(_call);
+    	try {        java.lang.Object _resp = _call.invoke(new java.lang.Object[] {});
 
-        if (_resp instanceof java.rmi.RemoteException) {
-            throw (java.rmi.RemoteException)_resp;
-        }
-        else {
-            extractAttachments(_call);
-            try {
-                return (sr.puc.server.ws.soap.a5.DummyReturn) _resp;
-            } catch (java.lang.Exception _exception) {
-                return (sr.puc.server.ws.soap.a5.DummyReturn) org.apache.axis.utils.JavaUtils.convert(_resp, sr.puc.server.ws.soap.a5.DummyReturn.class);
-            }
+    	if (_resp instanceof java.rmi.RemoteException) {
+    		throw (java.rmi.RemoteException)_resp;
+    	}
+    	else {
+    		extractAttachments(_call);
+    		try {
+    			return (sr.puc.server.ws.soap.a5.DummyReturn) _resp;
+    		} catch (java.lang.Exception _exception) {
+    			return (sr.puc.server.ws.soap.a5.DummyReturn) org.apache.axis.utils.JavaUtils.convert(_resp, sr.puc.server.ws.soap.a5.DummyReturn.class);
+    		}
         }
   } catch (org.apache.axis.AxisFault axisFaultException) {
   throw axisFaultException;

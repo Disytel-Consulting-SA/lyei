@@ -22,6 +22,7 @@ import org.openXpertya.util.Env;
 import org.openXpertya.util.Ini;
 import org.openXpertya.util.Secure;
 
+import sr.puc.server.ws.soap.a5.DatosGenerales;
 import sr.puc.server.ws.soap.a5.PersonaReturn;
 import sr.puc.server.ws.soap.a5.PersonaServiceA5_PortType;
 import sr.puc.server.ws.soap.a5.PersonaServiceA5_ServiceLocator;
@@ -95,6 +96,10 @@ public class LYEIWSCI {
 			System.out.println("PersonaReturn.result[" + persona + "]");
 			
 		} catch (Exception e) {
+			persona = new PersonaReturn();
+			DatosGenerales dg = new DatosGenerales();
+			dg.setRazonSocial(e.toString());
+			persona.setDatosGenerales(dg);
 			e.printStackTrace();
 			MLYEIElectronicInvoiceLog.logActivity(LYEIWSCI.class, Level.SEVERE, null, posConfig!=null?posConfig.getC_LYEIElectronicPOSConfig_ID():null, null, "Error en consulta de CUIT: " + e.getMessage());
 			logXMLRequestResponse(port);

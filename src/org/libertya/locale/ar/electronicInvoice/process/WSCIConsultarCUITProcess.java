@@ -3,6 +3,7 @@ package org.libertya.locale.ar.electronicInvoice.process;
 import java.math.BigDecimal;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 import org.openXpertya.process.ProcessInfoParameter;
@@ -55,7 +56,7 @@ public class WSCIConsultarCUITProcess extends SvrProcess {
 		
 		WSCI w = new WSCI();
 		// Consulta de CUIT
-		HashMap<String, String> resp = w.consultarCUIT(getCUIT());
+		LinkedHashMap<String, String> resp = w.consultarCUIT(getCUIT());
 		for (Map.Entry<String, String> entry : resp.entrySet()) {
 		    System.out.println("clave=" + entry.getKey() + ", valor=" + entry.getValue());
 		    this.addLog(0, null, null, entry.getKey() + " " + entry.getValue());
