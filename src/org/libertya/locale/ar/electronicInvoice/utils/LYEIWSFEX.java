@@ -83,6 +83,23 @@ public class LYEIWSFEX extends LYEIWSFE implements ElectronicInvoiceInterface {
 			// Para los que no son de tipo “19 - Facturas de Exportación” omitir la fecha de pago
 			if (Integer.parseInt(MDocType.DOCSUBTYPECAE_FacturaDeExportaciónE) == LYEICommons.getCbteTipo(docType)) {
 				cmp.setFecha_pago(LYEICommons.getFechaVtoString(inv));
+				
+				/** dREHER - Marzo 25
+				 * 
+				 * CanMisMonExt
+				 * 
+				 * Marca que identifica si el comprobante se
+   				   cancela en misma moneda del comprobante
+				   (moneda extranjera). Valores posibles S o N.
+				   
+				   Solo se informa para facturas de exportacion y monedas distinta a pesos argentinos
+				   
+				   TODO: agregar columna en MInvoice para marcar con que moneda se cancela la factura
+				   
+				 */
+				if(isVersion40 && currency.getC_Currency_ID()!=118) 
+					cmp.setCanmismonext(LYEICommons.getCanMisMonExt(inv));
+				
 			}
 			// Forma de Pago
 			cmp.setForma_pago(LYEICommons.getFormaPago(inv));

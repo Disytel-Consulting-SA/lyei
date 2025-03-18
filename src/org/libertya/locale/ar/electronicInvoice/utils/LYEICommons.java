@@ -287,4 +287,19 @@ public class LYEICommons {
 		
 		return condIva;
 	}
+	
+	/**
+	 * Nuevo parametro LYEIEX v 3.0
+	 * @param inv
+	 * @return S=Cancela en misma moneda, N=No cancela en misma moneda, default=N
+	 * @author dREHER Mar 25
+	 */
+	public static String getCanMisMonExt(MInvoice inv) {
+		String cancelaMismaMoneda = "N";
+		if(inv.get_Value("IsCancelaMismaMoneda")!=null)
+			if( ((String)inv.get_Value("IsCancelaMismaMoneda")).equals("Y"))
+				cancelaMismaMoneda = "S";
+		
+		return cancelaMismaMoneda;
+	}
 }

@@ -36,6 +36,7 @@ import org.openXpertya.model.X_C_Invoice;
 import org.openXpertya.reflection.CallResult;
 import org.openXpertya.util.CLogger;
 import org.openXpertya.util.DB;
+import org.openXpertya.util.Env;
 import org.openXpertya.util.Util;
 
 import FEV1.dif.afip.gov.ar.Actividad;
@@ -97,6 +98,8 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 	/** Punto de Venta */
 	protected int puntoDeVenta = 0;
 	
+	protected boolean isVersion40 = false;
+	
 	/**
 	 * Constructor para servicio WSFEV1 de AFIP
 	 * @param inv factura
@@ -107,6 +110,10 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 		this.inv = inv;
 		this.ctx = inv.getCtx();
 		this.trx = inv.get_TrxName();
+		
+		String version40 = MPreference.GetCustomPreferenceValue("LYEIVersion4.0", Env.getAD_Client_ID(ctx));
+		if(version40!=null && version40.equals("Y"))
+			isVersion40 = true;
 		
 		puntoDeVenta = inv.getPuntoDeVenta();
 		
@@ -294,7 +301,8 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			detReq.setDocNro(LYEICommons.getDocNro(partner, inv));
 			
 			// dREHER Feb'25 Condicion de IVA del receptor
-			detReq.setCondicionIvaReceptorId(LYEICommons.getCondIva(partner));
+			if(isVersion40)
+				detReq.setCondicionIvaReceptorId(LYEICommons.getCondIva(partner));
 			
 			
 			// Fecha del comprobante  (yyyymmdd). Si  no  se envía la	fecha del comprobante se   

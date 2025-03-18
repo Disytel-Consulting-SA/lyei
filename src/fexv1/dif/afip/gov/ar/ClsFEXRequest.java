@@ -59,6 +59,8 @@ public class ClsFEXRequest  implements java.io.Serializable {
     private fexv1.dif.afip.gov.ar.Opcional[] opcionales;
 
     private java.lang.String fecha_pago;
+    
+    private java.lang.String canmismonext;
 
     public ClsFEXRequest() {
     }
@@ -79,6 +81,7 @@ public class ClsFEXRequest  implements java.io.Serializable {
            java.lang.String id_impositivo,
            java.lang.String moneda_Id,
            java.math.BigDecimal moneda_ctz,
+           java.lang.String canmismonext, // Marzo 25
            java.lang.String obs_comerciales,
            java.math.BigDecimal imp_total,
            java.lang.String obs,
@@ -105,6 +108,7 @@ public class ClsFEXRequest  implements java.io.Serializable {
            this.id_impositivo = id_impositivo;
            this.moneda_Id = moneda_Id;
            this.moneda_ctz = moneda_ctz;
+           this.setCanmismonext(canmismonext); // Marzo 25
            this.obs_comerciales = obs_comerciales;
            this.imp_total = imp_total;
            this.obs = obs;
@@ -409,7 +413,16 @@ public class ClsFEXRequest  implements java.io.Serializable {
     }
 
 
-    /**
+    // Marzo 25
+    public java.lang.String getCanmismonext() {
+		return canmismonext;
+	}
+
+	public void setCanmismonext(java.lang.String canmismonext) {
+		this.canmismonext = canmismonext;
+	}
+
+	/**
      * Sets the moneda_ctz value for this ClsFEXRequest.
      * 
      * @param moneda_ctz
@@ -681,6 +694,9 @@ public class ClsFEXRequest  implements java.io.Serializable {
             ((this.moneda_ctz==null && other.getMoneda_ctz()==null) || 
              (this.moneda_ctz!=null &&
               this.moneda_ctz.equals(other.getMoneda_ctz()))) &&
+            ((this.canmismonext==null && other.getCanmismonext()==null) || // Marzo 25
+                    (this.canmismonext!=null &&
+                     this.canmismonext.equals(other.getCanmismonext()))) &&
             ((this.obs_comerciales==null && other.getObs_comerciales()==null) || 
              (this.obs_comerciales!=null &&
               this.obs_comerciales.equals(other.getObs_comerciales()))) &&
@@ -761,6 +777,9 @@ public class ClsFEXRequest  implements java.io.Serializable {
         }
         if (getMoneda_ctz() != null) {
             _hashCode += getMoneda_ctz().hashCode();
+        }
+        if (getCanmismonext() != null) { // Marzo 25
+            _hashCode += getCanmismonext().hashCode();
         }
         if (getObs_comerciales() != null) {
             _hashCode += getObs_comerciales().hashCode();
@@ -923,6 +942,12 @@ public class ClsFEXRequest  implements java.io.Serializable {
         elemField.setFieldName("moneda_ctz");
         elemField.setXmlName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "Moneda_ctz"));
         elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "decimal"));
+        elemField.setNillable(false);
+        typeDesc.addFieldDesc(elemField);
+        elemField = new org.apache.axis.description.ElementDesc(); // Marzo 25
+        elemField.setFieldName("canmismonext");
+        elemField.setXmlName(new javax.xml.namespace.QName("http://ar.gov.afip.dif.fexv1/", "CanMisMonExt"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "string"));
         elemField.setNillable(false);
         typeDesc.addFieldDesc(elemField);
         elemField = new org.apache.axis.description.ElementDesc();
