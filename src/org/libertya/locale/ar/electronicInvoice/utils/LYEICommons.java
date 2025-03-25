@@ -297,7 +297,7 @@ public class LYEICommons {
 	public static String getCanMisMonExt(MInvoice inv) {
 		String cancelaMismaMoneda = "N";
 		if(inv.get_Value("IsCancelaMismaMoneda")!=null)
-			if( ((String)inv.get_Value("IsCancelaMismaMoneda")).equals("Y"))
+			if( ((Boolean)inv.get_Value("IsCancelaMismaMoneda")))
 				cancelaMismaMoneda = "S";
 		
 		return cancelaMismaMoneda;
