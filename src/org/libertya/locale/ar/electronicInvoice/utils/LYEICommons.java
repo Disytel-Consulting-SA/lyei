@@ -1,8 +1,12 @@
 package org.libertya.locale.ar.electronicInvoice.utils;
 
 import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Properties;
 
@@ -142,22 +146,131 @@ public class LYEICommons {
 		return currency.getWSFECode();
 	}
 	
-	/** Cotizacion de la moneda */
+	/** Cotizacion de la moneda 
+	 * por compatibilidad con otras llamadas
+	 * dREHER Jun 25 
+	 * */
 	public static BigDecimal getMonCotiz(MInvoice inv, Properties ctx) {
-		return getMonCotizBigDecimal(inv, ctx);
+		return getMonCotizBigDecimal(inv, ctx, false);
 	}
 	
 	/** Cotizacion de la moneda */
-	public static BigDecimal getMonCotizBigDecimal(MInvoice inv, Properties ctx) {
+	public static BigDecimal getMonCotiz(MInvoice inv, Properties ctx, boolean is40Version) {
+		return getMonCotizBigDecimal(inv, ctx, is40Version);
+	}
+	
+	/** Cotizacion de la moneda */
+	public static BigDecimal getMonCotizBigDecimal(MInvoice inv, Properties ctx, boolean is40Version) {
+		
+		// dREHER Jun 25, si la moneda del sistema es la de la factura, la cotizacion es 1
+		if(inv.getC_Currency_ID() ==
+						Env.getContextAsInt(ctx, "$C_Currency_ID"))
+			return BigDecimal.ONE;
+		
+		Timestamp fechaCotiz = inv.getDateAcct();
+		if(is40Version) {
+			fechaCotiz = getFechaConversion(inv);
+		}
+		
 		BigDecimal cotizacion = 
-				MCurrency.currencyConvert(	Env.ONE,
-											inv.getC_Currency_ID(), 
-											Env.getContextAsInt(ctx, "$C_Currency_ID"), 
-											inv.getDateAcct(), 
-											0,
-											ctx);
+				currencyConvert(Env.ONE,
+						inv.getC_Currency_ID(), 
+						Env.getContextAsInt(ctx, "$C_Currency_ID"), 
+						fechaCotiz, 
+						0, // AD_Org_ID dREHER Jun 25
+						inv.getC_ConversionType_ID(), // dREHER Jun 25
+						ctx);
 		return cotizacion;
 	}
+	
+	/*
+	 * Si se cancela en la misma moneda (se factura en otra moneda) 
+	 * debe validar contra el dia anterior, no contra hoy
+	 * @author dREHER
+	 */
+	public static Timestamp getFechaConversion(MInvoice inv) {
+		Timestamp fecha = inv.getDateAcct();
+		
+		// Calcular la fecha base: un día antes de la fecha de factura
+	    Calendar cal = Calendar.getInstance();
+	    cal.setTimeInMillis(fecha.getTime());
+		
+		int currecy_Client = Env
+				.getContextAsInt(Env.getCtx(), "$C_Currency_ID");
+		if (inv.getC_Currency_ID() == currecy_Client || (inv.get_Value("IsCancelaMismaMoneda")==null || Boolean.FALSE.equals(inv.get_Value("IsCancelaMismaMoneda")))) {
+			Date date = cal.getTime();
+			Timestamp ts = new Timestamp(date.getTime());
+			return ts;
+		}
+
+		// dia anterior
+	    cal.add(Calendar.DATE, -1);
+
+	    // Si es sábado, retrocede 1 día más (viernes); si es domingo, retrocede 2 días (viernes)
+	    int dia = cal.get(Calendar.DAY_OF_WEEK);
+	    if (dia == Calendar.SATURDAY) {
+	        cal.add(Calendar.DATE, -1);
+	    } else if (dia == Calendar.SUNDAY) {
+	        cal.add(Calendar.DATE, -2);
+	    }
+
+	    Date date = cal.getTime();
+		Timestamp ts = new Timestamp(date.getTime());
+		return ts;
+	}
+	
+	// dREHER Jun 25
+    // sobre cargo para que tome el tipo de conversion
+    public static BigDecimal currencyConvert(BigDecimal amount, int currencyFrom, int currencyTo, Date date, int adOrg, int currencyConvertType, Properties ctx )
+    {
+    	// Si es la misma moneda entonces ni siquiera abro una conexión
+    	if(currencyFrom == currencyTo){
+    		return amount;
+    	}
+    	
+    	BigDecimal result = null;
+    	PreparedStatement pstmt = null;
+    	ResultSet rs = null;
+    	try
+    	{
+    		StringBuffer sql = new StringBuffer("SELECT currencyconvert (?, ?, ?, ? ::timestamp, " + 
+    									(currencyConvertType<=0?"null": String.valueOf(currencyConvertType)) + 
+    									", ?, ");
+    		if (adOrg > 0)
+    			sql.append( "? )");
+    		else
+    			sql.append( "null )");
+
+    		pstmt = DB.prepareStatement(sql.toString());
+    		pstmt.setBigDecimal(1, amount);
+    		pstmt.setInt(2, currencyFrom);
+    		pstmt.setInt(3, currencyTo);
+    		//pstmt.setDate(4, new  java.sql.Date(date.getTime()) );
+    		// currencyconvert requiere un timestamp como parametro. En ciertos casos 
+    		// estaba funcionando mal con el Date. 
+    		pstmt.setTimestamp(4, new Timestamp(date.getTime()) ); 
+    		pstmt.setInt(5, Env.getAD_Client_ID(ctx) );
+    		
+    		if (adOrg > 0)
+    			pstmt.setInt(6, adOrg );
+    		
+    		rs = pstmt.executeQuery();
+    		if (rs.next())
+    			result = rs.getBigDecimal(1);
+    	}
+    	catch (Exception e ) {
+    		e.printStackTrace();
+    	} finally {
+    		try {
+				if(rs != null)rs.close();
+				if(pstmt != null)pstmt.close();
+			} catch (Exception e2) {
+				e2.printStackTrace();
+			}
+    	}
+    	
+		return result;
+    }    
 	
 	/** Concepto de la FE segun existan productos y/o servicios en la misma */
 	public static int getConcepto(int invoiceID) {

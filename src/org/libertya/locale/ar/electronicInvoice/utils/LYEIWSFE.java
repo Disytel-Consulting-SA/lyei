@@ -315,7 +315,7 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			// Código de  moneda  del comprobante. Consultar método FEParamGetTiposMonedas para valores posibles
 			detReq.setMonId(LYEICommons.getMonId(currency));
 			// Cotizacion de  la  moneda  informada.  Para PES, pesos argentinos  la misma debe ser 1
-			detReq.setMonCotiz(LYEICommons.getMonCotiz(inv, ctx).doubleValue());
+			detReq.setMonCotiz(LYEICommons.getMonCotiz(inv, ctx, isVersion40).doubleValue());
 			// Impuestos.  No deben ser enviados para comprobantes de tipo C
 			AlicIva[] iva = getIva();
 			double impIva = getImpIVA(iva);
