@@ -241,6 +241,7 @@ public class LYEIWSAA {
 			// Obtener un TA valido
 			MLYEIElectronicInvoiceLog.logActivity(LYEIWSAA.class, Level.INFO, null, aConfig.getC_LYEIElectronicPOSConfig_ID(), aConfig.getC_LYEIElectronicInvoiceConfig_ID(), "Invocando a loginCms para POS " + aConfig.getPOS() + " en " + endPointAddress);
 			login = locator.getLoginCms();
+			((LoginCmsSoapBindingStub)login).setTimeout(LYEITools.getTimeout(LYEIConstants.EXTERNAL_SERVICE_WSAA_PREFIX, targetEnv));
 			String response = login.loginCms(generateTRABase64(aConfig, ctx, targetEnv));
 			if (response==null) 
 				throw new Exception("Sin respuesta desde WSAA");
