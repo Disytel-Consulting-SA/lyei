@@ -5,8 +5,17 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.IOException;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.Period;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -366,14 +375,8 @@ public class LYEIWSAA {
 				return true;
 			
 			// Si no es nulo, buscar el expirationTime y comparar con la fecha actual 
-			DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
 			System.out.println("requiresNewTA. TA:" + ta);
-			
-			Document doc = builder.parse(new ByteArrayInputStream(ta));
-			NodeList signNodes = doc.getElementsByTagName("expirationTime"); 
-			String expStr = (signNodes.item(0).getFirstChild().getNodeValue());
-			DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
-			Date exp = df.parse(expStr.substring(0, expStr.length()-6));
+			Date exp = getExpirationDateFromTA(ta);
 			Date now = new Date();
 			
 			System.out.println("Vto token:" + exp + " hoy:" + now);
@@ -382,7 +385,44 @@ public class LYEIWSAA {
 		} catch (Exception e) {
 			return true;
 		}
+	}	
+	
+	protected static Date getExpirationDateFromTA(byte[] ta) throws Exception {
+		DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+		Document doc = builder.parse(new ByteArrayInputStream(ta));
+		NodeList signNodes = doc.getElementsByTagName("expirationTime"); 
+		String expStr = (signNodes.item(0).getFirstChild().getNodeValue());
+		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+		Date exp = df.parse(expStr.substring(0, expStr.length()-6));
+		return exp;
 	}
+	
+	public static Long daysUntilExpirationCRT(byte[] crt) {
+		try {
+			if (crt==null)
+				return null;
+			LocalDate exp = getExpirationDateFromCRT(crt);
+			LocalDate now = LocalDate.now();
+			return ChronoUnit.DAYS.between(now, exp);			
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	private static LocalDate getExpirationDateFromCRT(byte[] crt) throws Exception {
+	    CertificateFactory cf = CertificateFactory.getInstance("X.509");
+	    try (ByteArrayInputStream in = new ByteArrayInputStream(crt)) {
+	        X509Certificate cert = (X509Certificate) cf.generateCertificate(in);
+	        return cert.getNotAfter()
+	                .toInstant()
+	                .atZone(ZoneId.systemDefault())
+	                .toLocalDate();
+	    } catch (IOException e) {
+	        throw new Exception(e);
+	    }
+	}
+		
 	
 	/** Retorna el nombre de la columna CRT dependiendo del ambiente */
 	protected static String getCRTColumnName(String targetEnv) {
