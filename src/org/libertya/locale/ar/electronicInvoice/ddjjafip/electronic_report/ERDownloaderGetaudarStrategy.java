@@ -6,10 +6,22 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
+import org.openXpertya.model.MPreference;
+import org.openXpertya.util.CLogger;
 import org.openXpertya.util.DB;
+import org.openXpertya.util.Env;
 
 public abstract class ERDownloaderGetaudarStrategy implements IElectronicReportDownloaderStrategy{
 	
+	/**
+	 * dREHER 19 de Nov de 2026 - OP 8582
+	 * Preferencia (AD_Preference) para NO presentar el F8012. Desde la RG ARCA 5801/2025 (periodo enero 2026) el F8012
+	 * (duplicados electronicos) dejo de ser obligatorio. Por defecto (sin preferencia o con otro valor) se sigue presentando;
+	 * solo se omite si la preferencia existe, esta activa y vale 'Y'.
+	 */
+	public static final String PREFERENCE_NO_PRESENTAR_F8012 = "DDJJ_NoPresentarF8012";
+	private static CLogger log = CLogger.getCLogger(ERDownloaderGetaudarStrategy.class);
+
 	//En este atributo se setean los archivos que deben presentarse ante AFIP como ddjj una vez descargados
 	ArrayList<String> archivosPresentacion = new ArrayList<String>();
 	
@@ -45,6 +57,7 @@ public abstract class ERDownloaderGetaudarStrategy implements IElectronicReportD
         	return archivosPresentacionString;
         // orden fijo: F8010, F8011, F8012
         java.util.Arrays.sort(pathnames);
+        boolean noPresentarF8012 = isNoPresentarF8012();
         for (String pathname : pathnames) {
         	if(pathname.length() < 5)
         		continue;
@@ -52,6 +65,10 @@ public abstract class ERDownloaderGetaudarStrategy implements IElectronicReportD
         	if(!pathname.toLowerCase().endsWith(".pem"))
         		continue;
         	String substring = pathname.substring(0, 5);
+        	if(substring.equalsIgnoreCase("F8012") && noPresentarF8012) {
+        		log.info("No se presenta el F8012 (preferencia " + PREFERENCE_NO_PRESENTAR_F8012 + " activa): " + pathname);
+        		continue;
+        	}
         	if(substring.equalsIgnoreCase("F8010") || substring.equalsIgnoreCase("F8011") || substring.equalsIgnoreCase("F8012")) {
         		//establece el archivo con su ruta absoluta
         		archivosPresentacionString.add(getFormattedPath(dir) + pathname);
@@ -61,6 +78,21 @@ public abstract class ERDownloaderGetaudarStrategy implements IElectronicReportD
 	}
 	
 	protected abstract String getFormattedPath(String path);
+	
+	/**
+	 * dREHER 19 de Nov de 2026 - OP 8582
+	 * @return true solo si la preferencia DDJJ_NoPresentarF8012 esta definida (para el cliente del entorno) con valor 'Y'.
+	 * Se lee sin cache para que el cambio rija en la proxima presentacion. Ante cualquier error se asume false (se presenta).
+	 */
+	protected boolean isNoPresentarF8012() {
+		try {
+			String v = MPreference.GetCustomPreferenceValue(PREFERENCE_NO_PRESENTAR_F8012, Env.getAD_Client_ID(Env.getCtx()), null, null, true);
+			return v != null && v.trim().equalsIgnoreCase("Y");
+		} catch (Exception e) {
+			log.warning("No se pudo leer la preferencia " + PREFERENCE_NO_PRESENTAR_F8012 + ", se presenta el F8012: " + e.toString());
+			return false;
+		}
+	}
 	
 	protected String getAD_PreferenceGetaudar() {
 		PreparedStatement pstmtMLA = 
