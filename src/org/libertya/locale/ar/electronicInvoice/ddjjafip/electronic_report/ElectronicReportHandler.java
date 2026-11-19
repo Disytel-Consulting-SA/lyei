@@ -92,11 +92,22 @@ public class ElectronicReportHandler {
 //		En la tabla c_lyeiddjjpresentada por cada archivo, con el trx_number si fue exitoso o errorMsg si fallo
 		StringBuilder output = new StringBuilder();
 		output.append("Archivos para DDJJ: <b>" + archivosPresentacion.size() + "</b><br>");
+		int omitidos = 0;
 		for(String archivoPresentacion : archivosPresentacion) {
 			String trxNumber = null;
 			String errorMsg = null;
 			String uploadoutput = "";
 			String nombreArchivoPresentacion = new File(archivoPresentacion).getName();
+			
+			// dREHER 19 de Nov de 2026 - OP 8582: si para este periodo (mismo tipo de archivo, misma impresora y mismas fechas)
+			// ya figura presentado OK en el log (c_lyeiddjjpresentada), no se vuelve a presentar. Solo se intenta lo que no figura.
+			String trxPrevio = getTrxYaPresentado(nombreArchivoPresentacion);
+			if(trxPrevio != null) {
+				omitidos++;
+				log.info("[INFO] Se omite " + nombreArchivoPresentacion + ": ya presentado para este periodo, trx=" + trxPrevio);
+				output.append(nombreArchivoPresentacion + "<br/> [Omitido] Ya figura presentado para este periodo, numero de transaccion: [" + trxPrevio + "] <br/><br/>");
+				continue;
+			}
 						
 			log.info("[INFO] Invocando presentacion ddjj de archivo: " + archivoPresentacion);
 			String wsResponse = uploader.uploadER(archivoPresentacion);
@@ -114,7 +125,53 @@ public class ElectronicReportHandler {
 			this.saveDDJJPresentada(nombreArchivoPresentacion, trxNumber, errorMsg);
 		}
 		
+		if(omitidos > 0)
+			output.append("Archivos omitidos por estar ya presentados en este periodo: <b>" + omitidos + "</b><br>");
+		
 		return output.toString();
+	}
+	
+	/**
+	 * dREHER 19 de Nov de 2026 - OP 8582
+	 * Busca en el log de presentaciones (c_lyeiddjjpresentada) si el archivo ya fue presentado OK para este periodo.
+	 * Coincide por: cliente del entorno, registro activo con numero de transaccion (presentacion exitosa), mismo rango de
+	 * fechas (datefrom/dateto), mismo tipo de archivo (F8010/F8011/F8012) y misma impresora (serie del nombre del archivo).
+	 * No se compara el nombre completo porque getaudar genera un GUID distinto en cada descarga.
+	 * Las presentaciones con error (sin trx_number) NO cuentan: se reintentan. Para forzar una nueva presentacion basta
+	 * desactivar el registro del log (isactive='N').
+	 * Nombre esperado: F8011.CUIT.SERIE.AAAAMMDD.GUID.pem
+	 * @return numero de transaccion de la presentacion previa, o null si no figura (o ante cualquier error de lectura)
+	 */
+	private String getTrxYaPresentado(String nombreArchivo) {
+		String[] partes = nombreArchivo.split("\\.");
+		if(partes.length < 4)
+			return null;
+		String tipo = partes[0].toUpperCase();
+		String serie = partes[2];
+		
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		try {
+			pstmt = DB.prepareStatement(
+					"SELECT trx_number FROM c_lyeiddjjpresentada " +
+					"WHERE isactive = 'Y' AND ad_client_id = ? AND trx_number IS NOT NULL " +
+					"AND datefrom = ? AND dateto = ? " +
+					"AND upper(split_part(filename, '.', 1)) = ? AND split_part(filename, '.', 3) = ? " +
+					"ORDER BY fyh_presentacion DESC");
+			pstmt.setInt(1, Env.getAD_Client_ID(Env.getCtx()));
+			pstmt.setDate(2, new java.sql.Date(getTimestampDateFormat(fechaInicio).getTime()));
+			pstmt.setDate(3, new java.sql.Date(getTimestampDateFormat(fechaFin).getTime()));
+			pstmt.setString(4, tipo);
+			pstmt.setString(5, serie);
+			rs = pstmt.executeQuery();
+			if(rs.next())
+				return rs.getString(1);
+		} catch (Exception e) {
+			log.warning("No se pudo verificar si " + nombreArchivo + " ya fue presentado, se intenta presentar: " + e.toString());
+		} finally {
+			DB.close(rs, pstmt);
+		}
+		return null;
 	}
 
 	//instancia downloader y uploader necesarios
