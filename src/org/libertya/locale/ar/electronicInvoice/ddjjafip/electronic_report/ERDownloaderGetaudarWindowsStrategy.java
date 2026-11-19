@@ -41,7 +41,7 @@ public class ERDownloaderGetaudarWindowsStrategy extends ERDownloaderGetaudarStr
 			
 			//Una vez obtenido el .zip desde la impresora fiscal es necesario
 			//guardar su contenido en un directorio particular, descomprimir y
-			//obtener los nombres de los archivos a presentar F8011... y F8012... (F8010 NO SE PRESENTA)
+			//obtener los nombres de los archivos a presentar F8010..., F8011... y F8012... (dREHER OP 8582: desde 01/01/2026 ARCA exige tambien el F8010)
 			
 			//crear nuevo directorio especifico para la fecha de hoy
 			String newDir = fechaInicio + "_" + fechaFin + "_" + getRandomInt(1, 1000);

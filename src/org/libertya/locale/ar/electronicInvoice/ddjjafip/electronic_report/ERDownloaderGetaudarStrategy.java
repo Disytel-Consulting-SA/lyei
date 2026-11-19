@@ -39,9 +39,20 @@ public abstract class ERDownloaderGetaudarStrategy implements IElectronicReportD
 		String[] pathnames;
         File f = new File(dir);
         pathnames = f.list();
+        // dREHER 19 de Nov de 2026 - OP 8582: desde el 01/01/2026 ARCA exige presentar tambien el F8010
+        // (getaudar genera F8010, F8011 y F8012). Antes solo se presentaban F8011 y F8012.
+        if(pathnames == null)
+        	return archivosPresentacionString;
+        // orden fijo: F8010, F8011, F8012
+        java.util.Arrays.sort(pathnames);
         for (String pathname : pathnames) {
+        	if(pathname.length() < 5)
+        		continue;
+        	// solo los .pem que genera getaudar son los que se presentan en ARCA (se ignoran .xml, afip.zip, afip.85, etc.)
+        	if(!pathname.toLowerCase().endsWith(".pem"))
+        		continue;
         	String substring = pathname.substring(0, 5);
-        	if(substring.equalsIgnoreCase("F8011") || substring.equalsIgnoreCase("F8012")) {
+        	if(substring.equalsIgnoreCase("F8010") || substring.equalsIgnoreCase("F8011") || substring.equalsIgnoreCase("F8012")) {
         		//establece el archivo con su ruta absoluta
         		archivosPresentacionString.add(getFormattedPath(dir) + pathname);
         	}

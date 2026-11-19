@@ -87,7 +87,7 @@ public class ElectronicReportHandler {
 		
 		log.info("Comienza con la lectura de la info para la DDJJ");
 		
-//		Se invoca el proceso de presentacion (upload) por cada archivo (F8011 y F8012)
+//		Se invoca el proceso de presentacion (upload) por cada archivo (F8010, F8011 y F8012; dREHER OP 8582: desde 01/01/2026 se presenta tambien el F8010)
 //		Luego se determina si la presentacion fue exitosa o no y se almacena un registro
 //		En la tabla c_lyeiddjjpresentada por cada archivo, con el trx_number si fue exitoso o errorMsg si fallo
 		StringBuilder output = new StringBuilder();
