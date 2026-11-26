@@ -319,9 +319,9 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			// Impuestos.  No deben ser enviados para comprobantes de tipo C
 			AlicIva[] iva = getIva();
 			double impIva = getImpIVA(iva);
-			if (!X_C_DocType.DOCSUBTYPECAE_FacturasC.equals(docType.getdocsubtypecae())
-					&& !X_C_DocType.DOCSUBTYPECAE_NotasDeCreditoC.equals(docType.getdocsubtypecae())
-					&& !X_C_DocType.DOCSUBTYPECAE_NotasDeDebitoC.equals(docType.getdocsubtypecae())) {
+			// dREHER 26 de Nov de 2026: incluye todos los comprobantes C (tambien MiPyME C)
+			boolean esComprobanteC = LYEICommons.isComprobanteC(docType);
+			if (!esComprobanteC) {
 				
 				// Array  para  informar  las  alícuotas  y  sus importes   asociados   a   un   comprobante <AlicIva>
 				if(iva.length>0) {
@@ -368,6 +368,12 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 				}
 			}
 			
+			// dREHER 26 de Nov de 2026: en comprobantes C el neto es el subtotal (total - tributos),
+			// incluyendo lo que corresponda a impuestos exentos o no gravados
+			if (esComprobanteC)
+				valor = LYEICommons.getImpTotal(inv).subtract(BigDecimal.valueOf(tmpV))
+						.setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
+			
 			// Importe  neto    gravado.  Debe  ser  menor  o igual a Importe total y no puede ser menor a cero.
 			detReq.setImpNeto(valor);
 			totales += " Neto=" + valor;
@@ -382,7 +388,8 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			detReq.setImpTotal(valor);
 			totales += " Total=" + valor;
 			
-			bigValor = LYEICommons.getImpTotConc(inv.getC_Invoice_ID());
+			// dREHER 26 de Nov de 2026: en comprobantes C debe informarse cero
+			bigValor = esComprobanteC ? BigDecimal.ZERO : LYEICommons.getImpTotConc(inv.getC_Invoice_ID());
 			if(bigValor == null)
 				throw new Exception("Error al leer NO GRAVADO del comprobante!");
 			else
@@ -392,7 +399,8 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			detReq.setImpTotConc(valor);
 			totales += " NO gravado=" + valor;
 			
-			bigValor = LYEICommons.getImpOpEx(inv.getC_Invoice_ID());
+			// dREHER 26 de Nov de 2026: en comprobantes C debe informarse cero
+			bigValor = esComprobanteC ? BigDecimal.ZERO : LYEICommons.getImpOpEx(inv.getC_Invoice_ID());
 			if(bigValor == null)
 				throw new Exception("Error al leer EXCENTO del comprobante!");
 			else
@@ -403,7 +411,7 @@ public class LYEIWSFE implements ElectronicInvoiceInterface {
 			
 			totales += " Otr Tributos=" + tmpV;
 			
-			totales += " IVA=" + impIva;
+			totales += " IVA=" + (esComprobanteC ? 0.00 : impIva);
 			
 			// Opcionales
 			Opcional[] opcionales = getOpcionales();

@@ -110,6 +110,24 @@ public class LYEICommons {
 		return Long.parseLong(inv.getCUIT().replace("-", "").replace(" ", ""));
 	}
 
+	/**
+	 * Comprobantes tipo C (Factura, ND, NC, Recibo, Venta al contado y MiPyME C). ARCA exige para ellos
+	 * ImpTotConc, ImpOpEx e ImpIVA en cero, sin detalle de alicuotas, e ImpNeto igual al subtotal.
+	 *
+	 * dREHER 26 de Nov de 2026
+	 */
+	public static boolean isComprobanteC(MDocType docType) {
+		String tipo = docType.getdocsubtypecae();
+		return X_C_DocType.DOCSUBTYPECAE_FacturasC.equals(tipo)
+				|| X_C_DocType.DOCSUBTYPECAE_NotasDeDebitoC.equals(tipo)
+				|| X_C_DocType.DOCSUBTYPECAE_NotasDeCreditoC.equals(tipo)
+				|| X_C_DocType.DOCSUBTYPECAE_RecibosC.equals(tipo)
+				|| X_C_DocType.DOCSUBTYPECAE_NotasDeVentaAlContadoC.equals(tipo)
+				|| X_C_DocType.DOCSUBTYPECAE_FacturasMiPyMEC.equals(tipo)
+				|| X_C_DocType.DOCSUBTYPECAE_NotasDeDebitoMiPyMEC.equals(tipo)
+				|| X_C_DocType.DOCSUBTYPECAE_NotasDeCreditoMiPyMEC.equals(tipo);
+	}
+
 	/** Neto de la factura */
 	public static BigDecimal getImpNeto(BigDecimal impIva, MDocType docType, MInvoice inv) throws Exception{
 		return getImpNetoBigDecimal(impIva, docType, inv);
